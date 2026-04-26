@@ -27,6 +27,21 @@ export function formatTemplate(template: string) {
   return template.replace('-', ' ')
 }
 
+const timestampFormatter = new Intl.DateTimeFormat(undefined, {
+  month: 'short',
+  day: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+})
+
+export function formatTimestamp(value: string) {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return value
+  }
+  return timestampFormatter.format(date)
+}
+
 export function reviewSummary(
   task: { status: string },
   latestReview: { verdict: string; appliedAt: string | null } | null,

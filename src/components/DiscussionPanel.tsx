@@ -1,5 +1,6 @@
 import type { DiscussionMessage } from '../../core/types'
 import { MessageSquare, X } from 'lucide-react'
+import { formatTimestamp } from './helpers'
 
 type DiscussionPanelProps = {
   messages: DiscussionMessage[]
@@ -35,7 +36,7 @@ export function DiscussionPanel({
           <article className={`discussion-message ${message.author}`} key={message.id}>
             <div>
               <span>{message.author}</span>
-              <small>{message.agentId ?? message.createdAt}</small>
+              <small>{message.agentId ?? formatTimestamp(message.createdAt)}</small>
             </div>
             <p>{message.body}</p>
           </article>

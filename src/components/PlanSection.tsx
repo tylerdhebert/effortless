@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { Plan } from '../../core/types'
 import { PlanCommentStream } from './PlanCommentStream'
-import { Check, ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { isPlanWaiting, planStatus } from './helpers'
 
 type PlanSectionProps = {
@@ -81,7 +81,6 @@ export function PlanSection({
                 onClick={() => onSelectPlan(p.id)}
                 aria-label={`plan ${i + 1}`}
               >
-                {p.accepted ? <Check size={10} strokeWidth={3} /> : null}
               </button>
             ))}
           </div>

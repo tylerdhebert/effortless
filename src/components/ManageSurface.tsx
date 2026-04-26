@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Pencil, Trash2 } from 'lucide-react'
 import type { Mandate, Repo, WorkSurface, MandateSourceType } from '../../core/types'
+import { PillSwitcher } from './PillSwitcher'
 
 type ManageSurfaceProps = {
   repos: Repo[]
@@ -37,6 +38,11 @@ export function ManageSurface({
   isDeletingMandate,
   section,
 }: ManageSurfaceProps) {
+  const mandateSourceOptions: Array<{ id: MandateSourceType; label: string }> = [
+    { id: 'body', label: 'inline text' },
+    { id: 'file', label: 'file path' },
+  ]
+
   const [repoName, setRepoName] = useState('')
   const [repoPath, setRepoPath] = useState('')
   const [repoBaseBranch, setRepoBaseBranch] = useState('main')
@@ -93,6 +99,8 @@ export function ManageSurface({
     setEditingMandateRepoId(mandate.repoId ? String(mandate.repoId) : '')
   }
 
+  const activeMandateSourceType = editingMandateId ? editingMandateSourceType : mandateSourceType
+
   return (
     <>
       <div className="effort-scroll manage-scroll">
@@ -100,7 +108,9 @@ export function ManageSurface({
           <section className="manage-surface manage-surface-repos">
             <section className="manage-panel">
               <div className="manage-panel-header">
-                <h3>{editingRepoId ? 'edit repo' : 'add repo'}</h3>
+                <div>
+                  <h3>{editingRepoId ? 'edit repo' : 'add repo'}</h3>
+                </div>
               </div>
 
               <form
@@ -171,7 +181,9 @@ export function ManageSurface({
 
             <section className="manage-panel">
               <div className="manage-panel-header">
-                <h3>repos</h3>
+                <div>
+                  <h3>repos</h3>
+                </div>
               </div>
 
               <div className="repo-list manage-repo-list">
@@ -202,7 +214,9 @@ export function ManageSurface({
           <section className="manage-surface manage-surface-mandates">
             <section className="manage-panel">
               <div className="manage-panel-header">
-                <h3>{editingMandateId ? 'edit mandate' : 'add mandate'}</h3>
+                <div>
+                  <h3>{editingMandateId ? 'edit mandate' : 'add mandate'}</h3>
+                </div>
               </div>
 
               <form
@@ -262,33 +276,19 @@ export function ManageSurface({
                     </option>
                   ))}
                 </select>
-                <div className="radio-row">
-                  <label className="radio-label">
-                    <input
-                      type="radio"
-                      name={editingMandateId ? 'editSource' : 'newSource'}
-                      value="body"
-                      checked={editingMandateId ? editingMandateSourceType === 'body' : mandateSourceType === 'body'}
-                      onChange={() =>
-                        editingMandateId ? setEditingMandateSourceType('body') : setMandateSourceType('body')
-                      }
-                    />
-                    inline text
-                  </label>
-                  <label className="radio-label">
-                    <input
-                      type="radio"
-                      name={editingMandateId ? 'editSource' : 'newSource'}
-                      value="file"
-                      checked={editingMandateId ? editingMandateSourceType === 'file' : mandateSourceType === 'file'}
-                      onChange={() =>
-                        editingMandateId ? setEditingMandateSourceType('file') : setMandateSourceType('file')
-                      }
-                    />
-                    file path
-                  </label>
-                </div>
-                {(editingMandateId ? editingMandateSourceType : mandateSourceType) === 'body' ? (
+                <PillSwitcher
+                  ariaLabel="mandate source type"
+                  options={mandateSourceOptions}
+                  value={activeMandateSourceType}
+                  onChange={(nextValue) => {
+                    if (editingMandateId) {
+                      setEditingMandateSourceType(nextValue)
+                    } else {
+                      setMandateSourceType(nextValue)
+                    }
+                  }}
+                />
+                {activeMandateSourceType === 'body' ? (
                   <textarea
                     aria-label="mandate body"
                     placeholder="mandate instructions"
@@ -323,7 +323,9 @@ export function ManageSurface({
 
             <section className="manage-panel">
               <div className="manage-panel-header">
-                <h3>mandates</h3>
+                <div>
+                  <h3>mandates</h3>
+                </div>
               </div>
 
               <div className="repo-list manage-repo-list">

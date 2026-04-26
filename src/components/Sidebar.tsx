@@ -1,8 +1,6 @@
-import { useState } from 'react'
-import type { Effort, EffortTemplate } from '../../core/types'
-import { Home, Plus, Settings, X } from 'lucide-react'
+import type { Effort } from '../../core/types'
+import { Home, Plus, Settings } from 'lucide-react'
 import { formatTemplate } from './helpers'
-import { EffortCreationForm } from './EffortCreationForm'
 
 type SidebarProps = {
   efforts: Effort[]
@@ -11,11 +9,10 @@ type SidebarProps = {
   mandatesCount: number
   surfaceMode: 'effort' | 'manage'
   manageSection: 'repos' | 'mandates'
-  onCreateEffort: (input: { title: string; description: string; template: EffortTemplate }) => void
   onSelectEffort: (effortId: number) => void
   onSetSurfaceMode: (mode: 'effort' | 'manage') => void
   onSetManageSection: (section: 'repos' | 'mandates') => void
-  isCreatingEffort: boolean
+  onOpenCreateEffort: () => void
 }
 
 export function Sidebar({
@@ -25,14 +22,11 @@ export function Sidebar({
   mandatesCount,
   surfaceMode,
   manageSection,
-  onCreateEffort,
   onSelectEffort,
   onSetSurfaceMode,
   onSetManageSection,
-  isCreatingEffort,
+  onOpenCreateEffort,
 }: SidebarProps) {
-  const [createEffortOpen, setCreateEffortOpen] = useState(false)
-
   return (
     <aside className="efforts-sidebar">
       <div className="sidebar-heading">
@@ -46,7 +40,6 @@ export function Sidebar({
             className="icon-btn"
             aria-label="home"
             onClick={() => {
-              setCreateEffortOpen(false)
               onSetSurfaceMode('effort')
             }}
           >
@@ -57,7 +50,7 @@ export function Sidebar({
             className="icon-btn"
             aria-label="create effort"
             onClick={() => {
-              setCreateEffortOpen((open) => !open)
+              onOpenCreateEffort()
             }}
           >
             <Plus size={16} />
@@ -67,7 +60,6 @@ export function Sidebar({
             className="icon-btn"
             aria-label="open manage"
             onClick={() => {
-              setCreateEffortOpen(false)
               onSetSurfaceMode('manage')
               onSetManageSection(manageSection === 'repos' || manageSection === 'mandates' ? manageSection : 'repos')
             }}
@@ -76,29 +68,6 @@ export function Sidebar({
           </button>
         </div>
       </div>
-
-      {createEffortOpen ? (
-        <div className="create-effort-flyout">
-          <div className="create-effort-flyout-header">
-            <h3>new effort</h3>
-            <button
-              type="button"
-              className="icon-btn"
-              aria-label="close effort creation"
-              onClick={() => setCreateEffortOpen(false)}
-            >
-              <X size={14} />
-            </button>
-          </div>
-          <EffortCreationForm
-            isPending={isCreatingEffort}
-            onSubmit={(input) => {
-              onCreateEffort(input)
-              setCreateEffortOpen(false)
-            }}
-          />
-        </div>
-      ) : null}
 
       <div className="sidebar-scroll">
         {surfaceMode === 'manage' ? (
@@ -133,7 +102,6 @@ export function Sidebar({
                 onClick={() => {
                   onSelectEffort(effort.id)
                   onSetSurfaceMode('effort')
-                  setCreateEffortOpen(false)
                 }}
                 type="button"
               >

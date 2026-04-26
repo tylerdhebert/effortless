@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { MessageSquare } from 'lucide-react'
-import { CollapsibleSection } from './components/CollapsibleSection'
+import { MessageSquare, X } from 'lucide-react'
 import { DiscussionPanel } from './components/DiscussionPanel'
+import { EffortCreationForm } from './components/EffortCreationForm'
 import { InputRequestList } from './components/InputRequestList'
 import { ManageSurface } from './components/ManageSurface'
 import { PlanSection } from './components/PlanSection'
@@ -10,6 +10,7 @@ import { ReferenceSection } from './components/ReferenceSection'
 import { Sidebar } from './components/Sidebar'
 import { TaskDetailPane } from './components/TaskDetailPane'
 import { TaskList } from './components/TaskList'
+import { formatTimestamp } from './components/helpers'
 import { useDiscussionMutations } from './hooks/useDiscussionMutations'
 import { useEffortMutations } from './hooks/useEffortMutations'
 import { useInputMutations } from './hooks/useInputMutations'
@@ -30,8 +31,9 @@ function App() {
   const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null)
   const [discussionOpen, setDiscussionOpen] = useState(false)
   const [discussionDraft, setDiscussionDraft] = useState('')
-  const [descriptionOpen, setDescriptionOpen] = useState(true)
+  const [createEffortOpen, setCreateEffortOpen] = useState(false)
   const [observedAppVersion, setObservedAppVersion] = useState<number | null>(null)
+  const effortScrollRef = useRef<HTMLDivElement | null>(null)
 
   const effortsQuery = useQuery({
     queryKey: ['efforts'],
@@ -78,7 +80,7 @@ function App() {
   const discussionQuery = useQuery({
     queryKey: ['discussion', selectedEffort?.id],
     queryFn: () => window.effortless.listDiscussionMessages(selectedEffort!.id),
-    enabled: Boolean(selectedEffort) && discussionOpen,
+    enabled: Boolean(selectedEffort) && (discussionOpen || !selectedEffort?.needsTasks),
   })
 
   const selectedPlan =
@@ -98,6 +100,7 @@ function App() {
 
   const selectedTask =
     tasksQuery.data?.find((task) => task.id === selectedTaskId) ?? tasksQuery.data?.[0] ?? null
+  const pendingInputCount = inputsQuery.data?.filter((input) => input.status === 'pending').length ?? 0
 
   const commentsQuery = useQuery({
     queryKey: ['task-comments', selectedTask?.id],
@@ -152,6 +155,9 @@ function App() {
     setSelectedTaskId(null)
     setSelectedPlanId(null)
     setDiscussionDraft('')
+    if (effortScrollRef.current) {
+      effortScrollRef.current.scrollTop = 0
+    }
   }, [selectedEffort?.id])
 
   useEffect(() => {
@@ -175,18 +181,10 @@ function App() {
         mandatesCount={mandatesQuery.data?.length ?? 0}
         surfaceMode={surfaceMode}
         manageSection={manageSection}
-        onCreateEffort={(input) => {
-          createEffort.mutate(input, {
-            onSuccess: (effort) => {
-              setSelectedEffortId(effort.id)
-              setSurfaceMode('effort')
-            },
-          })
-        }}
         onSelectEffort={(id) => setSelectedEffortId(id)}
         onSetSurfaceMode={setSurfaceMode}
         onSetManageSection={setManageSection}
-        isCreatingEffort={createEffort.isPending}
+        onOpenCreateEffort={() => setCreateEffortOpen(true)}
       />
 
       <section className="effort-surface">
@@ -211,12 +209,14 @@ function App() {
         ) : selectedEffort ? (
           <>
             <header className="effort-header">
-              <div className="effort-title-row">
-                <h2>{selectedEffort.title}</h2>
-                <div className="effort-header-meta">
-                  <span>{selectedEffort.shortRef}</span>
-                  <span>{selectedEffort.template.replace('-', ' ')}</span>
-                  <span>{selectedEffort.status}</span>
+              <div className="effort-header-copy">
+                <div className="effort-title-row">
+                  <h2>{selectedEffort.title}</h2>
+                  <div className="effort-header-meta">
+                    <span>{selectedEffort.shortRef}</span>
+                    <span>{selectedEffort.template.replace('-', ' ')}</span>
+                    <span>{selectedEffort.status}</span>
+                  </div>
                 </div>
               </div>
               <button
@@ -250,83 +250,78 @@ function App() {
               />
             ) : null}
 
-            <div className="effort-scroll">
-              <CollapsibleSection
-                title="description"
-                open={descriptionOpen}
-                onToggle={() => setDescriptionOpen((open) => !open)}
-              >
-                <p>{selectedEffort.description}</p>
-              </CollapsibleSection>
+            <div
+              ref={effortScrollRef}
+              className={`effort-scroll ${selectedEffort.needsTasks ? 'effort-scroll--delivery' : 'effort-scroll--compact'}`}
+            >
+              <section className="surface-section effort-description-section">
+                <div className="section-title">
+                  <span>description</span>
+                </div>
+                <p className="effort-description">{selectedEffort.description}</p>
+              </section>
 
-              <div className="surface-row plan-ref-row">
-                <PlanSection
-                  plans={plansQuery.data ?? []}
-                  selectedPlanId={selectedPlanId}
-                  onSelectPlan={setSelectedPlanId}
-                  planComments={planCommentsQuery.data ?? []}
-                  onAcceptPlan={(planId) => planMutations.acceptPlan.mutate(planId)}
-                  onReadyPlan={(planId) => planMutations.readyPlan.mutate(planId)}
-                  onRequestPlanChanges={(input) => planMutations.requestPlanChanges.mutate(input)}
-                  isAcceptingPlan={planMutations.acceptPlan.isPending}
-                  isReadyingPlan={planMutations.readyPlan.isPending}
-                  isRequestingPlanChanges={planMutations.requestPlanChanges.isPending}
-                />
+              <div className={`effort-layout ${selectedEffort.needsTasks ? 'has-tasks' : 'no-tasks'}`}>
+                <div className="effort-primary-column">
+                  <PlanSection
+                    plans={plansQuery.data ?? []}
+                    selectedPlanId={selectedPlanId}
+                    onSelectPlan={setSelectedPlanId}
+                    planComments={planCommentsQuery.data ?? []}
+                    onAcceptPlan={(planId) => planMutations.acceptPlan.mutate(planId)}
+                    onReadyPlan={(planId) => planMutations.readyPlan.mutate(planId)}
+                    onRequestPlanChanges={(input) => planMutations.requestPlanChanges.mutate(input)}
+                    isAcceptingPlan={planMutations.acceptPlan.isPending}
+                    isReadyingPlan={planMutations.readyPlan.isPending}
+                    isRequestingPlanChanges={planMutations.requestPlanChanges.isPending}
+                  />
 
-                <ReferenceSection
-                  references={referencesQuery.data ?? []}
-                  effortId={selectedEffort.id}
-                  isCreating={referenceMutations.createReference.isPending}
-                  isDeleting={referenceMutations.deleteReference.isPending}
-                  onAddReference={(input) => referenceMutations.createReference.mutate(input)}
-                  onRemoveReference={(refId) => referenceMutations.deleteReference.mutate(refId)}
-                />
-              </div>
+                  {!selectedEffort.needsTasks ? (
+                    <section className="surface-section discussion-summary-section">
+                      <div className="section-title">
+                        <span>discussion</span>
+                        <span>{discussionQuery.data?.length ?? 0} messages</span>
+                      </div>
+                      <div className="discussion-preview-list">
+                        {(discussionQuery.data ?? []).length === 0 ? (
+                          <p className="empty-state">no discussion yet</p>
+                        ) : (
+                          (discussionQuery.data ?? []).slice(-3).map((message) => (
+                            <article className={`discussion-message ${message.author}`} key={message.id}>
+                              <div>
+                                <span>{message.author}</span>
+                                <small>{message.agentId ?? formatTimestamp(message.createdAt)}</small>
+                              </div>
+                              <p>{message.body}</p>
+                            </article>
+                          ))
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        className="inline-action-button"
+                        onClick={() => setDiscussionOpen(true)}
+                      >
+                        open full discussion
+                      </button>
+                    </section>
+                  ) : null}
+                </div>
 
-              {selectedEffort.needsTasks ? (
-                <div className="surface-row tasks-row">
-                  <section className="surface-section task-section">
-                    <div className="section-title">
-                      <span>tasks ({tasksQuery.data?.length ?? 0})</span>
-                    </div>
-                    <div className="task-workspace">
-                      <TaskList
-                        tasks={tasksQuery.data ?? []}
-                        selectedTaskId={selectedTaskId}
-                        onSelectTask={setSelectedTaskId}
-                      />
-                      <TaskDetailPane
-                        task={selectedTask}
-                        repos={reposQuery.data ?? []}
-                        reviews={reviewsQuery.data ?? []}
-                        comments={commentsQuery.data ?? []}
-                        latestBuild={buildQuery.data ?? null}
-                        onReadyTask={(taskId) => taskMutations.readyTask.mutate(taskId)}
-                        onUpdateTaskDetails={(input) => taskMutations.updateTaskDetails.mutate(input)}
-                        onEnsureTaskWorktree={(taskId) => taskMutations.ensureTaskWorktree.mutate(taskId)}
-                        onRunBuild={(taskId) => taskMutations.runBuild.mutate(taskId)}
-                        onSubmitReview={(input) => {
-                          reviewMutations.submitReview.mutate(input, {
-                            onSuccess: () => {
-                            },
-                          })
-                        }}
-                        onApplyReview={(reviewId) => reviewMutations.applyReview.mutate({ reviewId })}
-                        onRequestReviewChanges={(input) => reviewMutations.requestReviewChanges.mutate(input)}
-                        isReadyingTask={taskMutations.readyTask.isPending}
-                        isUpdatingTask={taskMutations.updateTaskDetails.isPending}
-                        isEnsuringWorktree={taskMutations.ensureTaskWorktree.isPending}
-                        isRunningBuild={taskMutations.runBuild.isPending}
-                        isSubmittingReview={reviewMutations.submitReview.isPending}
-                        isApplyingReview={reviewMutations.applyReview.isPending}
-                        isRequestingReviewChanges={reviewMutations.requestReviewChanges.isPending}
-                      />
-                    </div>
-                  </section>
+                <div className="effort-secondary-column">
+                  <ReferenceSection
+                    references={referencesQuery.data ?? []}
+                    effortId={selectedEffort.id}
+                    isCreating={referenceMutations.createReference.isPending}
+                    isDeleting={referenceMutations.deleteReference.isPending}
+                    onAddReference={(input) => referenceMutations.createReference.mutate(input)}
+                    onRemoveReference={(refId) => referenceMutations.deleteReference.mutate(refId)}
+                  />
 
                   <section className="surface-section input-section">
                     <div className="section-title">
                       <span>inputs ({inputsQuery.data?.length ?? 0})</span>
+                      <span>{pendingInputCount} pending</span>
                     </div>
                     <InputRequestList
                       inputs={inputsQuery.data ?? []}
@@ -337,26 +332,74 @@ function App() {
                     />
                   </section>
                 </div>
-              ) : (
-                <section className="surface-section input-section">
+              </div>
+
+              {selectedEffort.needsTasks ? (
+                <section className="surface-section task-section">
                   <div className="section-title">
-                    <span>inputs ({inputsQuery.data?.length ?? 0})</span>
+                    <span>tasks ({tasksQuery.data?.length ?? 0})</span>
+                    {selectedTask ? <span>{selectedTask.status}</span> : null}
                   </div>
-                  <InputRequestList
-                    inputs={inputsQuery.data ?? []}
-                    onAnswer={(inputRequestId, answer) =>
-                      answerInput.mutate({ inputRequestId, answer })
-                    }
-                    isAnswering={answerInput.isPending}
-                  />
+                  <div className="task-workspace">
+                    <TaskList
+                      tasks={tasksQuery.data ?? []}
+                      selectedTaskId={selectedTaskId}
+                      onSelectTask={setSelectedTaskId}
+                    />
+                    <TaskDetailPane
+                      task={selectedTask}
+                      repos={reposQuery.data ?? []}
+                      reviews={reviewsQuery.data ?? []}
+                      comments={commentsQuery.data ?? []}
+                      latestBuild={buildQuery.data ?? null}
+                      onRunBuild={(taskId) => taskMutations.runBuild.mutate(taskId)}
+                      onApplyReview={(reviewId) => reviewMutations.applyReview.mutate({ reviewId })}
+                      onRequestReviewChanges={(input) => reviewMutations.requestReviewChanges.mutate(input)}
+                      isRunningBuild={taskMutations.runBuild.isPending}
+                      isApplyingReview={reviewMutations.applyReview.isPending}
+                      isRequestingReviewChanges={reviewMutations.requestReviewChanges.isPending}
+                    />
+                  </div>
                 </section>
-              )}
+              ) : null}
             </div>
           </>
         ) : (
           <p className="empty-state">no effort selected</p>
         )}
       </section>
+
+      {createEffortOpen ? (
+        <div className="flyout-overlay" onClick={() => setCreateEffortOpen(false)}>
+          <div className="flyout-card create-effort-modal" onClick={(event) => event.stopPropagation()}>
+            <header className="flyout-header create-effort-modal-header">
+              <div>
+                <h4>new effort</h4>
+              </div>
+              <button
+                type="button"
+                className="icon-btn"
+                onClick={() => setCreateEffortOpen(false)}
+                aria-label="close effort creation"
+              >
+                <X size={14} />
+              </button>
+            </header>
+            <EffortCreationForm
+              isPending={createEffort.isPending}
+              onSubmit={(input) => {
+                createEffort.mutate(input, {
+                  onSuccess: (effort) => {
+                    setSelectedEffortId(effort.id)
+                    setSurfaceMode('effort')
+                    setCreateEffortOpen(false)
+                  },
+                })
+              }}
+            />
+          </div>
+        </div>
+      ) : null}
     </main>
   )
 }

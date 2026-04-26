@@ -22,3 +22,8 @@
 - Default to a maximized window unless the user explicitly asks for a different size.
 - Do not leave the app minimized while debugging or capturing screenshots.
 - The app does not need to stay in the foreground, but it should remain restored.
+
+## UI Style
+
+- Avoid marketing-flavored hero content. Do not add redundant workspace-summary banners that restate the current screen without adding operational value.
+- Default all UI labels to lowercase. Do not use uppercase labels unless a developer explicitly asks for them.

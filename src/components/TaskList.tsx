@@ -29,13 +29,19 @@ export function TaskList({ tasks, selectedTaskId, onSelectTask }: TaskListProps)
           className={`task-list-row ${task.id === selectedTaskId ? 'selected' : ''}`}
           onClick={() => onSelectTask(task.id)}
         >
-          <span
-            className="task-list-dot"
-            style={{ background: statusColors[task.status] ?? statusColors.open }}
-            aria-hidden="true"
-          />
-          <span className="task-list-ref">{task.shortRef}</span>
-          <span className="task-list-title">{task.title}</span>
+          <div className="task-list-meta">
+            <div className="task-list-topline">
+              <span
+                className="task-list-dot"
+                style={{ background: statusColors[task.status] ?? statusColors.open }}
+                aria-hidden="true"
+              />
+              <span className="task-list-ref">{task.shortRef}</span>
+            </div>
+            <span className="task-list-status">{task.status}</span>
+          </div>
+          <strong className="task-list-title">{task.title}</strong>
+          <p className="task-list-description">{task.description}</p>
         </button>
       ))}
     </div>

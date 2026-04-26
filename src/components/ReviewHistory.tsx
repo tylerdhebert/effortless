@@ -1,4 +1,5 @@
 import type { Review } from '../../core/types'
+import { formatTimestamp } from './helpers'
 
 type ReviewHistoryProps = {
   reviews: Review[]
@@ -18,7 +19,7 @@ export function ReviewHistory({ reviews }: ReviewHistoryProps) {
               <span>{review.shortRef}</span>
               <strong>{review.verdict}</strong>
             </div>
-            <small>{review.authorAgentId ?? review.createdAt}</small>
+            <small>{review.authorAgentId ?? formatTimestamp(review.createdAt)}</small>
           </div>
           <p>{review.body}</p>
           <div className="review-record-footer">

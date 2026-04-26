@@ -1,4 +1,5 @@
 import type { PlanComment } from '../../core/types'
+import { formatTimestamp } from './helpers'
 
 type PlanCommentStreamProps = {
   comments: PlanComment[]
@@ -15,7 +16,7 @@ export function PlanCommentStream({ comments }: PlanCommentStreamProps) {
         <article className="comment" key={comment.id}>
           <div>
             <span>{comment.kind}</span>
-            <small>{comment.agentId ?? comment.author}</small>
+            <small>{comment.agentId ?? `${comment.author} • ${formatTimestamp(comment.createdAt)}`}</small>
           </div>
           <p>{comment.body}</p>
         </article>
