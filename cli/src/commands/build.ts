@@ -1,0 +1,30 @@
+import { getLatestTaskBuild, runTaskBuild } from '../../../core/builds'
+import { requiredOption } from '../args'
+import { db, resolveTask } from '../context'
+import { printBuild } from '../render'
+
+export async function handleBuild(surface: string, command: string): Promise<boolean> {
+  if (surface !== 'build') return false
+
+  if (command === 'run') {
+    const task = resolveTask(db, requiredOption('--task'))
+    const build = await runTaskBuild(db, task.id)
+    printBuild(build)
+    return true
+  }
+
+  if (command === 'status') {
+    const task = resolveTask(db, requiredOption('--task'))
+    const build = getLatestTaskBuild(db, task.id)
+
+    if (!build) {
+      console.log('no builds')
+      return true
+    }
+
+    printBuild(build)
+    return true
+  }
+
+  return false
+}

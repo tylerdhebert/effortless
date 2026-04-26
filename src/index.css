@@ -1,0 +1,26 @@
+:root {
+  font-family: Aptos, "Segoe UI", sans-serif;
+  color: #e8e6d9;
+  background: #11130f;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  --main: #12140f;
+  --sidebar: #0e110d;
+  --surface: #171b15;
+  --panel: #1d221b;
+  --field: #10130f;
+  --button: #171a15;
+  --line: #2a3026;
+  --line-strong: #394234;
+  --text: #d8dccf;
+  --text-strong: #f2f1e7;
+  --muted: #929984;
+  --accent: #8ccf62;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  background: #11130f;
+}
