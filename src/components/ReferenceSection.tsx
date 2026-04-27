@@ -1,13 +1,20 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Reference } from '../../core/types'
-import { Plus, Trash2, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Glasses, List, Plus, Trash2, X } from 'lucide-react'
 
 type ReferenceSectionProps = {
   references: Reference[]
   effortId: number
   isCreating: boolean
   isDeleting: boolean
-  onAddReference: (input: { ownerType: 'effort' | 'plan' | 'task' | 'review'; ownerId: number; targetType: 'effort' | 'plan' | 'task' | 'review' | 'file'; targetId?: number | null; filePath?: string | null; label?: string | null }) => void
+  onAddReference: (input: {
+    ownerType: 'effort' | 'plan' | 'task' | 'review'
+    ownerId: number
+    targetType: 'effort' | 'plan' | 'task' | 'review' | 'file'
+    targetId?: number | null
+    filePath?: string | null
+    label?: string | null
+  }) => void
   onRemoveReference: (refId: number) => void
 }
 
@@ -20,10 +27,34 @@ export function ReferenceSection({
   onRemoveReference,
 }: ReferenceSectionProps) {
   const [flyoutOpen, setFlyoutOpen] = useState(false)
+  const [listOpen, setListOpen] = useState(false)
+  const [selectedIndex, setSelectedIndex] = useState(0)
   const [refTargetType, setRefTargetType] = useState<'effort' | 'plan' | 'task' | 'review' | 'file'>('file')
   const [refTargetId, setRefTargetId] = useState('')
   const [refFilePath, setRefFilePath] = useState('')
   const [refLabel, setRefLabel] = useState('')
+  const popoverRef = useRef<HTMLDivElement | null>(null)
+
+  const boundedIndex = Math.min(selectedIndex, Math.max(0, references.length - 1))
+  const activeReference = references[boundedIndex] ?? null
+  const counterLabel = references.length > 0 ? `${boundedIndex + 1} of ${references.length}` : 'no references'
+
+  useEffect(() => {
+    setSelectedIndex((current) => Math.min(current, Math.max(0, references.length - 1)))
+  }, [references.length])
+
+  useEffect(() => {
+    if (!listOpen) return
+
+    function handlePointerDown(event: MouseEvent) {
+      if (!popoverRef.current?.contains(event.target as Node)) {
+        setListOpen(false)
+      }
+    }
+
+    window.addEventListener('mousedown', handlePointerDown)
+    return () => window.removeEventListener('mousedown', handlePointerDown)
+  }, [listOpen])
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -41,18 +72,71 @@ export function ReferenceSection({
     setFlyoutOpen(false)
   }
 
+  const activeReferenceBody = useMemo(() => {
+    if (!activeReference) {
+      return null
+    }
+
+    if (activeReference.targetType === 'file') {
+      return activeReference.filePath
+    }
+
+    if (activeReference.targetId) {
+      return `${activeReference.targetType}-${activeReference.targetId}`
+    }
+
+    return null
+  }, [activeReference])
+
   return (
     <section className="surface-section reference-section">
       <div className="section-title">
-        <span>references ({references.length})</span>
-        <button type="button" onClick={() => setFlyoutOpen(true)} aria-label="add reference">
-          <Plus size={16} />
-        </button>
+        <span className="section-title-label">
+          <Glasses size={14} />
+          <span>references ({references.length})</span>
+        </span>
+        <div className="section-title-actions reference-title-actions">
+          {references.length > 1 ? (
+            <button
+              type="button"
+              onClick={() => setListOpen((open) => !open)}
+              aria-label="show reference list"
+              title="show reference list"
+            >
+              <List size={14} />
+            </button>
+          ) : null}
+          <button type="button" onClick={() => setFlyoutOpen(true)} aria-label="add reference">
+            <Plus size={16} />
+          </button>
+        </div>
       </div>
+
+      {listOpen ? (
+        <div ref={popoverRef} className="reference-popover">
+          <div className="reference-popover-title">all references</div>
+          <div className="reference-popover-list">
+            {references.map((reference, index) => (
+              <button
+                key={reference.id}
+                type="button"
+                className={`reference-popover-item ${index === boundedIndex ? 'selected' : ''}`}
+                onClick={() => {
+                  setSelectedIndex(index)
+                  setListOpen(false)
+                }}
+              >
+                <strong>{reference.shortRef}</strong>
+                <span>{reference.label ?? reference.targetType}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       {flyoutOpen ? (
         <div className="flyout-overlay" onClick={() => setFlyoutOpen(false)}>
-          <div className="flyout-card" onClick={(e) => e.stopPropagation()}>
+          <div className="flyout-card" onClick={(event) => event.stopPropagation()}>
             <header className="flyout-header">
               <h4>add reference</h4>
               <button type="button" onClick={() => setFlyoutOpen(false)} aria-label="close">
@@ -62,7 +146,11 @@ export function ReferenceSection({
             <form className="flyout-form" onSubmit={handleSubmit}>
               <select
                 value={refTargetType}
-                onChange={(event) => setRefTargetType(event.target.value as 'effort' | 'plan' | 'task' | 'review' | 'file')}
+                onChange={(event) =>
+                  setRefTargetType(
+                    event.target.value as 'effort' | 'plan' | 'task' | 'review' | 'file',
+                  )
+                }
               >
                 <option value="file">file</option>
                 <option value="effort">effort</option>
@@ -96,31 +184,58 @@ export function ReferenceSection({
         </div>
       ) : null}
 
-      <div className="reference-list">
-        {references.map((ref) => (
-          <article className="reference-card" key={ref.id}>
-            <div className="reference-card-header">
-              <strong>{ref.shortRef}</strong>
-              <span>{ref.targetType}</span>
-              {ref.label ? <small>{ref.label}</small> : null}
-              <button
-                type="button"
-                className="icon-btn remove-btn"
-                onClick={() => onRemoveReference(ref.id)}
-                disabled={isDeleting}
-                aria-label="remove reference"
-              >
-                <Trash2 size={12} />
-              </button>
-            </div>
-            {ref.targetType === 'file' ? (
-              <p>{ref.filePath}</p>
-            ) : ref.targetId ? (
-              <p>{ref.targetType}-{ref.targetId}</p>
+      <div className="reference-preview-shell">
+        {activeReference ? (
+          <>
+            {references.length > 1 ? (
+              <div className="reference-preview-nav">
+                <button
+                  type="button"
+                  className="pager-arrow"
+                  onClick={() => setSelectedIndex((current) => Math.max(0, current - 1))}
+                  disabled={boundedIndex === 0}
+                  aria-label="previous reference"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                <span>{counterLabel}</span>
+                <button
+                  type="button"
+                  className="pager-arrow"
+                  onClick={() =>
+                    setSelectedIndex((current) =>
+                      Math.min(references.length - 1, current + 1),
+                    )
+                  }
+                  disabled={boundedIndex === references.length - 1}
+                  aria-label="next reference"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
             ) : null}
-          </article>
-        ))}
-        {references.length === 0 ? <p className="empty-state">no references</p> : null}
+
+            <article className="reference-card reference-card--featured">
+              <div className="reference-card-header">
+                <strong>{activeReference.shortRef}</strong>
+                <span>{activeReference.targetType}</span>
+                {activeReference.label ? <small>{activeReference.label}</small> : null}
+                <button
+                  type="button"
+                  className="icon-btn remove-btn"
+                  onClick={() => onRemoveReference(activeReference.id)}
+                  disabled={isDeleting}
+                  aria-label="remove reference"
+                >
+                  <Trash2 size={12} />
+                </button>
+              </div>
+              {activeReferenceBody ? <p>{activeReferenceBody}</p> : null}
+            </article>
+          </>
+        ) : (
+          <p className="empty-state">no references</p>
+        )}
       </div>
     </section>
   )

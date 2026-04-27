@@ -1,6 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { MessageSquare, X } from 'lucide-react'
+import {
+  CircleHelp,
+  Hammer,
+  MessageSquare,
+  ScrollText,
+  Speech,
+  X,
+} from 'lucide-react'
 import { DiscussionPanel } from './components/DiscussionPanel'
 import { EffortCreationForm } from './components/EffortCreationForm'
 import { InputRequestList } from './components/InputRequestList'
@@ -10,7 +17,14 @@ import { ReferenceSection } from './components/ReferenceSection'
 import { Sidebar } from './components/Sidebar'
 import { TaskDetailPane } from './components/TaskDetailPane'
 import { TaskList } from './components/TaskList'
-import { formatTimestamp } from './components/helpers'
+import {
+  effortSupportsDiscussion,
+  effortSupportsPlans,
+  effortSupportsTasks,
+  formatTimestamp,
+  preferredDiscussionSummary,
+  preferredPlanSummary,
+} from './components/helpers'
 import { useDiscussionMutations } from './hooks/useDiscussionMutations'
 import { useEffortMutations } from './hooks/useEffortMutations'
 import { useInputMutations } from './hooks/useInputMutations'
@@ -80,7 +94,7 @@ function App() {
   const discussionQuery = useQuery({
     queryKey: ['discussion', selectedEffort?.id],
     queryFn: () => window.effortless.listDiscussionMessages(selectedEffort!.id),
-    enabled: Boolean(selectedEffort) && (discussionOpen || !selectedEffort?.needsTasks),
+    enabled: Boolean(selectedEffort) && (discussionOpen || (selectedEffort ? effortSupportsDiscussion(selectedEffort.template) : false)),
   })
 
   const selectedPlan =
@@ -101,6 +115,16 @@ function App() {
   const selectedTask =
     tasksQuery.data?.find((task) => task.id === selectedTaskId) ?? tasksQuery.data?.[0] ?? null
   const pendingInputCount = inputsQuery.data?.filter((input) => input.status === 'pending').length ?? 0
+  const template = selectedEffort?.template ?? null
+  const supportsPlans = template ? effortSupportsPlans(template) : false
+  const supportsTasks = template ? effortSupportsTasks(template) : false
+  const supportsDiscussion = template ? effortSupportsDiscussion(template) : false
+  const usesBugfixOverview = template === 'bugfix'
+  const preferredPlan = preferredPlanSummary(plansQuery.data ?? [])
+  const preferredDiscussion = preferredDiscussionSummary(
+    discussionQuery.data ?? [],
+    inputsQuery.data ?? [],
+  )
 
   const commentsQuery = useQuery({
     queryKey: ['task-comments', selectedTask?.id],
@@ -154,6 +178,7 @@ function App() {
   useEffect(() => {
     setSelectedTaskId(null)
     setSelectedPlanId(null)
+    setDiscussionOpen(false)
     setDiscussionDraft('')
     if (effortScrollRef.current) {
       effortScrollRef.current.scrollTop = 0
@@ -221,9 +246,15 @@ function App() {
               </div>
               <button
                 className={`discussion-button ${discussionOpen ? 'active' : ''}`}
-                onClick={() => setDiscussionOpen((open) => !open)}
+                onClick={() => {
+                  if (supportsDiscussion) {
+                    setDiscussionOpen((open) => !open)
+                  }
+                }}
                 type="button"
                 aria-label="open discussion"
+                title={supportsDiscussion ? 'open discussion' : 'discussion is not part of this effort type'}
+                disabled={!supportsDiscussion}
               >
                 <MessageSquare size={18} />
               </button>
@@ -236,13 +267,16 @@ function App() {
                 onDraftChange={setDiscussionDraft}
                 onSubmit={() => {
                   if (selectedEffort && discussionDraft.trim()) {
-                    createDiscussionMessage.mutate({
-                      effortId: selectedEffort.id,
-                      author: 'user',
-                      body: discussionDraft,
-                    }, {
-                      onSuccess: () => setDiscussionDraft(''),
-                    })
+                    createDiscussionMessage.mutate(
+                      {
+                        effortId: selectedEffort.id,
+                        author: 'user',
+                        body: discussionDraft,
+                      },
+                      {
+                        onSuccess: () => setDiscussionDraft(''),
+                      },
+                    )
                   }
                 }}
                 isPending={createDiscussionMessage.isPending}
@@ -252,34 +286,31 @@ function App() {
 
             <div
               ref={effortScrollRef}
-              className={`effort-scroll ${selectedEffort.needsTasks ? 'effort-scroll--delivery' : 'effort-scroll--compact'}`}
+              className={`effort-scroll ${supportsTasks ? 'effort-scroll--delivery' : 'effort-scroll--compact'}`}
             >
-              <section className="surface-section effort-description-section">
-                <div className="section-title">
-                  <span>description</span>
-                </div>
-                <p className="effort-description">{selectedEffort.description}</p>
-              </section>
+              <div
+                className={`effort-overview-grid ${supportsDiscussion ? 'has-discussion' : 'no-discussion'} ${usesBugfixOverview ? 'bugfix-overview-grid' : ''}`}
+              >
+                <div className="effort-overview-main">
+                  <section
+                    className={`surface-section effort-description-section ${usesBugfixOverview ? 'bugfix-description-section' : ''}`}
+                  >
+                    <div className="section-title">
+                      <span className="section-title-label">
+                        <ScrollText size={14} />
+                        <span>description</span>
+                      </span>
+                    </div>
+                    <p className="effort-description">{selectedEffort.description}</p>
+                  </section>
 
-              <div className={`effort-layout ${selectedEffort.needsTasks ? 'has-tasks' : 'no-tasks'}`}>
-                <div className="effort-primary-column">
-                  <PlanSection
-                    plans={plansQuery.data ?? []}
-                    selectedPlanId={selectedPlanId}
-                    onSelectPlan={setSelectedPlanId}
-                    planComments={planCommentsQuery.data ?? []}
-                    onAcceptPlan={(planId) => planMutations.acceptPlan.mutate(planId)}
-                    onReadyPlan={(planId) => planMutations.readyPlan.mutate(planId)}
-                    onRequestPlanChanges={(input) => planMutations.requestPlanChanges.mutate(input)}
-                    isAcceptingPlan={planMutations.acceptPlan.isPending}
-                    isReadyingPlan={planMutations.readyPlan.isPending}
-                    isRequestingPlanChanges={planMutations.requestPlanChanges.isPending}
-                  />
-
-                  {!selectedEffort.needsTasks ? (
+                  {supportsDiscussion ? (
                     <section className="surface-section discussion-summary-section">
                       <div className="section-title">
-                        <span>discussion</span>
+                        <span className="section-title-label">
+                          <Speech size={14} />
+                          <span>recent discussion</span>
+                        </span>
                         <span>{discussionQuery.data?.length ?? 0} messages</span>
                       </div>
                       <div className="discussion-preview-list">
@@ -297,18 +328,11 @@ function App() {
                           ))
                         )}
                       </div>
-                      <button
-                        type="button"
-                        className="inline-action-button"
-                        onClick={() => setDiscussionOpen(true)}
-                      >
-                        open full discussion
-                      </button>
                     </section>
                   ) : null}
                 </div>
 
-                <div className="effort-secondary-column">
+                <div className="effort-overview-side">
                   <ReferenceSection
                     references={referencesQuery.data ?? []}
                     effortId={selectedEffort.id}
@@ -320,7 +344,10 @@ function App() {
 
                   <section className="surface-section input-section">
                     <div className="section-title">
-                      <span>inputs ({inputsQuery.data?.length ?? 0})</span>
+                      <span className="section-title-label">
+                        <CircleHelp size={14} />
+                        <span>inputs ({inputsQuery.data?.length ?? 0})</span>
+                      </span>
                       <span>{pendingInputCount} pending</span>
                     </div>
                     <InputRequestList
@@ -334,10 +361,60 @@ function App() {
                 </div>
               </div>
 
-              {selectedEffort.needsTasks ? (
+              {supportsPlans ? (
+                <PlanSection
+                  plans={plansQuery.data ?? []}
+                  selectedPlanId={selectedPlanId}
+                  onSelectPlan={setSelectedPlanId}
+                  planComments={planCommentsQuery.data ?? []}
+                  onAcceptPlan={(planId) => planMutations.acceptPlan.mutate(planId)}
+                  onReadyPlan={(planId) => planMutations.readyPlan.mutate(planId)}
+                  onRequestPlanChanges={(input) => planMutations.requestPlanChanges.mutate(input)}
+                  isAcceptingPlan={planMutations.acceptPlan.isPending}
+                  isReadyingPlan={planMutations.readyPlan.isPending}
+                  isRequestingPlanChanges={planMutations.requestPlanChanges.isPending}
+                />
+              ) : null}
+
+              {selectedEffort.template === 'investigation' && !supportsPlans ? (
+                <section className="surface-section template-summary-section">
+                  <div className="section-title">
+                    <span>findings</span>
+                    <span>{preferredPlan?.plan.shortRef ?? 'no summary yet'}</span>
+                  </div>
+                  <div className="template-summary-body">
+                    {preferredPlan ? (
+                      <p>{preferredPlan.body}</p>
+                    ) : (
+                      <p className="empty-state">no findings yet</p>
+                    )}
+                  </div>
+                </section>
+              ) : null}
+
+              {selectedEffort.template === 'discussion' ? (
+                <section className="surface-section template-summary-section">
+                  <div className="section-title">
+                    <span>summary</span>
+                    <span>{preferredDiscussion?.label ?? 'no summary yet'}</span>
+                  </div>
+                  <div className="template-summary-body">
+                    {preferredDiscussion ? (
+                      <p>{preferredDiscussion.body}</p>
+                    ) : (
+                      <p className="empty-state">no summary yet</p>
+                    )}
+                  </div>
+                </section>
+              ) : null}
+
+              {supportsTasks ? (
                 <section className="surface-section task-section">
                   <div className="section-title">
-                    <span>tasks ({tasksQuery.data?.length ?? 0})</span>
+                    <span className="section-title-label">
+                      <Hammer size={14} />
+                      <span>tasks ({tasksQuery.data?.length ?? 0})</span>
+                    </span>
                     {selectedTask ? <span>{selectedTask.status}</span> : null}
                   </div>
                   <div className="task-workspace">

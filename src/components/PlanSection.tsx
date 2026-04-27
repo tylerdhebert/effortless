@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import type { Plan } from '../../core/types'
 import { PlanCommentStream } from './PlanCommentStream'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ListOrdered } from 'lucide-react'
 import { isPlanWaiting, planStatus } from './helpers'
+import { MarkdownDocument } from './MarkdownDocument'
 
 type PlanSectionProps = {
   plans: Plan[]
@@ -47,7 +48,10 @@ export function PlanSection({
     return (
       <section className="surface-section plan-section">
         <div className="section-title">
-          <span>plan</span>
+          <span className="section-title-label">
+            <ListOrdered size={14} />
+            <span>plan</span>
+          </span>
         </div>
         <p className="empty-state">no plans yet</p>
       </section>
@@ -57,7 +61,10 @@ export function PlanSection({
   return (
     <section className="surface-section plan-section">
       <div className="section-title">
-        <span>plan</span>
+        <span className="section-title-label">
+          <ListOrdered size={14} />
+          <span>plan</span>
+        </span>
       </div>
 
       <div className="plan-pager">
@@ -126,7 +133,9 @@ export function PlanSection({
               ) : null}
             </div>
           </div>
-          <p className="plan-body">{plan.body}</p>
+          <div className="plan-card-body">
+            <MarkdownDocument content={plan.body} className="plan-body-markdown" />
+          </div>
           {plan.latestFeedbackBody ? (
             <div className="plan-feedback">
               <span>feedback</span>

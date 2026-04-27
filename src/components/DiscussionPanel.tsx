@@ -26,23 +26,28 @@ export function DiscussionPanel({
           <MessageSquare size={14} />
           <span>discussion</span>
         </div>
+        <span className="discussion-popper-count">{messages.length} messages</span>
         <button type="button" className="icon-btn" onClick={onClose} aria-label="close">
           <X size={14} />
         </button>
       </div>
 
       <div className="discussion-popper-stream">
-        {messages.map((message) => (
-          <article className={`discussion-message ${message.author}`} key={message.id}>
-            <div>
-              <span>{message.author}</span>
-              <small>{message.agentId ?? formatTimestamp(message.createdAt)}</small>
-            </div>
-            <p>{message.body}</p>
-          </article>
-        ))}
-
-        {messages.length === 0 ? <p className="empty-state">no discussion yet</p> : null}
+        {messages.length === 0 ? (
+          <div className="discussion-popper-empty">
+            <p className="empty-state">no discussion yet</p>
+          </div>
+        ) : (
+          messages.map((message) => (
+            <article className={`discussion-message ${message.author}`} key={message.id}>
+              <div>
+                <span>{message.author}</span>
+                <small>{message.agentId ?? formatTimestamp(message.createdAt)}</small>
+              </div>
+              <p>{message.body}</p>
+            </article>
+          ))
+        )}
       </div>
 
       <form
@@ -61,9 +66,11 @@ export function DiscussionPanel({
           rows={3}
           placeholder="message..."
         />
-        <button type="submit" disabled={isPending}>
-          send
-        </button>
+        <div className="discussion-popper-compose-actions">
+          <button type="submit" disabled={isPending || !draft.trim()}>
+            send
+          </button>
+        </div>
       </form>
     </section>
   )

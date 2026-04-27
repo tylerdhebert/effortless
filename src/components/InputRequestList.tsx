@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { InputRequest } from '../../core/types'
+import { PillSwitcher } from './PillSwitcher'
 
 function timeAgo(dateString: string): string {
   const seconds = Math.floor((Date.now() - new Date(dateString).getTime()) / 1000)
@@ -24,24 +25,21 @@ export function InputRequestList({ inputs, onAnswer, isAnswering }: InputRequest
   const [drafts, setDrafts] = useState<Record<number, string>>({})
 
   const filtered = inputs.filter((input) => input.status === tab)
+  const pendingCount = inputs.filter((input) => input.status === 'pending').length
+  const answeredCount = inputs.filter((input) => input.status === 'answered').length
 
   return (
     <div className="input-panel">
       <div className="input-tabs">
-        <button
-          type="button"
-          className={tab === 'pending' ? 'active' : ''}
-          onClick={() => setTab('pending')}
-        >
-          pending ({inputs.filter((i) => i.status === 'pending').length})
-        </button>
-        <button
-          type="button"
-          className={tab === 'answered' ? 'active' : ''}
-          onClick={() => setTab('answered')}
-        >
-          answered ({inputs.filter((i) => i.status === 'answered').length})
-        </button>
+        <PillSwitcher
+          ariaLabel="input status"
+          value={tab}
+          onChange={setTab}
+          options={[
+            { id: 'pending', label: `pending (${pendingCount})` },
+            { id: 'answered', label: `answered (${answeredCount})` },
+          ]}
+        />
       </div>
 
       <div className="input-cards">
@@ -49,12 +47,17 @@ export function InputRequestList({ inputs, onAnswer, isAnswering }: InputRequest
           <p className="empty-state">no {tab} inputs</p>
         ) : (
           filtered.map((input) => {
-            const isExpanded = expandedId === input.id
+            const isAnswered = input.status === 'answered'
+            const isExpanded = isAnswered || expandedId === input.id
             return (
               <article
-                className={`input-card ${input.status} ${isExpanded ? 'expanded' : ''}`}
+                className={`input-card ${input.status} ${isExpanded ? 'expanded' : ''} ${isAnswered ? 'read-only' : 'interactive'}`}
                 key={input.id}
-                onClick={() => setExpandedId(isExpanded ? null : input.id)}
+                onClick={() => {
+                  if (!isAnswered) {
+                    setExpandedId(isExpanded ? null : input.id)
+                  }
+                }}
               >
                 <div className="input-card-header">
                   <span>{input.shortRef}</span>
@@ -78,6 +81,10 @@ export function InputRequestList({ inputs, onAnswer, isAnswering }: InputRequest
                     }}
                     onClick={(e) => e.stopPropagation()}
                   >
+                    <div className="input-answer-context">
+                      <span>question</span>
+                      <p>{input.prompt}</p>
+                    </div>
                     {input.choices ? (
                       <div className="input-choice-list">
                         {input.choices.map((choice) => (
@@ -106,8 +113,11 @@ export function InputRequestList({ inputs, onAnswer, isAnswering }: InputRequest
                   </form>
                 ) : null}
 
-                {isExpanded && input.status === 'answered' && input.answer ? (
-                  <p className="input-answer">{input.answer}</p>
+                {input.status === 'answered' && input.answer ? (
+                  <div className="input-answer">
+                    <span>answer</span>
+                    <p>{input.answer}</p>
+                  </div>
                 ) : null}
               </article>
             )

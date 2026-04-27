@@ -112,7 +112,6 @@ export function Sidebar({
                 <strong>{effort.title}</strong>
                 <div className="effort-row-meta">
                   <span>{effort.status}</span>
-                  <span>{effort.planRequiresReview ? 'plan review' : 'direct plan'}</span>
                 </div>
               </button>
             ))}

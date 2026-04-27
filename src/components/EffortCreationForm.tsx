@@ -31,12 +31,14 @@ type EffortCreationFormProps = {
 export function EffortCreationForm({ isPending, onSubmit }: EffortCreationFormProps) {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
-  const [template, setTemplate] = useState<EffortTemplate>('bugfix')
-  const [hasSelectedTemplate, setHasSelectedTemplate] = useState(false)
+  const [template, setTemplate] = useState<EffortTemplate | null>(null)
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!title.trim() || !description.trim()) {
+      return
+    }
+    if (!template) {
       return
     }
     onSubmit({ title, description, template })
@@ -49,10 +51,9 @@ export function EffortCreationForm({ isPending, onSubmit }: EffortCreationFormPr
           <button
             key={option.value}
             type="button"
-            className={`template-option ${template === option.value ? 'selected' : hasSelectedTemplate ? 'deemphasized' : ''}`}
+            className={`template-option ${template === option.value ? 'selected' : !!template ? 'deemphasized' : ''}`}
             onClick={() => {
               setTemplate(option.value)
-              setHasSelectedTemplate(true)
             }}
             aria-pressed={template === option.value}
           >
