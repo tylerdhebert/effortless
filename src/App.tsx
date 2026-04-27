@@ -9,6 +9,7 @@ import {
   X,
 } from 'lucide-react'
 import { DiscussionPanel } from './components/DiscussionPanel'
+import { DiscussionThreadItem } from './components/DiscussionThreadItem'
 import { EffortCreationForm } from './components/EffortCreationForm'
 import { InputRequestList } from './components/InputRequestList'
 import { ManageSurface } from './components/ManageSurface'
@@ -21,7 +22,6 @@ import {
   effortSupportsDiscussion,
   effortSupportsPlans,
   effortSupportsTasks,
-  formatTimestamp,
   preferredDiscussionSummary,
   preferredPlanSummary,
 } from './components/helpers'
@@ -318,13 +318,7 @@ function App() {
                           <p className="empty-state">no discussion yet</p>
                         ) : (
                           (discussionQuery.data ?? []).slice(-3).map((message) => (
-                            <article className={`discussion-message ${message.author}`} key={message.id}>
-                              <div>
-                                <span>{message.author}</span>
-                                <small>{message.agentId ?? formatTimestamp(message.createdAt)}</small>
-                              </div>
-                              <p>{message.body}</p>
-                            </article>
+                            <DiscussionThreadItem message={message} key={message.id} />
                           ))
                         )}
                       </div>

@@ -1109,16 +1109,9 @@ select:focus {
 }
 
 .plan-card {
-  cursor: pointer;
   transition:
     border-color 140ms ease,
-    transform 140ms ease,
     background 140ms ease;
-}
-
-.plan-card:hover {
-  transform: translateY(-1px);
-  border-color: rgba(140, 207, 98, 0.2);
 }
 
 .plan-card.accepted,
@@ -1369,6 +1362,19 @@ select:focus {
   align-items: center;
   justify-content: center;
   gap: 14px;
+}
+
+.plan-pager-nav {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+}
+
+.plan-pager-count {
+  color: #99a18f;
+  font-size: 0.68rem;
+  letter-spacing: 0.05em;
+  text-transform: lowercase;
 }
 
 .pager-arrow {
@@ -2569,10 +2575,8 @@ select:focus {
 }
 
 .effort-overview-grid {
-  --overview-top-row: clamp(156px, 18vh, 190px);
-  --overview-bottom-row: clamp(332px, 40vh, 452px);
   display: grid;
-  grid-template-columns: minmax(0, 0.96fr) minmax(420px, 1.04fr);
+  grid-template-columns: minmax(0, 1.22fr) minmax(360px, 0.78fr);
   gap: 20px;
   align-items: start;
 }
@@ -2581,33 +2585,34 @@ select:focus {
 .effort-overview-side {
   display: grid;
   align-content: start;
-  grid-template-rows: var(--overview-top-row) var(--overview-bottom-row);
   gap: 18px;
   min-width: 0;
 }
 
 .bugfix-overview-grid {
-  --overview-top-row: clamp(148px, 17vh, 184px);
-  --overview-bottom-row: minmax(332px, 40vh, 452px);
+  grid-template-columns: minmax(0, 1.14fr) minmax(360px, 0.86fr);
 }
 
 .effort-description-section {
-  height: 100%;
+  min-height: 176px;
 }
 
 .discussion-summary-section {
-  height: 100%;
+  min-height: 320px;
+  max-height: 460px;
   overflow: hidden;
 }
 
 .reference-section {
   position: relative;
-  height: 100%;
+  min-height: 132px;
+  max-height: 182px;
   overflow: hidden;
 }
 
 .input-section {
-  height: 100%;
+  min-height: 348px;
+  max-height: 472px;
   overflow: hidden;
 }
 
@@ -2621,21 +2626,8 @@ select:focus {
   min-height: 0;
 }
 
-.bugfix-overview-grid .task-section {
-  height: 100%;
-  overflow: hidden;
-}
-
-.bugfix-overview-grid .task-workspace {
-  height: 100%;
-}
-
-.bugfix-overview-grid .effort-overview-main {
-  grid-template-rows: minmax(0, 1fr);
-}
-
 .bugfix-description-section {
-  grid-row: 1 / span 2;
+  min-height: 458px;
 }
 
 .effort-description-section .effort-description {
@@ -3056,9 +3048,13 @@ select:focus {
     grid-template-columns: 1fr;
   }
 
-  .effort-overview-grid {
-    --overview-top-row: auto;
-    --overview-bottom-row: auto;
+  .effort-description-section,
+  .discussion-summary-section,
+  .reference-section,
+  .input-section,
+  .bugfix-description-section {
+    min-height: 0;
+    max-height: none;
   }
 
   .reference-popover {
@@ -3075,4 +3071,87 @@ select:focus {
   .plan-card-actions {
     justify-content: flex-start;
   }
+}
+
+/* Discussion thread */
+.discussion-preview-list,
+.discussion-popper-stream {
+  justify-items: stretch;
+  align-content: start;
+  grid-auto-rows: min-content;
+  gap: 12px;
+}
+
+.discussion-thread-item {
+  display: grid;
+  gap: 6px;
+  justify-self: start;
+  width: min(100%, 38rem);
+  min-width: 0;
+}
+
+.discussion-thread-item.user {
+  justify-self: end;
+}
+
+.discussion-thread-meta {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  color: #99a18f;
+  font-size: 0.72rem;
+  line-height: 1.2;
+}
+
+.discussion-thread-item.user .discussion-thread-meta {
+  justify-self: end;
+}
+
+.discussion-thread-author {
+  color: #eef3e5;
+  font-weight: 650;
+}
+
+.discussion-thread-meta small {
+  color: #87907c;
+  font-size: 0.68rem;
+}
+
+.discussion-thread-card {
+  width: fit-content;
+  max-width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 16px 16px 16px 5px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.028), rgba(255, 255, 255, 0.01)),
+    rgba(40, 43, 39, 0.96);
+  padding: 11px 14px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.018),
+    0 8px 22px rgba(0, 0, 0, 0.09);
+}
+
+.discussion-thread-item.user .discussion-thread-card {
+  justify-self: end;
+  border-color: rgba(140, 207, 98, 0.22);
+  border-radius: 16px 16px 5px 16px;
+  background:
+    linear-gradient(180deg, rgba(140, 207, 98, 0.18), rgba(140, 207, 98, 0.075)),
+    rgba(46, 65, 39, 0.97);
+}
+
+.discussion-thread-card p {
+  margin: 0;
+  color: #edf1e6;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+.discussion-preview-list .discussion-thread-item {
+  width: min(84%, 38rem);
+}
+
+.discussion-popper-stream .discussion-thread-item {
+  width: min(84%, 22rem);
 }

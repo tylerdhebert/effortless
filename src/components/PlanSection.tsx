@@ -79,17 +79,23 @@ export function PlanSection({
             <ChevronLeft size={18} />
           </button>
 
-          <div className="plan-dots">
+          <div className="plan-pager-nav">
+            <span className="plan-pager-count">
+              {plans.length === 1 ? '1 plan' : `plan ${index + 1} of ${plans.length}`}
+            </span>
+
+            <div className="plan-dots">
             {plans.map((p, i) => (
               <button
                 key={p.id}
                 type="button"
                 className={`plan-dot ${i === index ? 'active' : ''} ${p.accepted ? 'accepted' : ''}`}
                 onClick={() => onSelectPlan(p.id)}
-                aria-label={`plan ${i + 1}`}
+                aria-label={`show plan ${i + 1}`}
               >
               </button>
             ))}
+            </div>
           </div>
 
           <button
