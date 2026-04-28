@@ -3,6 +3,7 @@ import { useState } from 'react'
 import type { Task, Repo, Review, TaskBuildResult, TaskComment } from '../../../core/types'
 import { CommentStream } from './CommentStream'
 import { ReviewHistory } from './ReviewHistory'
+import { ReviewRecord } from './ReviewRecord'
 import { reviewSummary } from '../../lib/helpers'
 import styles from './TaskDetailPane.module.css'
 
@@ -127,16 +128,10 @@ export function TaskDetailPane({
         <p className={styles['task-review-summary']}>{reviewSummary(task, latestReview)}</p>
 
         {pendingReview ? (
-          <article className="review-record pending">
-            <div className="review-record-header">
-              <div>
-                <span>{pendingReview.shortRef}</span>
-                <strong>{pendingReview.verdict}</strong>
-              </div>
-              <small>{pendingReview.authorAgentId ?? pendingReview.createdAt}</small>
-            </div>
-            <p>{pendingReview.body}</p>
-
+          <ReviewRecord
+            review={pendingReview}
+            dateLabel={pendingReview.authorAgentId ?? pendingReview.createdAt}
+          >
             <div className={styles['task-action-row']}>
               <button
                 type="button"
@@ -166,7 +161,7 @@ export function TaskDetailPane({
                 request review changes
               </button>
             </form>
-          </article>
+          </ReviewRecord>
         ) : null}
 
         <ReviewHistory reviews={reviews} />
