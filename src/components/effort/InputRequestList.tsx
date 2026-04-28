@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import type { InputRequest } from '../../core/types'
-import { PillSwitcher } from './PillSwitcher'
+import type { InputRequest } from '../../../core/types'
+import { PillSwitcher } from '../ui/PillSwitcher'
+import styles from './InputRequestList.module.css'
 
 function timeAgo(dateString: string): string {
   const seconds = Math.floor((Date.now() - new Date(dateString).getTime()) / 1000)
@@ -29,8 +30,8 @@ export function InputRequestList({ inputs, onAnswer, isAnswering }: InputRequest
   const answeredCount = inputs.filter((input) => input.status === 'answered').length
 
   return (
-    <div className="input-panel">
-      <div className="input-tabs">
+    <div className={styles['input-panel']}>
+      <div className={styles['input-tabs']}>
         <PillSwitcher
           ariaLabel="input status"
           value={tab}
@@ -42,7 +43,7 @@ export function InputRequestList({ inputs, onAnswer, isAnswering }: InputRequest
         />
       </div>
 
-      <div className="input-cards">
+      <div className={styles['input-cards']}>
         {filtered.length === 0 ? (
           <p className="empty-state">no {tab} inputs</p>
         ) : (
@@ -51,7 +52,7 @@ export function InputRequestList({ inputs, onAnswer, isAnswering }: InputRequest
             const isExpanded = isAnswered || expandedId === input.id
             return (
               <article
-                className={`input-card ${input.status} ${isExpanded ? 'expanded' : ''} ${isAnswered ? 'read-only' : 'interactive'}`}
+                className={`${styles['input-card']} ${styles[input.status]} ${isExpanded ? styles.expanded : ''} ${isAnswered ? styles['read-only'] : styles.interactive}`}
                 key={input.id}
                 onClick={() => {
                   if (!isAnswered) {
@@ -59,17 +60,17 @@ export function InputRequestList({ inputs, onAnswer, isAnswering }: InputRequest
                   }
                 }}
               >
-                <div className="input-card-header">
+                <div className={styles['input-card-header']}>
                   <span>{input.shortRef}</span>
                   <strong>{input.type}</strong>
                   <small>{timeAgo(input.requestedAt)}</small>
                 </div>
-                <p className="input-card-prompt">{input.prompt}</p>
-                <span className="input-card-status">{input.status}</span>
+                <p className={styles['input-card-prompt']}>{input.prompt}</p>
+                <span className={styles['input-card-status']}>{input.status}</span>
 
                 {isExpanded && input.status === 'pending' ? (
                   <form
-                    className="input-answer-form"
+                    className={styles['input-answer-form']}
                     onSubmit={(event) => {
                       event.preventDefault()
                       event.stopPropagation()
@@ -81,17 +82,17 @@ export function InputRequestList({ inputs, onAnswer, isAnswering }: InputRequest
                     }}
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <div className="input-answer-context">
+                    <div className={styles['input-answer-context']}>
                       <span>question</span>
                       <p>{input.prompt}</p>
                     </div>
                     {input.choices ? (
-                      <div className="input-choice-list">
+                      <div className={styles['input-choice-list']}>
                         {input.choices.map((choice) => (
                           <button
                             key={choice.value}
                             type="button"
-                            className={`input-choice ${drafts[input.id] === choice.value ? 'selected' : ''}`}
+                            className={`${styles['input-choice']} ${drafts[input.id] === choice.value ? styles.selected : ''}`}
                             onClick={() => setDrafts((c) => ({ ...c, [input.id]: choice.value }))}
                             disabled={isAnswering}
                           >
@@ -114,7 +115,7 @@ export function InputRequestList({ inputs, onAnswer, isAnswering }: InputRequest
                 ) : null}
 
                 {input.status === 'answered' && input.answer ? (
-                  <div className="input-answer">
+                  <div className={styles['input-answer']}>
                     <span>answer</span>
                     <p>{input.answer}</p>
                   </div>

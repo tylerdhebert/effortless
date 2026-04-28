@@ -1,5 +1,6 @@
-import type { TaskComment } from '../../core/types'
-import { formatTimestamp } from './helpers'
+import type { TaskComment } from '../../../core/types'
+import { formatTimestamp } from '../../lib/helpers'
+import styles from './CommentStream.module.css'
 
 type CommentStreamProps = {
   comments: TaskComment[]
@@ -7,9 +8,9 @@ type CommentStreamProps = {
 
 export function CommentStream({ comments }: CommentStreamProps) {
   return (
-    <div className="comment-stream">
+    <div className={styles['comment-stream']}>
       {comments.map((comment) => (
-        <article className="comment" key={comment.id}>
+        <article className={styles.comment} key={comment.id}>
           <div>
             <span>{comment.kind}</span>
             <small>{comment.agentId ?? `${comment.author} - ${formatTimestamp(comment.createdAt)}`}</small>

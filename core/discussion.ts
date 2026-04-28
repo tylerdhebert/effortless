@@ -14,7 +14,7 @@ type DiscussionMessageRow = {
 export function listDiscussionMessages(db: AppDatabase, effortId: number): DiscussionMessage[] {
   return db
     .prepare<DiscussionMessageRow>(
-      `SELECT * FROM discussion_messages WHERE effort_id = ? ORDER BY id ASC`,
+      `SELECT * FROM discussion_messages WHERE effort_id = ? ORDER BY id DESC`,
     )
     .all(effortId)
     .map(mapDiscussionMessage)

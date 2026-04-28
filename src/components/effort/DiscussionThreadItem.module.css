@@ -1,0 +1,65 @@
+.discussion-thread-item {
+  display: grid;
+  gap: 6px;
+  justify-self: start;
+  width: min(100%, 38rem);
+  min-width: 0;
+}
+
+.discussion-thread-item.user {
+  justify-self: end;
+}
+
+.discussion-thread-meta {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  color: #99a18f;
+  font-size: 0.72rem;
+  line-height: 1.2;
+}
+
+.discussion-thread-item.user .discussion-thread-meta {
+  justify-self: end;
+}
+
+.discussion-thread-author {
+  color: #eef3e5;
+  font-weight: 650;
+}
+
+.discussion-thread-meta small {
+  color: #87907c;
+  font-size: 0.68rem;
+}
+
+.discussion-thread-card {
+  width: fit-content;
+  max-width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 16px 16px 16px 5px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.028), rgba(255, 255, 255, 0.01)),
+    rgba(40, 43, 39, 0.96);
+  padding: 11px 14px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.018),
+    0 8px 22px rgba(0, 0, 0, 0.09);
+}
+
+.discussion-thread-item.user .discussion-thread-card {
+  justify-self: end;
+  border-color: rgba(140, 207, 98, 0.22);
+  border-radius: 16px 16px 5px 16px;
+  background:
+    linear-gradient(180deg, rgba(140, 207, 98, 0.18), rgba(140, 207, 98, 0.075)),
+    rgba(46, 65, 39, 0.97);
+}
+
+.discussion-thread-card p {
+  margin: 0;
+  color: #edf1e6;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}

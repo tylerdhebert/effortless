@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { Reference } from '../../core/types'
+import type { Reference } from '../../../core/types'
 import { ChevronLeft, ChevronRight, Glasses, List, Plus, Trash2, X } from 'lucide-react'
+import styles from './ReferenceSection.module.css'
 
 type ReferenceSectionProps = {
   references: Reference[]
@@ -89,13 +90,13 @@ export function ReferenceSection({
   }, [activeReference])
 
   return (
-    <section className="surface-section reference-section">
+    <section className={`surface-section ${styles['reference-section']}`}>
       <div className="section-title">
         <span className="section-title-label">
           <Glasses size={14} />
           <span>references ({references.length})</span>
         </span>
-        <div className="section-title-actions reference-title-actions">
+        <div className={`section-title-actions ${styles['reference-title-actions']}`}>
           {references.length > 1 ? (
             <button
               type="button"
@@ -113,14 +114,14 @@ export function ReferenceSection({
       </div>
 
       {listOpen ? (
-        <div ref={popoverRef} className="reference-popover">
-          <div className="reference-popover-title">all references</div>
-          <div className="reference-popover-list">
+        <div ref={popoverRef} className={styles['reference-popover']}>
+          <div className={styles['reference-popover-title']}>all references</div>
+          <div className={styles['reference-popover-list']}>
             {references.map((reference, index) => (
               <button
                 key={reference.id}
                 type="button"
-                className={`reference-popover-item ${index === boundedIndex ? 'selected' : ''}`}
+                className={`${styles['reference-popover-item']} ${index === boundedIndex ? styles.selected : ''}`}
                 onClick={() => {
                   setSelectedIndex(index)
                   setListOpen(false)
@@ -184,11 +185,11 @@ export function ReferenceSection({
         </div>
       ) : null}
 
-      <div className="reference-preview-shell">
+      <div className={styles['reference-preview-shell']}>
         {activeReference ? (
           <>
             {references.length > 1 ? (
-              <div className="reference-preview-nav">
+              <div className={styles['reference-preview-nav']}>
                 <button
                   type="button"
                   className="pager-arrow"
@@ -215,8 +216,8 @@ export function ReferenceSection({
               </div>
             ) : null}
 
-            <article className="reference-card reference-card--featured">
-              <div className="reference-card-header">
+            <article className={`${styles['reference-card']} ${styles['reference-card--featured']}`}>
+              <div className={styles['reference-card-header']}>
                 <strong>{activeReference.shortRef}</strong>
                 <span>{activeReference.targetType}</span>
                 {activeReference.label ? <small>{activeReference.label}</small> : null}

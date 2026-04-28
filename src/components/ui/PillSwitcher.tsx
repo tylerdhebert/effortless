@@ -5,6 +5,7 @@ import {
   useState,
   type TransitionEvent,
 } from 'react'
+import styles from './PillSwitcher.module.css'
 
 type PillOption<T extends string> = {
   id: T
@@ -298,21 +299,21 @@ export function PillSwitcher<T extends string>({
   return (
     <div
       ref={containerRef}
-      className="pill-switcher"
+      className={styles['pill-switcher']}
       role="tablist"
       aria-label={ariaLabel}
     >
       {pill !== null ? (
         <div
           ref={pillRef}
-          className="pill-switcher-indicator"
+          className={styles['pill-switcher-indicator']}
           onTransitionEnd={handlePillTransitionEnd}
           style={{ left: pill.left, width: pill.width, transition: pill.transition }}
           aria-hidden="true"
         >
-          <div className="pill-switcher-indicator-fill" />
+          <div className={styles['pill-switcher-indicator-fill']} />
           <div
-            className="pill-switcher-indicator-edge dark"
+            className={`${styles['pill-switcher-indicator-edge']} dark`}
             style={{
               background: darkEdgeGradient,
               opacity: pill.darkEdgeOpacity,
@@ -320,7 +321,7 @@ export function PillSwitcher<T extends string>({
             }}
           />
           <div
-            className="pill-switcher-indicator-edge light"
+            className={`${styles['pill-switcher-indicator-edge']} light`}
             style={{
               background: lightEdgeGradient,
               opacity: pill.lightEdgeOpacity,
@@ -337,7 +338,7 @@ export function PillSwitcher<T extends string>({
             buttonRefs.current[optionIdx] = node
           }}
           type="button"
-          className={`pill-switcher-option ${value === option.id ? 'selected' : ''}`}
+          className={`${styles['pill-switcher-option']} ${value === option.id ? styles.selected : ''}`}
           style={segmentWidth !== null ? { width: segmentWidth } : undefined}
           onClick={() => onChange(option.id)}
           role="tab"

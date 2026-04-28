@@ -1,0 +1,190 @@
+.reference-section {
+  position: relative;
+  min-height: 132px;
+  max-height: 182px;
+  overflow: hidden;
+}
+
+.reference-title-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.reference-title-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0;
+  transition:
+    border-color 140ms ease,
+    color 140ms ease,
+    background 140ms ease;
+}
+
+.reference-title-actions button:hover {
+  border-color: rgba(140, 207, 98, 0.22);
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.reference-preview-shell {
+  display: grid;
+  align-content: start;
+  grid-auto-rows: min-content;
+  gap: 12px;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.reference-preview-shell > .empty-state {
+  margin: 0;
+  padding: 10px 0 2px;
+}
+
+.reference-preview-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.reference-preview-nav span {
+  color: var(--muted);
+  font-size: 0.68rem;
+  letter-spacing: 0.05em;
+}
+
+.reference-card {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+  padding: 10px;
+}
+
+.reference-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.reference-card-header strong {
+  font-size: 0.8rem;
+}
+
+.reference-card-header span,
+.reference-card-header small {
+  color: var(--muted);
+  font-size: 0.69rem;
+  letter-spacing: 0.04em;
+}
+
+.reference-card p {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.reference-card--featured {
+  min-height: 0;
+  gap: 10px;
+}
+
+.reference-card--featured .reference-card-header {
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.reference-card--featured .reference-card-header .remove-btn {
+  margin-left: auto;
+}
+
+.reference-card--featured p {
+  display: block;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.reference-popover {
+  position: absolute;
+  top: 56px;
+  right: 18px;
+  z-index: 15;
+  display: grid;
+  gap: 10px;
+  width: min(320px, calc(100% - 36px));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 28%),
+    rgba(18, 22, 17, 0.985);
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.4);
+  padding: 12px;
+}
+
+.reference-popover-title {
+  color: #b7beaa;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.reference-popover-list {
+  display: grid;
+  gap: 6px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.reference-popover-item {
+  display: grid;
+  gap: 3px;
+  width: 100%;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--text);
+  cursor: pointer;
+  padding: 10px 11px;
+  text-align: left;
+  text-transform: lowercase;
+  transition:
+    border-color 140ms ease,
+    background 140ms ease,
+    color 140ms ease;
+}
+
+.reference-popover-item:hover,
+.reference-popover-item.selected {
+  border-color: rgba(140, 207, 98, 0.18);
+  background: rgba(140, 207, 98, 0.08);
+}
+
+.reference-popover-item strong {
+  font-size: 0.78rem;
+}
+
+.reference-popover-item span {
+  color: var(--muted);
+  font-size: 0.74rem;
+}
+
+@media (max-width: 960px) {
+  .reference-popover {
+    left: 18px;
+    right: 18px;
+    width: auto;
+  }
+}

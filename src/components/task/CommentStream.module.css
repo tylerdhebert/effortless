@@ -1,0 +1,41 @@
+.comment-stream {
+  display: grid;
+  gap: 8px;
+  max-height: 220px;
+  overflow: auto;
+}
+
+.comment {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel);
+  padding: 11px 12px;
+}
+
+.comment p {
+  margin-bottom: 0;
+  color: var(--text);
+  white-space: pre-wrap;
+}
+
+.comment div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.comment small {
+  color: var(--muted);
+  font-size: 0.69rem;
+  letter-spacing: 0.04em;
+}
+
+.comment code {
+  display: block;
+  margin-top: 7px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-family: "Cascadia Code", Consolas, "Courier New", monospace;
+  word-break: break-all;
+}

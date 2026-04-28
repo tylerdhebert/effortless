@@ -1,4 +1,5 @@
-import type { Task } from '../../core/types'
+import type { Task } from '../../../core/types'
+import styles from './TaskList.module.css'
 
 const statusColors: Record<string, string> = {
   open: '#5a5e54',
@@ -21,27 +22,27 @@ export function TaskList({ tasks, selectedTaskId, onSelectTask }: TaskListProps)
   }
 
   return (
-    <div className="task-list">
+    <div className={styles['task-list']}>
       {tasks.map((task) => (
         <button
           key={task.id}
           type="button"
-          className={`task-list-row ${task.id === selectedTaskId ? 'selected' : ''}`}
+          className={`${styles['task-list-row']} ${task.id === selectedTaskId ? styles.selected : ''}`}
           onClick={() => onSelectTask(task.id)}
         >
-          <div className="task-list-meta">
-            <div className="task-list-topline">
+          <div className={styles['task-list-meta']}>
+            <div className={styles['task-list-topline']}>
               <span
-                className="task-list-dot"
+                className={styles['task-list-dot']}
                 style={{ background: statusColors[task.status] ?? statusColors.open }}
                 aria-hidden="true"
               />
-              <span className="task-list-ref">{task.shortRef}</span>
+              <span className={styles['task-list-ref']}>{task.shortRef}</span>
             </div>
-            <span className="task-list-status">{task.status}</span>
+            <span className={styles['task-list-status']}>{task.status}</span>
           </div>
-          <strong className="task-list-title">{task.title}</strong>
-          <p className="task-list-description">{task.description}</p>
+          <strong className={styles['task-list-title']}>{task.title}</strong>
+          <p className={styles['task-list-description']}>{task.description}</p>
         </button>
       ))}
     </div>

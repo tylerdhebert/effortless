@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
-import type { EffortTemplate } from '../../core/types'
+import type { EffortTemplate } from '../../../core/types'
+import styles from './EffortCreationForm.module.css'
 
 const templateOptions: Array<{
   value: EffortTemplate
@@ -45,13 +46,13 @@ export function EffortCreationForm({ isPending, onSubmit }: EffortCreationFormPr
   }
 
   return (
-    <form className="quick-create" onSubmit={handleSubmit}>
-      <div className="template-picker" role="radiogroup" aria-label="template">
+    <form className={styles['quick-create']} onSubmit={handleSubmit}>
+      <div className={styles['template-picker']} role="radiogroup" aria-label="template">
         {templateOptions.map((option) => (
           <button
             key={option.value}
             type="button"
-            className={`template-option ${template === option.value ? 'selected' : !!template ? 'deemphasized' : ''}`}
+            className={`${styles['template-option']} ${template === option.value ? styles.selected : !!template ? styles.deemphasized : ''}`}
             onClick={() => {
               setTemplate(option.value)
             }}

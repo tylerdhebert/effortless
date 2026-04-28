@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import type { Plan } from '../../core/types'
+import type { Plan } from '../../../core/types'
 import { PlanCommentStream } from './PlanCommentStream'
 import { ChevronLeft, ChevronRight, ListOrdered } from 'lucide-react'
-import { isPlanWaiting, planStatus } from './helpers'
-import { MarkdownDocument } from './MarkdownDocument'
+import { isPlanWaiting, planStatus } from '../../lib/helpers'
+import { MarkdownDocument } from '../ui/MarkdownDocument'
+import styles from './PlanSection.module.css'
 
 type PlanSectionProps = {
   plans: Plan[]
@@ -46,7 +47,7 @@ export function PlanSection({
 
   if (plans.length === 0) {
     return (
-      <section className="surface-section plan-section">
+      <section className={`surface-section ${styles['plan-section']}`}>
         <div className="section-title">
           <span className="section-title-label">
             <ListOrdered size={14} />
@@ -59,7 +60,7 @@ export function PlanSection({
   }
 
   return (
-    <section className="surface-section plan-section">
+    <section className={`surface-section ${styles['plan-section']}`}>
       <div className="section-title">
         <span className="section-title-label">
           <ListOrdered size={14} />
@@ -67,8 +68,8 @@ export function PlanSection({
         </span>
       </div>
 
-      <div className="plan-pager">
-        <div className="plan-pager-top">
+      <div className={styles['plan-pager']}>
+        <div className={styles['plan-pager-top']}>
           <button
             type="button"
             className="pager-arrow"
@@ -79,17 +80,17 @@ export function PlanSection({
             <ChevronLeft size={18} />
           </button>
 
-          <div className="plan-pager-nav">
-            <span className="plan-pager-count">
+          <div className={styles['plan-pager-nav']}>
+            <span className={styles['plan-pager-count']}>
               {plans.length === 1 ? '1 plan' : `plan ${index + 1} of ${plans.length}`}
             </span>
 
-            <div className="plan-dots">
+            <div className={styles['plan-dots']}>
             {plans.map((p, i) => (
               <button
                 key={p.id}
                 type="button"
-                className={`plan-dot ${i === index ? 'active' : ''} ${p.accepted ? 'accepted' : ''}`}
+                className={`${styles['plan-dot']} ${i === index ? styles.active : ''} ${p.accepted ? styles.accepted : ''}`}
                 onClick={() => onSelectPlan(p.id)}
                 aria-label={`show plan ${i + 1}`}
               >
@@ -110,15 +111,15 @@ export function PlanSection({
         </div>
 
         <article
-          className={`plan-card ${plan.accepted ? 'accepted' : ''} ${isPlanWaiting(plan) ? 'waiting' : ''}`}
+          className={`${styles['plan-card']} ${plan.accepted ? styles.accepted : ''} ${isPlanWaiting(plan) ? styles.waiting : ''}`}
           data-state={planStatus(plan)}
         >
-          <div className="plan-card-header">
+          <div className={styles['plan-card-header']}>
             <div>
               <span>{plan.shortRef}</span>
               <strong>{planStatus(plan)}</strong>
             </div>
-            <div className="plan-card-actions">
+            <div className={styles['plan-card-actions']}>
               {!plan.accepted && !hasAcceptedPlan ? (
                 <button
                   type="button"
@@ -139,18 +140,18 @@ export function PlanSection({
               ) : null}
             </div>
           </div>
-          <div className="plan-card-body">
-            <MarkdownDocument content={plan.body} className="plan-body-markdown" />
+          <div className={styles['plan-card-body']}>
+            <MarkdownDocument content={plan.body} className={styles['plan-body-markdown']} />
           </div>
           {plan.latestFeedbackBody ? (
-            <div className="plan-feedback">
+            <div className={styles['plan-feedback']}>
               <span>feedback</span>
               <p>{plan.latestFeedbackBody}</p>
             </div>
           ) : null}
           {isPlanWaiting(plan) && !hasAcceptedPlan ? (
             <form
-              className="plan-feedback-form"
+              className={styles['plan-feedback-form']}
               onSubmit={(event) => {
                 event.preventDefault()
                 if ((planFeedbackDrafts[plan.id] ?? '').trim()) {
@@ -176,7 +177,7 @@ export function PlanSection({
             </form>
           ) : null}
 
-          <section className="plan-history">
+          <section className={styles['plan-history']}>
             <h4>history</h4>
             <PlanCommentStream comments={planComments} />
           </section>

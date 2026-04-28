@@ -1,6 +1,7 @@
-import type { DiscussionMessage } from '../../core/types'
+import type { DiscussionMessage } from '../../../core/types'
 import { MessageSquare, X } from 'lucide-react'
 import { DiscussionThreadItem } from './DiscussionThreadItem'
+import styles from './DiscussionPanel.module.css'
 
 type DiscussionPanelProps = {
   messages: DiscussionMessage[]
@@ -20,21 +21,21 @@ export function DiscussionPanel({
   onClose,
 }: DiscussionPanelProps) {
   return (
-    <section className="discussion-popper">
-      <div className="discussion-popper-header">
-        <div className="discussion-popper-title">
+    <section className={styles['discussion-popper']}>
+      <div className={styles['discussion-popper-header']}>
+        <div className={styles['discussion-popper-title']}>
           <MessageSquare size={14} />
           <span>discussion</span>
         </div>
-        <span className="discussion-popper-count">{messages.length} messages</span>
+        <span className={styles['discussion-popper-count']}>{messages.length} messages</span>
         <button type="button" className="icon-btn" onClick={onClose} aria-label="close">
           <X size={14} />
         </button>
       </div>
 
-      <div className="discussion-popper-stream">
+      <div className={styles['discussion-popper-stream']}>
         {messages.length === 0 ? (
-          <div className="discussion-popper-empty">
+          <div className={styles['discussion-popper-empty']}>
             <p className="empty-state">no discussion yet</p>
           </div>
         ) : (
@@ -43,7 +44,7 @@ export function DiscussionPanel({
       </div>
 
       <form
-        className="discussion-popper-compose"
+        className={styles['discussion-popper-compose']}
         onSubmit={(event) => {
           event.preventDefault()
           if (draft.trim()) {
@@ -58,7 +59,7 @@ export function DiscussionPanel({
           rows={3}
           placeholder="message..."
         />
-        <div className="discussion-popper-compose-actions">
+        <div className={styles['discussion-popper-compose-actions']}>
           <button type="submit" disabled={isPending || !draft.trim()}>
             send
           </button>

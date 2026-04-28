@@ -1,0 +1,116 @@
+.markdown-document {
+  color: var(--text);
+  font-size: 0.92rem;
+  line-height: 1.72;
+}
+
+.markdown-document > :first-child {
+  margin-top: 0;
+}
+
+.markdown-document > :last-child {
+  margin-bottom: 0;
+}
+
+.markdown-document h1,
+.markdown-document h2,
+.markdown-document h3 {
+  margin: 0 0 0.75rem;
+  color: #edf4e2;
+  line-height: 1.2;
+}
+
+.markdown-document h1 {
+  font-size: 1.24rem;
+}
+
+.markdown-document h2 {
+  font-size: 1.08rem;
+}
+
+.markdown-document h3 {
+  font-size: 0.96rem;
+}
+
+.markdown-document p,
+.markdown-document ul,
+.markdown-document ol,
+.markdown-document blockquote,
+.markdown-document hr,
+.markdown-document .markdown-table-wrap,
+.markdown-document .markdown-code-block {
+  margin: 0 0 1rem;
+}
+
+.markdown-document ul,
+.markdown-document ol {
+  padding-left: 1.35rem;
+}
+
+.markdown-document li + li {
+  margin-top: 0.35rem;
+}
+
+.markdown-document blockquote {
+  border-left: 2px solid rgba(140, 207, 98, 0.28);
+  color: #c8cfbb;
+  padding-left: 1rem;
+}
+
+.markdown-document hr {
+  border: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.markdown-inline-code {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #eef3e7;
+  font-family: "Cascadia Code", Consolas, "Courier New", monospace;
+  font-size: 0.84em;
+  padding: 0.08rem 0.42rem;
+}
+
+.markdown-code-block {
+  overflow-x: auto;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 14px;
+  background: rgba(9, 11, 8, 0.92);
+  padding: 14px;
+}
+
+.markdown-code-block code {
+  color: #d5ddc8;
+  font-family: "Cascadia Code", Consolas, "Courier New", monospace;
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
+.markdown-table-wrap {
+  overflow-x: auto;
+}
+
+.markdown-document table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 420px;
+}
+
+.markdown-document th,
+.markdown-document td {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 0.6rem 0.72rem;
+  text-align: left;
+}
+
+.markdown-document th {
+  color: #eef3e7;
+  background: rgba(255, 255, 255, 0.045);
+}
+
+@media (max-width: 960px) {
+  .markdown-document table {
+    min-width: 0;
+  }
+}

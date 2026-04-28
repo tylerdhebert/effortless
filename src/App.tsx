@@ -8,23 +8,23 @@ import {
   Speech,
   X,
 } from 'lucide-react'
-import { DiscussionPanel } from './components/DiscussionPanel'
-import { DiscussionThreadItem } from './components/DiscussionThreadItem'
-import { EffortCreationForm } from './components/EffortCreationForm'
-import { InputRequestList } from './components/InputRequestList'
-import { ManageSurface } from './components/ManageSurface'
-import { PlanSection } from './components/PlanSection'
-import { ReferenceSection } from './components/ReferenceSection'
-import { Sidebar } from './components/Sidebar'
-import { TaskDetailPane } from './components/TaskDetailPane'
-import { TaskList } from './components/TaskList'
+import { DiscussionPanel } from './components/effort/DiscussionPanel'
+import { DiscussionThreadItem } from './components/effort/DiscussionThreadItem'
+import { EffortCreationForm } from './components/sidebar/EffortCreationForm'
+import { InputRequestList } from './components/effort/InputRequestList'
+import { ManageSurface } from './components/manage/ManageSurface'
+import { PlanSection } from './components/effort/PlanSection'
+import { ReferenceSection } from './components/effort/ReferenceSection'
+import { Sidebar } from './components/sidebar/Sidebar'
+import { TaskDetailPane } from './components/task/TaskDetailPane'
+import { TaskList } from './components/task/TaskList'
 import {
   effortSupportsDiscussion,
   effortSupportsPlans,
   effortSupportsTasks,
   preferredDiscussionSummary,
   preferredPlanSummary,
-} from './components/helpers'
+} from './lib/helpers'
 import { useDiscussionMutations } from './hooks/useDiscussionMutations'
 import { useEffortMutations } from './hooks/useEffortMutations'
 import { useInputMutations } from './hooks/useInputMutations'
@@ -238,9 +238,18 @@ function App() {
                 <div className="effort-title-row">
                   <h2>{selectedEffort.title}</h2>
                   <div className="effort-header-meta">
-                    <span>{selectedEffort.shortRef}</span>
-                    <span>{selectedEffort.template.replace('-', ' ')}</span>
-                    <span>{selectedEffort.status}</span>
+                    <div className="chip-group">
+                      <small>ref</small>
+                      <span>{selectedEffort.shortRef}</span>
+                    </div>
+                    <div className="chip-group">
+                      <small>type</small>
+                      <span>{selectedEffort.template.replace('-', ' ')}</span>
+                    </div>
+                    <div className="chip-group">
+                      <small>status</small>
+                      <span>{selectedEffort.status}</span>
+                    </div>
                   </div>
                 </div>
               </div>

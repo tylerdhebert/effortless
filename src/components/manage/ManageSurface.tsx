@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Pencil, Trash2 } from 'lucide-react'
-import type { Mandate, Repo, WorkSurface, MandateSourceType } from '../../core/types'
-import { PillSwitcher } from './PillSwitcher'
+import type { Mandate, Repo, WorkSurface, MandateSourceType } from '../../../core/types'
+import { PillSwitcher } from '../ui/PillSwitcher'
+import styles from './ManageSurface.module.css'
 
 type ManageSurfaceProps = {
   repos: Repo[]
@@ -103,18 +104,18 @@ export function ManageSurface({
 
   return (
     <>
-      <div className="effort-scroll manage-scroll">
+      <div className={`effort-scroll ${styles['manage-scroll']}`}>
         {section === 'repos' ? (
-          <section className="manage-surface manage-surface-repos">
-            <section className="manage-panel">
-              <div className="manage-panel-header">
+          <section className={`${styles['manage-surface']} ${styles['manage-surface-repos']}`}>
+            <section className={styles['manage-panel']}>
+              <div className={styles['manage-panel-header']}>
                 <div>
                   <h3>{editingRepoId ? 'edit repo' : 'add repo'}</h3>
                 </div>
               </div>
 
               <form
-                className="repo-form manage-form"
+                className={`${styles['repo-form']} ${styles['manage-form']}`}
                 onSubmit={(event) => {
                   event.preventDefault()
                   if (editingRepoId) {
@@ -148,7 +149,7 @@ export function ManageSurface({
                     editingRepoId ? setEditingRepoPath(event.target.value) : setRepoPath(event.target.value)
                   }
                 />
-                <div className="repo-form-row">
+                <div className={styles['repo-form-row']}>
                   <input
                     aria-label="repo base branch"
                     placeholder="base branch"
@@ -166,7 +167,7 @@ export function ManageSurface({
                     }
                   />
                 </div>
-                <div className="manage-repo-actions">
+                <div className={styles['manage-repo-actions']}>
                   <button type="submit" disabled={editingRepoId ? isUpdatingRepo : isCreatingRepo}>
                     {editingRepoId ? (isUpdatingRepo ? 'saving' : 'save repo') : isCreatingRepo ? 'creating' : 'add repo'}
                   </button>
@@ -179,23 +180,23 @@ export function ManageSurface({
               </form>
             </section>
 
-            <section className="manage-panel">
-              <div className="manage-panel-header">
+            <section className={styles['manage-panel']}>
+              <div className={styles['manage-panel-header']}>
                 <div>
                   <h3>repos</h3>
                 </div>
               </div>
 
-              <div className="repo-list manage-repo-list">
+              <div className={`${styles['repo-list']} ${styles['manage-repo-list']}`}>
                 {repos.map((repo) => (
-                  <article className="repo-row manage-repo-row" key={repo.id}>
+                  <article className={`${styles['repo-row']} ${styles['manage-repo-row']}`} key={repo.id}>
                     <div>
                       <strong>{repo.name}</strong>
                       <span>{repo.shortRef}</span>
                     </div>
                     <p>{repo.path}</p>
                     <small>{repo.baseBranch}</small>
-                    <div className="manage-repo-actions">
+                    <div className={styles['manage-repo-actions']}>
                       <button type="button" className="icon-btn" onClick={() => beginRepoEdit(repo)} aria-label="edit">
                         <Pencil size={12} />
                       </button>
@@ -211,16 +212,16 @@ export function ManageSurface({
             </section>
           </section>
         ) : section === 'mandates' ? (
-          <section className="manage-surface manage-surface-mandates">
-            <section className="manage-panel">
-              <div className="manage-panel-header">
+          <section className={`${styles['manage-surface']} ${styles['manage-surface-mandates']}`}>
+            <section className={styles['manage-panel']}>
+              <div className={styles['manage-panel-header']}>
                 <div>
                   <h3>{editingMandateId ? 'edit mandate' : 'add mandate'}</h3>
                 </div>
               </div>
 
               <form
-                className="repo-form manage-form"
+                className={`${styles['repo-form']} ${styles['manage-form']}`}
                 onSubmit={(event) => {
                   event.preventDefault()
                   if (editingMandateId) {
@@ -308,7 +309,7 @@ export function ManageSurface({
                     }
                   />
                 )}
-                <div className="manage-repo-actions">
+                <div className={styles['manage-repo-actions']}>
                   <button type="submit" disabled={editingMandateId ? isUpdatingMandate : isCreatingMandate}>
                     {editingMandateId ? (isUpdatingMandate ? 'saving' : 'save mandate') : isCreatingMandate ? 'creating' : 'add mandate'}
                   </button>
@@ -321,16 +322,16 @@ export function ManageSurface({
               </form>
             </section>
 
-            <section className="manage-panel">
-              <div className="manage-panel-header">
+            <section className={styles['manage-panel']}>
+              <div className={styles['manage-panel-header']}>
                 <div>
                   <h3>mandates</h3>
                 </div>
               </div>
 
-              <div className="repo-list manage-repo-list">
+              <div className={`${styles['repo-list']} ${styles['manage-repo-list']}`}>
                 {mandates.map((mandate) => (
-                  <article className="repo-row manage-repo-row" key={mandate.id}>
+                  <article className={`${styles['repo-row']} ${styles['manage-repo-row']}`} key={mandate.id}>
                     <div>
                       <strong>{mandate.workSurface}</strong>
                       <span>{mandate.shortRef}</span>
@@ -341,13 +342,13 @@ export function ManageSurface({
                       )}
                     </div>
                     {mandate.sourceType === 'body' ? (
-                      <p className="mandate-body-preview">
+                      <p className={styles['mandate-body-preview']}>
                         {mandate.body ? (mandate.body.length > 120 ? mandate.body.slice(0, 120) + '...' : mandate.body) : '(empty)'}
                       </p>
                     ) : (
                       <p>{mandate.filePath}</p>
                     )}
-                    <div className="manage-repo-actions">
+                    <div className={styles['manage-repo-actions']}>
                       <button type="button" className="icon-btn" onClick={() => beginMandateEdit(mandate)} aria-label="edit">
                         <Pencil size={12} />
                       </button>

@@ -1,6 +1,7 @@
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import type { Components } from 'react-markdown'
+import styles from './MarkdownDocument.module.css'
 
 const markdownComponents: Components = {
   h1: ({ children }) => <h1>{children}</h1>,
@@ -16,17 +17,17 @@ const markdownComponents: Components = {
     const text = String(children ?? '').replace(/\n$/, '')
     if ((className ?? '').includes('language-') || text.includes('\n')) {
       return (
-        <pre className="markdown-code-block">
+        <pre className={styles['markdown-code-block']}>
           <code>{text}</code>
         </pre>
       )
     }
 
-    return <code className="markdown-inline-code">{children}</code>
+    return <code className={styles['markdown-inline-code']}>{children}</code>
   },
   hr: () => <hr />,
   table: ({ children }) => (
-    <div className="markdown-table-wrap">
+    <div className={styles['markdown-table-wrap']}>
       <table>{children}</table>
     </div>
   ),
@@ -40,7 +41,7 @@ export function MarkdownDocument({
   className?: string
 }) {
   return (
-    <div className={['markdown-document', className].filter(Boolean).join(' ')}>
+    <div className={[styles['markdown-document'], className].filter(Boolean).join(' ')}>
       <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
         {content}
       </ReactMarkdown>
