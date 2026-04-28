@@ -18,6 +18,7 @@ export type BuildStatus = 'running' | 'passed' | 'failed'
 export type InputRequestType = 'yesno' | 'choice' | 'text'
 export type InputRequestStatus = 'pending' | 'answered'
 export type PlanCommentKind = 'comment' | 'approval' | 'input-request' | 'input-response'
+export type DiffType = 'uncommitted' | 'branch' | 'combined'
 
 export type Repo = {
   id: number
@@ -106,6 +107,24 @@ export type TaskBuildResult = {
   output: string
   triggeredAt: string
   completedAt: string | null
+}
+
+export type TaskDiffView = {
+  taskId: number
+  type: DiffType
+  output: string
+}
+
+export type TaskCommitView = {
+  taskId: number
+  output: string
+}
+
+export type TaskConflictView = {
+  taskId: number
+  hasConflicts: boolean
+  files: string[]
+  details: string | null
 }
 
 export type InputChoice = {

@@ -8,6 +8,9 @@ export function useCacheInvalidation() {
     await queryClient.invalidateQueries({ queryKey: ['task-comments', taskId] })
     await queryClient.invalidateQueries({ queryKey: ['reviews', taskId] })
     await queryClient.invalidateQueries({ queryKey: ['task-build', taskId] })
+    await queryClient.invalidateQueries({ queryKey: ['task-diff', taskId] })
+    await queryClient.invalidateQueries({ queryKey: ['task-commits', taskId] })
+    await queryClient.invalidateQueries({ queryKey: ['task-conflicts', taskId] })
     await queryClient.invalidateQueries({ queryKey: ['efforts'] })
   }
 

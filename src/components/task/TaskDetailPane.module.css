@@ -1,4 +1,5 @@
 .task-detail-pane {
+  height: 100%;
   min-height: 0;
   overflow-y: auto;
   border: 1px solid var(--line);
@@ -21,6 +22,14 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 14px;
+}
+
+.task-header-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .task-detail-header-copy {
@@ -299,6 +308,163 @@
   word-break: break-word;
 }
 
+.implementation-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.implementation-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.implementation-layout {
+  display: grid;
+  grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+  gap: 12px;
+  min-height: 0;
+}
+
+.implementation-file-list {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  max-height: 460px;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.016);
+  padding: 8px;
+}
+
+.implementation-file {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  text-align: left;
+  padding: 7px 8px;
+}
+
+.implementation-file:hover {
+  border-color: rgba(140, 207, 98, 0.16);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text);
+}
+
+.implementation-file.active {
+  border-color: rgba(140, 207, 98, 0.24);
+  background: rgba(140, 207, 98, 0.08);
+  color: var(--text);
+}
+
+.implementation-file div {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.implementation-file strong {
+  font-family: "Cascadia Code", Consolas, "Courier New", monospace;
+  font-size: 0.72rem;
+  line-height: 1.2;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.implementation-file span {
+  font-size: 0.65rem;
+  letter-spacing: 0.03em;
+  opacity: 0.72;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.implementation-file small {
+  font-family: "Cascadia Code", Consolas, "Courier New", monospace;
+  font-size: 0.68rem;
+  color: #a4b691;
+  flex: 0 0 auto;
+}
+
+.implementation-diff-panel {
+  min-height: 0;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.016);
+}
+
+.diff-file {
+  min-width: 0;
+}
+
+.implementation-card {
+  display: grid;
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.016);
+  padding: 12px;
+}
+
+.implementation-card-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.implementation-card-header strong {
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+  text-transform: lowercase;
+}
+
+.implementation-card-header small {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.implementation-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.implementation-card pre {
+  margin: 0;
+  max-height: 240px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #12140f;
+  color: #c9d1bf;
+  font-family: "Cascadia Code", Consolas, "Courier New", monospace;
+  font-size: 0.74rem;
+  line-height: 1.45;
+  padding: 10px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.conflict-block {
+  display: grid;
+  gap: 8px;
+}
+
 @media (max-width: 960px) {
   .task-detail-supporting-grid {
     grid-template-columns: 1fr;
@@ -311,5 +477,31 @@
 
   .task-header-action {
     justify-content: center;
+  }
+
+  .task-header-controls {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .task-header-controls :global(.pill-switcher) {
+    flex: 1;
+  }
+
+  .task-header-controls .task-header-action {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .implementation-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .implementation-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .implementation-file-list {
+    max-height: 180px;
   }
 }

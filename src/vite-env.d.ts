@@ -8,6 +8,7 @@ import type {
   ClaimTaskInput,
   CreateEffortInput,
   CreateDiscussionMessageInput,
+  DiffType,
   CreateInputRequestInput,
   CreateMandateInput,
   CreatePlanInput,
@@ -29,7 +30,10 @@ import type {
   SubmitReviewInput,
   Task,
   TaskBuildResult,
+  TaskCommitView,
   TaskComment,
+  TaskConflictView,
+  TaskDiffView,
   UpdateMandateInput,
   UpdateRepoInput,
   UpdateTaskDetailsInput,
@@ -37,8 +41,8 @@ import type {
 } from '../core/types'
 
 declare global {
-  interface Window {
-    effortless: {
+interface Window {
+  effortless: {
       getAppState: () => Promise<{ version: number; updatedAt: string }>
       listRepos: () => Promise<Repo[]>
       createRepo: (input: CreateRepoInput) => Promise<Repo>
@@ -73,6 +77,9 @@ declare global {
       checkpointTask: (input: CheckpointTaskInput) => Promise<TaskComment>
       markTaskReady: (taskId: number) => Promise<Task>
       ensureTaskWorktree: (taskId: number) => Promise<Task>
+      getTaskDiff: (taskId: number, type?: DiffType) => Promise<TaskDiffView>
+      getTaskCommits: (taskId: number) => Promise<TaskCommitView>
+      getTaskConflicts: (taskId: number) => Promise<TaskConflictView>
       updateTaskDetails: (input: UpdateTaskDetailsInput) => Promise<Task>
       approveTask: (input: ApproveTaskInput) => Promise<Task>
       requestTaskChanges: (input: RequestTaskChangesInput) => Promise<Task>

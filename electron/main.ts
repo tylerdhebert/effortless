@@ -30,7 +30,20 @@ import {
 } from '../core/references'
 import { createRepo, deleteRepo, listRepos, updateRepo } from '../core/repos'
 import { applyReview, getReviewByRef, listReviews, requestReviewChanges, submitReview } from '../core/reviews'
-import { checkpointTask, claimTask, ensureTaskWorktree, approveTask, listTaskComments, listTasks, markTaskReady, requestTaskChanges, updateTaskDetails } from '../core/tasks'
+import {
+  checkpointTask,
+  claimTask,
+  ensureTaskWorktree,
+  approveTask,
+  getTaskCommitView,
+  getTaskConflictView,
+  getTaskDiffView,
+  listTaskComments,
+  listTasks,
+  markTaskReady,
+  requestTaskChanges,
+  updateTaskDetails,
+} from '../core/tasks'
 import type {
   AnswerInputRequestInput,
   ApplyReviewInput,
@@ -52,6 +65,7 @@ import type {
   UpdateTaskDetailsInput,
   WorkSurface,
   ReferenceOwnerType,
+  DiffType,
 } from '../core/types'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -129,6 +143,11 @@ ipcMain.handle('tasks:checkpoint', (_event, input: CheckpointTaskInput) =>
 
 ipcMain.handle('tasks:ready', (_event, taskId: number) => markTaskReady(db, taskId))
 ipcMain.handle('tasks:worktree', (_event, taskId: number) => ensureTaskWorktree(db, taskId))
+ipcMain.handle('tasks:diff', (_event, taskId: number, type: DiffType = 'combined') =>
+  getTaskDiffView(db, taskId, type),
+)
+ipcMain.handle('tasks:commits', (_event, taskId: number) => getTaskCommitView(db, taskId))
+ipcMain.handle('tasks:conflicts', (_event, taskId: number) => getTaskConflictView(db, taskId))
 ipcMain.handle('tasks:updateDetails', (_event, input: UpdateTaskDetailsInput) =>
   updateTaskDetails(db, input),
 )

@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "vite",
     "dev:playwright": "node scripts/dev-playwright.mjs",
+    "capture:electron": "node scripts/capture-electron-shot.mjs",
     "build": "tsc && vite build && electron-builder",
     "efl": "cmd /c efl.cmd",
     "seed": "cmd /c seed.cmd",
@@ -22,8 +23,10 @@
     "better-sqlite3": "^12.9.0",
     "lucide-react": "^0.460.0",
     "react": "^18.2.0",
+    "react-diff-view": "^3.3.3",
     "react-dom": "^18.2.0",
     "react-markdown": "^10.1.0",
+    "refractor": "^5.0.0",
     "remark-gfm": "^4.0.1",
     "zustand": "^5.0.12"
   },

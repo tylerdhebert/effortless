@@ -1,6 +1,6 @@
 import type { AppDatabase } from './db'
 import { bumpAppState } from './db'
-import { getHeadCommit, worktreeCreate } from './git'
+import { checkConflicts, getCommits, getDiff, getHeadCommit, worktreeCreate } from './git'
 import { getRepo } from './repos'
 import type {
   ApproveTaskInput,
@@ -9,10 +9,14 @@ import type {
   CreateTaskInput,
   RequestTaskChangesInput,
   Task,
+  TaskCommitView,
   TaskComment,
   TaskCommentKind,
+  TaskConflictView,
+  TaskDiffView,
   UpdateTaskDetailsInput,
 } from './types'
+import type { DiffType } from './types'
 
 type TaskRow = {
   id: number
@@ -254,6 +258,68 @@ export async function ensureTaskWorktree(db: AppDatabase, taskId: number): Promi
   return getTask(db, taskId)
 }
 
+export async function getTaskDiffView(
+  db: AppDatabase,
+  taskId: number,
+  type: DiffType,
+): Promise<TaskDiffView> {
+  const context = resolveTaskRepoContext(db, taskId)
+  const output = await getDiff(
+    context.repo.path,
+    context.branchName,
+    context.baseBranch,
+    type,
+  )
+
+  return {
+    taskId,
+    type,
+    output: output.trimEnd(),
+  }
+}
+
+export async function getTaskCommitView(db: AppDatabase, taskId: number): Promise<TaskCommitView> {
+  const context = resolveTaskRepoContext(db, taskId)
+  const output = await getCommits(
+    context.repo.path,
+    context.branchName,
+    context.baseBranch,
+  )
+
+  return {
+    taskId,
+    output: output.trimEnd(),
+  }
+}
+
+export async function getTaskConflictView(
+  db: AppDatabase,
+  taskId: number,
+): Promise<TaskConflictView> {
+  const context = resolveTaskRepoContext(db, taskId)
+  const result = await checkConflicts(
+    context.repo.path,
+    context.branchName,
+    context.baseBranch,
+  )
+
+  if (!result.hasConflicts) {
+    return {
+      taskId,
+      hasConflicts: false,
+      files: [],
+      details: null,
+    }
+  }
+
+  return {
+    taskId,
+    hasConflicts: true,
+    files: result.files,
+    details: result.details.trimEnd(),
+  }
+}
+
 export function updateTaskStatus(db: AppDatabase, taskId: number, status: Task['status']): void {
   db.prepare(`UPDATE tasks SET status = ?, updated_at = ? WHERE id = ?`).run(
     status,
@@ -264,6 +330,28 @@ export function updateTaskStatus(db: AppDatabase, taskId: number, status: Task['
 
 function touchTask(db: AppDatabase, taskId: number): void {
   db.prepare(`UPDATE tasks SET updated_at = ? WHERE id = ?`).run(new Date().toISOString(), taskId)
+}
+
+function resolveTaskRepoContext(
+  db: AppDatabase,
+  taskId: number,
+): { task: Task; repo: ReturnType<typeof getRepo>; branchName: string; baseBranch: string } {
+  const task = getTask(db, taskId)
+  if (!task.repoId) {
+    throw new Error('Task does not have a repo')
+  }
+
+  if (!task.branchName || !task.baseBranch) {
+    throw new Error('Task needs branch and base branch before loading implementation context')
+  }
+
+  const repo = getRepo(db, task.repoId)
+  return {
+    task,
+    repo,
+    branchName: task.branchName,
+    baseBranch: task.baseBranch,
+  }
 }
 
 export function addTaskComment(

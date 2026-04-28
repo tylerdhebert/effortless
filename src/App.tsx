@@ -144,6 +144,18 @@ function App() {
     enabled: Boolean(selectedTask),
   })
 
+  const commitsQuery = useQuery({
+    queryKey: ['task-commits', selectedTask?.id],
+    queryFn: () => window.effortless.getTaskCommits(selectedTask!.id),
+    enabled: Boolean(selectedTask),
+  })
+
+  const conflictsQuery = useQuery({
+    queryKey: ['task-conflicts', selectedTask?.id],
+    queryFn: () => window.effortless.getTaskConflicts(selectedTask!.id),
+    enabled: Boolean(selectedTask),
+  })
+
   const { createEffort } = useEffortMutations()
   const repoMutations = useRepoMutations(selectedEffort?.id ?? null)
   const mandateMutations = useMandateMutations()
@@ -326,7 +338,7 @@ function App() {
                         {(discussionQuery.data ?? []).length === 0 ? (
                           <p className="empty-state">no discussion yet</p>
                         ) : (
-                          (discussionQuery.data ?? []).slice(-3).map((message) => (
+                          (discussionQuery.data ?? []).slice(0, 3).map((message) => (
                             <DiscussionThreadItem message={message} key={message.id} />
                           ))
                         )}
@@ -432,6 +444,8 @@ function App() {
                       reviews={reviewsQuery.data ?? []}
                       comments={commentsQuery.data ?? []}
                       latestBuild={buildQuery.data ?? null}
+                      commitView={commitsQuery.data ?? null}
+                      conflictView={conflictsQuery.data ?? null}
                       onRunBuild={(taskId) => taskMutations.runBuild.mutate(taskId)}
                       onApplyReview={(reviewId) => reviewMutations.applyReview.mutate({ reviewId })}
                       onRequestReviewChanges={(input) => reviewMutations.requestReviewChanges.mutate(input)}

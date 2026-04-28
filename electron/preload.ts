@@ -12,6 +12,7 @@ import type {
   CreatePlanInput,
   CreateReferenceInput,
   CreateRepoInput,
+  DiffType,
   DiscussionMessage,
   Effort,
   InputRequest,
@@ -28,7 +29,10 @@ import type {
   SubmitReviewInput,
   Task,
   TaskBuildResult,
+  TaskCommitView,
   TaskComment,
+  TaskConflictView,
+  TaskDiffView,
   UpdateMandateInput,
   UpdateRepoInput,
   UpdateTaskDetailsInput,
@@ -89,6 +93,12 @@ contextBridge.exposeInMainWorld('effortless', {
   markTaskReady: (taskId: number) => ipcRenderer.invoke('tasks:ready', taskId) as Promise<Task>,
   ensureTaskWorktree: (taskId: number) =>
     ipcRenderer.invoke('tasks:worktree', taskId) as Promise<Task>,
+  getTaskDiff: (taskId: number, type: DiffType = 'combined') =>
+    ipcRenderer.invoke('tasks:diff', taskId, type) as Promise<TaskDiffView>,
+  getTaskCommits: (taskId: number) =>
+    ipcRenderer.invoke('tasks:commits', taskId) as Promise<TaskCommitView>,
+  getTaskConflicts: (taskId: number) =>
+    ipcRenderer.invoke('tasks:conflicts', taskId) as Promise<TaskConflictView>,
   updateTaskDetails: (input: UpdateTaskDetailsInput) =>
     ipcRenderer.invoke('tasks:updateDetails', input) as Promise<Task>,
   approveTask: (input: ApproveTaskInput) =>
