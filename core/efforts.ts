@@ -85,6 +85,16 @@ export function getEffortByRef(db: AppDatabase, effortRef: string): Effort {
   return mapEffort(row)
 }
 
+export function updateEffortStatus(db: AppDatabase, effortId: number, status: Effort['status']): Effort {
+  db.prepare(`UPDATE efforts SET status = ?, updated_at = ? WHERE id = ?`).run(
+    status,
+    new Date().toISOString(),
+    effortId,
+  )
+  bumpAppState(db)
+  return getEffort(db, effortId)
+}
+
 function mapEffort(row: EffortRow): Effort {
   return {
     id: row.id,

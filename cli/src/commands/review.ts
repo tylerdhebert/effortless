@@ -55,6 +55,15 @@ export async function handleReview(surface: string, command: string): Promise<bo
     return true
   }
 
+  if (command === 'ready') {
+    const review = getReviewByRef(db, requiredOption('--review'))
+    printReview(review)
+    if (!review.appliedAt) {
+      await waitForReview(review)
+    }
+    return true
+  }
+
   if (command === 'wait') {
     const review = getReviewByRef(db, requiredOption('--review'))
     await waitForReview(review)

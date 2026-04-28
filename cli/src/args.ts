@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+
 export const rawArgs = process.argv.slice(2)
 
 export function option(name: string): string | null {
@@ -21,6 +23,11 @@ export function requiredOption(name: string): string {
 }
 
 export function bodyArg(): string {
+  const fromFile = option('--from-file')
+  if (fromFile) {
+    return readFileSync(fromFile, 'utf-8')
+  }
+
   const body = option('--body')
 
   if (body) {

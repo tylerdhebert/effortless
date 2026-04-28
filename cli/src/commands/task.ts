@@ -1,4 +1,14 @@
-import { checkpointTask, claimTask, createTask, ensureTaskWorktree, getTaskByRef, listTaskComments, markTaskReady } from '../../../core/tasks'
+import {
+  checkpointTask,
+  claimTask,
+  createTask,
+  ensureTaskWorktree,
+  getTaskByRef,
+  listTaskComments,
+  listTasks,
+  markTaskReady,
+  updateTaskDetails,
+} from '../../../core/tasks'
 import { option, requiredOption, bodyArg } from '../args'
 import { db, resolveTask, wait } from '../context'
 import { printTask } from '../render'
@@ -27,10 +37,62 @@ export async function handleTask(surface: string, command: string): Promise<bool
     return true
   }
 
+  if (command === 'list') {
+    const { getEffortByRef } = await import('../../../core/efforts')
+    const effort = getEffortByRef(db, requiredOption('--effort'))
+    const tasks = listTasks(db, effort.id)
+
+    if (tasks.length === 0) {
+      console.log('no tasks')
+      return true
+    }
+
+    for (const task of tasks) {
+      console.log(`${task.shortRef} ${task.status} ${task.title}`)
+    }
+    return true
+  }
+
+  if (command === 'show') {
+    const task = resolveTask(db, requiredOption('--task'))
+    printTask(task)
+    console.log(task.title)
+    console.log(task.description)
+    if (task.handoffSummary) {
+      console.log('handoff')
+      console.log(task.handoffSummary)
+    }
+    if (task.artifact) {
+      console.log('artifact')
+      console.log(task.artifact)
+    }
+    const comments = listTaskComments(db, task.id)
+    for (const comment of comments) {
+      console.log(`${comment.kind} ${comment.agentId ?? comment.author}: ${comment.body}`)
+    }
+    return true
+  }
+
   if (command === 'claim') {
     const task = resolveTask(db, requiredOption('--task'))
     const agentId = requiredOption('--agent')
     const updated = await claimTask(db, { taskId: task.id, agentId })
+    printTask(updated)
+    return true
+  }
+
+  if (command === 'plan') {
+    const task = resolveTask(db, requiredOption('--task'))
+    const agentId = requiredOption('--agent')
+    const updated = updateTaskDetails(db, {
+      taskId: task.id,
+      handoffSummary: bodyArg(),
+    })
+    checkpointTask(db, {
+      taskId: task.id,
+      agentId,
+      body: 'implementation plan updated',
+    })
     printTask(updated)
     return true
   }
@@ -41,6 +103,22 @@ export async function handleTask(surface: string, command: string): Promise<bool
     const body = bodyArg()
     const comment = checkpointTask(db, { taskId: task.id, agentId, body })
     console.log(`${task.shortRef} checkpoint ${comment.id}`)
+    return true
+  }
+
+  if (command === 'artifact') {
+    const task = resolveTask(db, requiredOption('--task'))
+    const agentId = requiredOption('--agent')
+    const updated = updateTaskDetails(db, {
+      taskId: task.id,
+      artifact: bodyArg(),
+    })
+    checkpointTask(db, {
+      taskId: task.id,
+      agentId,
+      body: 'artifact updated',
+    })
+    printTask(updated)
     return true
   }
 
