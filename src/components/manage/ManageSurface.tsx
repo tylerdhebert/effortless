@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Pencil, Trash2 } from 'lucide-react'
 import type { Mandate, Repo, WorkSurface, MandateSourceType } from '../../../core/types'
+import { PathPicker } from '../ui/PathPicker'
 import { PillSwitcher } from '../ui/PillSwitcher'
 import styles from './ManageSurface.module.css'
 
@@ -141,12 +142,12 @@ export function ManageSurface({
                     editingRepoId ? setEditingRepoName(event.target.value) : setRepoName(event.target.value)
                   }
                 />
-                <input
-                  aria-label="repo path"
-                  placeholder="path"
+                <PathPicker
+                  ariaLabel="repo path"
+                  placeholder="repo path"
                   value={editingRepoId ? editingRepoPath : repoPath}
-                  onChange={(event) =>
-                    editingRepoId ? setEditingRepoPath(event.target.value) : setRepoPath(event.target.value)
+                  onChange={(path) =>
+                    editingRepoId ? setEditingRepoPath(path) : setRepoPath(path)
                   }
                 />
                 <div className={styles['repo-form-row']}>
@@ -300,12 +301,13 @@ export function ManageSurface({
                     rows={4}
                   />
                 ) : (
-                  <input
-                    aria-label="mandate file path"
+                  <PathPicker
+                    ariaLabel="mandate file path"
                     placeholder="file path"
+                    selectFiles
                     value={editingMandateId ? editingMandateFilePath : mandateFilePath}
-                    onChange={(event) =>
-                      editingMandateId ? setEditingMandateFilePath(event.target.value) : setMandateFilePath(event.target.value)
+                    onChange={(path) =>
+                      editingMandateId ? setEditingMandateFilePath(path) : setMandateFilePath(path)
                     }
                   />
                 )}

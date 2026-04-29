@@ -42,6 +42,13 @@ import type {
 contextBridge.exposeInMainWorld('effortless', {
   getAppState: () =>
     ipcRenderer.invoke('app-state:get') as Promise<{ version: number; updatedAt: string }>,
+  browsePath: (targetPath?: string | null, includeFiles = false) =>
+    ipcRenderer.invoke('filesystem:browse', targetPath, includeFiles) as Promise<{
+      path: string
+      sep: string
+      parent: string | null
+      entries: Array<{ name: string; isDir: boolean }>
+    }>,
   listRepos: () => ipcRenderer.invoke('repos:list') as Promise<Repo[]>,
   createRepo: (input: CreateRepoInput) => ipcRenderer.invoke('repos:create', input) as Promise<Repo>,
   updateRepo: (input: UpdateRepoInput) => ipcRenderer.invoke('repos:update', input) as Promise<Repo>,

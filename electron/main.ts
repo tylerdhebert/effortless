@@ -7,6 +7,7 @@ import { getLatestTaskBuild, runTaskBuild } from '../core/builds'
 import { getAppState, openDatabase } from '../core/db'
 import { createDiscussionMessage, listDiscussionMessages } from '../core/discussion'
 import { listEfforts, createEffort } from '../core/efforts'
+import { browsePath } from '../core/filesystem'
 import {
   answerInputRequest,
   createInputRequest,
@@ -96,6 +97,9 @@ let win: BrowserWindow | null
 const db = openDatabase()
 
 ipcMain.handle('app-state:get', () => getAppState(db))
+ipcMain.handle('filesystem:browse', (_event, targetPath?: string | null, includeFiles = false) =>
+  browsePath(targetPath, includeFiles),
+)
 ipcMain.handle('efforts:list', () => listEfforts(db))
 ipcMain.handle('repos:list', () => listRepos(db))
 ipcMain.handle('repos:create', (_event, input: CreateRepoInput) => createRepo(db, input))

@@ -44,6 +44,12 @@ declare global {
 interface Window {
   effortless: {
       getAppState: () => Promise<{ version: number; updatedAt: string }>
+      browsePath: (targetPath?: string | null, includeFiles?: boolean) => Promise<{
+        path: string
+        sep: string
+        parent: string | null
+        entries: Array<{ name: string; isDir: boolean }>
+      }>
       listRepos: () => Promise<Repo[]>
       createRepo: (input: CreateRepoInput) => Promise<Repo>
       updateRepo: (input: UpdateRepoInput) => Promise<Repo>

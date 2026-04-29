@@ -16,7 +16,7 @@
   backdrop-filter: blur(18px);
   box-shadow: 0 32px 90px rgba(0, 0, 0, 0.5);
   overflow: hidden;
-  animation: flyout-in 180ms cubic-bezier(0.18, 0.88, 0.24, 1) both;
+  animation: modal-in 180ms cubic-bezier(0.18, 0.88, 0.24, 1) both;
 }
 
 .discussion-popper-header {

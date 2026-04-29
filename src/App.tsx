@@ -464,9 +464,9 @@ function App() {
       </section>
 
       {createEffortOpen ? (
-        <div className="flyout-overlay" onClick={() => setCreateEffortOpen(false)}>
-          <div className="flyout-card create-effort-modal" onClick={(event) => event.stopPropagation()}>
-            <header className="flyout-header create-effort-modal-header">
+        <div className="modal-overlay">
+          <div className="modal-card create-effort-modal">
+            <header className="modal-header create-effort-modal-header">
               <div>
                 <h4>new effort</h4>
               </div>
