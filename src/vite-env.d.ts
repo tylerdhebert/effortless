@@ -50,6 +50,7 @@ interface Window {
         parent: string | null
         entries: Array<{ name: string; isDir: boolean }>
       }>
+      openPath: (targetPath: string) => Promise<void>
       listRepos: () => Promise<Repo[]>
       createRepo: (input: CreateRepoInput) => Promise<Repo>
       updateRepo: (input: UpdateRepoInput) => Promise<Repo>

@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron'
+import { app, BrowserWindow, ipcMain, shell } from 'electron'
 import { fileURLToPath } from 'node:url'
 import { createHash } from 'node:crypto'
 import { mkdir, writeFile } from 'node:fs/promises'
@@ -100,6 +100,12 @@ ipcMain.handle('app-state:get', () => getAppState(db))
 ipcMain.handle('filesystem:browse', (_event, targetPath?: string | null, includeFiles = false) =>
   browsePath(targetPath, includeFiles),
 )
+ipcMain.handle('filesystem:open', async (_event, targetPath: string) => {
+  const result = await shell.openPath(targetPath)
+  if (result) {
+    throw new Error(result)
+  }
+})
 ipcMain.handle('efforts:list', () => listEfforts(db))
 ipcMain.handle('repos:list', () => listRepos(db))
 ipcMain.handle('repos:create', (_event, input: CreateRepoInput) => createRepo(db, input))

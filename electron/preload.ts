@@ -49,6 +49,8 @@ contextBridge.exposeInMainWorld('effortless', {
       parent: string | null
       entries: Array<{ name: string; isDir: boolean }>
     }>,
+  openPath: (targetPath: string) =>
+    ipcRenderer.invoke('filesystem:open', targetPath) as Promise<void>,
   listRepos: () => ipcRenderer.invoke('repos:list') as Promise<Repo[]>,
   createRepo: (input: CreateRepoInput) => ipcRenderer.invoke('repos:create', input) as Promise<Repo>,
   updateRepo: (input: UpdateRepoInput) => ipcRenderer.invoke('repos:update', input) as Promise<Repo>,

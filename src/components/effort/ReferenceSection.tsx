@@ -27,6 +27,7 @@ type ReferenceSectionProps = {
     label?: string | null
   }) => void
   onRemoveReference: (refId: number) => void
+  onOpenReference: (reference: Reference) => void
 }
 
 export function ReferenceSection({
@@ -36,6 +37,7 @@ export function ReferenceSection({
   isDeleting,
   onAddReference,
   onRemoveReference,
+  onOpenReference,
 }: ReferenceSectionProps) {
   const [flyoutOpen, setFlyoutOpen] = useState(false)
   const [listOpen, setListOpen] = useState(false)
@@ -51,6 +53,7 @@ export function ReferenceSection({
   const [expandedEffortIds, setExpandedEffortIds] = useState<Set<number>>(() => new Set())
   const [expandedTaskIds, setExpandedTaskIds] = useState<Set<number>>(() => new Set())
   const popoverRef = useRef<HTMLDivElement | null>(null)
+  const listButtonRef = useRef<HTMLButtonElement | null>(null)
 
   const boundedIndex = Math.min(selectedIndex, Math.max(0, references.length - 1))
   const activeReference = references[boundedIndex] ?? null
@@ -74,7 +77,8 @@ export function ReferenceSection({
     if (!listOpen) return
 
     function handlePointerDown(event: MouseEvent) {
-      if (!popoverRef.current?.contains(event.target as Node)) {
+      const target = event.target as Node
+      if (!popoverRef.current?.contains(target) && !listButtonRef.current?.contains(target)) {
         setListOpen(false)
       }
     }
@@ -223,9 +227,11 @@ export function ReferenceSection({
         <div className={`section-title-actions ${styles['reference-title-actions']}`}>
           {references.length > 1 ? (
             <button
+              ref={listButtonRef}
               type="button"
               onClick={() => setListOpen((open) => !open)}
               aria-label="show reference list"
+              aria-expanded={listOpen}
               title="show reference list"
             >
               <List size={14} />
@@ -405,6 +411,16 @@ export function ReferenceSection({
                 <strong>{activeReference.shortRef}</strong>
                 <span>{activeReference.targetType}</span>
                 {activeReference.label ? <small>{activeReference.label}</small> : null}
+                {(activeReference.targetType === 'file' && activeReference.filePath) ||
+                (activeReference.targetType !== 'file' && activeReference.targetId) ? (
+                  <button
+                    type="button"
+                    className={styles['reference-open-button']}
+                    onClick={() => onOpenReference(activeReference)}
+                  >
+                    open
+                  </button>
+                ) : null}
                 <button
                   type="button"
                   className="icon-btn remove-btn"

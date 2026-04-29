@@ -2,7 +2,7 @@
   position: relative;
   min-height: 132px;
   max-height: 182px;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .reference-title-actions {
@@ -110,6 +110,34 @@
   margin-left: auto;
 }
 
+.reference-open-button {
+  border: 1px solid rgba(140, 207, 98, 0.22);
+  border-radius: 999px;
+  background: rgba(140, 207, 98, 0.08);
+  color: #cfe5c2;
+  cursor: pointer;
+  font-size: 0.68rem;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+  margin-left: auto;
+  padding: 4px 8px;
+  text-transform: lowercase;
+  transition:
+    border-color 140ms ease,
+    background 140ms ease,
+    color 140ms ease;
+}
+
+.reference-open-button:hover {
+  border-color: rgba(140, 207, 98, 0.38);
+  background: rgba(140, 207, 98, 0.14);
+  color: #eff8e9;
+}
+
+.reference-open-button + .remove-btn {
+  margin-left: 0;
+}
+
 .reference-card--featured p {
   display: block;
   line-height: 1.45;
@@ -121,7 +149,7 @@
   position: absolute;
   top: 56px;
   right: 18px;
-  z-index: 15;
+  z-index: 60;
   display: grid;
   gap: 10px;
   width: min(320px, calc(100% - 36px));

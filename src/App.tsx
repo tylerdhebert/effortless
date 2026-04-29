@@ -34,6 +34,7 @@ import { useReferenceMutations } from './hooks/useReferenceMutations'
 import { useRepoMutations } from './hooks/useRepoMutations'
 import { useReviewMutations } from './hooks/useReviewMutations'
 import { useTaskMutations } from './hooks/useTaskMutations'
+import type { Reference } from '../core/types'
 import './App.css'
 
 function App() {
@@ -48,6 +49,7 @@ function App() {
   const [createEffortOpen, setCreateEffortOpen] = useState(false)
   const [observedAppVersion, setObservedAppVersion] = useState<number | null>(null)
   const effortScrollRef = useRef<HTMLDivElement | null>(null)
+  const preserveSelectionOnEffortChangeRef = useRef(false)
 
   const effortsQuery = useQuery({
     queryKey: ['efforts'],
@@ -188,6 +190,14 @@ function App() {
   }, [appStateQuery.data, observedAppVersion, queryClient])
 
   useEffect(() => {
+    if (preserveSelectionOnEffortChangeRef.current) {
+      preserveSelectionOnEffortChangeRef.current = false
+      if (effortScrollRef.current) {
+        effortScrollRef.current.scrollTop = 0
+      }
+      return
+    }
+
     setSelectedTaskId(null)
     setSelectedPlanId(null)
     setDiscussionOpen(false)
@@ -196,6 +206,70 @@ function App() {
       effortScrollRef.current.scrollTop = 0
     }
   }, [selectedEffort?.id])
+
+  async function openReference(reference: Reference) {
+    if (reference.targetType === 'file') {
+      if (reference.filePath) {
+        await window.effortless.openPath(reference.filePath)
+      }
+      return
+    }
+
+    if (!reference.targetId) {
+      return
+    }
+
+    setSurfaceMode('effort')
+
+    if (reference.targetType === 'effort') {
+      setSelectedEffortId(reference.targetId)
+      return
+    }
+
+    const efforts = effortsQuery.data ?? await window.effortless.listEfforts()
+
+    if (reference.targetType === 'plan') {
+      for (const effort of efforts) {
+        const plans = await window.effortless.listPlans(effort.id)
+        if (plans.some((plan) => plan.id === reference.targetId)) {
+          preserveSelectionOnEffortChangeRef.current = true
+          setSelectedEffortId(effort.id)
+          setSelectedPlanId(reference.targetId)
+          setSelectedTaskId(null)
+          return
+        }
+      }
+    }
+
+    if (reference.targetType === 'task') {
+      for (const effort of efforts) {
+        const tasks = await window.effortless.listTasks(effort.id)
+        if (tasks.some((task) => task.id === reference.targetId)) {
+          preserveSelectionOnEffortChangeRef.current = true
+          setSelectedEffortId(effort.id)
+          setSelectedTaskId(reference.targetId)
+          setSelectedPlanId(null)
+          return
+        }
+      }
+    }
+
+    if (reference.targetType === 'review') {
+      for (const effort of efforts) {
+        const tasks = await window.effortless.listTasks(effort.id)
+        for (const task of tasks) {
+          const reviews = await window.effortless.listReviews(task.id)
+          if (reviews.some((review) => review.id === reference.targetId)) {
+            preserveSelectionOnEffortChangeRef.current = true
+            setSelectedEffortId(effort.id)
+            setSelectedTaskId(task.id)
+            setSelectedPlanId(null)
+            return
+          }
+        }
+      }
+    }
+  }
 
   useEffect(() => {
     if (!selectedPlanId && plansQuery.data?.[0]) {
@@ -355,6 +429,7 @@ function App() {
                     isDeleting={referenceMutations.deleteReference.isPending}
                     onAddReference={(input) => referenceMutations.createReference.mutate(input)}
                     onRemoveReference={(refId) => referenceMutations.deleteReference.mutate(refId)}
+                    onOpenReference={(reference) => void openReference(reference)}
                   />
 
                   <section className="surface-section input-section">
