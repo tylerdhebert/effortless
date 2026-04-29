@@ -96,6 +96,7 @@ function seedDiscussionEffort(db: AppDatabase): Effort {
     template: 'discussion',
     planRequiresReview: false,
     needsTasks: false,
+    summary: 'Default notification posture: banner + badge. Sound remains opt-in.',
   })
 
   createDiscussionMessage(db, {
@@ -143,6 +144,7 @@ function seedInvestigationEffort(db: AppDatabase): Effort {
     template: 'investigation',
     planRequiresReview: true,
     needsTasks: false,
+    summary: 'Eager module loading is the primary overhead. Recommend lazy imports and splitting render.ts by domain.',
   })
 
   createDiscussionMessage(db, {
@@ -200,6 +202,7 @@ async function seedBugfixEffort(
     template: 'bugfix',
     planRequiresReview: false,
     needsTasks: true,
+    summary: 'Restored reattach output for task, review, and input wait interruptions. Build currently failing due to copy mismatch.',
   })
 
   const task = createTask(db, {
@@ -255,6 +258,7 @@ async function seedDeliveryEffort(
     template: 'delivery',
     planRequiresReview: true,
     needsTasks: true,
+    summary: 'Plan review flow, repo-backed task detail, and input requests are all wired. One task accepted, one task returned for changes, one task waiting for human review.',
   })
 
   createDiscussionMessage(db, {
@@ -473,6 +477,7 @@ function insertEffort(
     template: Effort['template']
     planRequiresReview: boolean
     needsTasks: boolean
+    summary?: string
   },
 ): Effort {
   const now = new Date().toISOString()
@@ -480,12 +485,12 @@ function insertEffort(
     .prepare(
       `
       INSERT INTO efforts (
-        title, description, template, accepted_plan_id, plan_requires_review, needs_tasks, status, created_at, updated_at
+        title, description, template, accepted_plan_id, plan_requires_review, needs_tasks, status, summary, created_at, updated_at
       )
-      VALUES (?, ?, ?, NULL, ?, ?, 'active', ?, ?)
+      VALUES (?, ?, ?, NULL, ?, ?, 'active', ?, ?, ?)
     `,
     )
-    .run(input.title, input.description, input.template, input.planRequiresReview ? 1 : 0, input.needsTasks ? 1 : 0, now, now)
+    .run(input.title, input.description, input.template, input.planRequiresReview ? 1 : 0, input.needsTasks ? 1 : 0, input.summary ?? null, now, now)
 
   const id = Number(result.lastInsertRowid)
   db.prepare(`UPDATE efforts SET short_ref = ? WHERE id = ?`).run(`eff-${id}`, id)
@@ -504,6 +509,7 @@ function getEffortRecord(db: AppDatabase, effortId: number): Effort {
       plan_requires_review: number
       needs_tasks: number
       status: Effort['status']
+      summary: string | null
       created_at: string
       updated_at: string
     }>(`SELECT * FROM efforts WHERE id = ?`)
@@ -523,6 +529,7 @@ function getEffortRecord(db: AppDatabase, effortId: number): Effort {
     planRequiresReview: Boolean(row.plan_requires_review),
     needsTasks: Boolean(row.needs_tasks),
     status: row.status,
+    summary: row.summary,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }

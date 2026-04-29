@@ -41,6 +41,7 @@ export type Effort = {
   planRequiresReview: boolean
   needsTasks: boolean
   status: EffortStatus
+  summary: string | null
   createdAt: string
   updatedAt: string
 }

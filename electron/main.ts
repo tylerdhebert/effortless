@@ -6,7 +6,7 @@ import path from 'node:path'
 import { getLatestTaskBuild, runTaskBuild } from '../core/builds'
 import { getAppState, openDatabase } from '../core/db'
 import { createDiscussionMessage, listDiscussionMessages } from '../core/discussion'
-import { listEfforts, createEffort } from '../core/efforts'
+import { listEfforts, createEffort, updateEffortSummary } from '../core/efforts'
 import { browsePath } from '../core/filesystem'
 import {
   answerInputRequest,
@@ -119,6 +119,9 @@ ipcMain.handle('inputs:show', (_event, inputRef: string) => getInputRequestByRef
 
 ipcMain.handle('efforts:create', (_event, input: { title: string; description: string; template: 'bugfix' | 'delivery' | 'investigation' | 'discussion' }) =>
   createEffort(db, input),
+)
+ipcMain.handle('efforts:updateSummary', (_event, effortId: number, summary: string) =>
+  updateEffortSummary(db, effortId, summary),
 )
 
 ipcMain.handle('tasks:list', (_event, effortId: number) => listTasks(db, effortId))

@@ -68,6 +68,8 @@ contextBridge.exposeInMainWorld('effortless', {
   listEfforts: () => ipcRenderer.invoke('efforts:list') as Promise<Effort[]>,
   createEffort: (input: CreateEffortInput) =>
     ipcRenderer.invoke('efforts:create', input) as Promise<Effort>,
+  updateEffortSummary: (effortId: number, summary: string) =>
+    ipcRenderer.invoke('efforts:updateSummary', effortId, summary) as Promise<Effort>,
   listTasks: (effortId: number) => ipcRenderer.invoke('tasks:list', effortId) as Promise<Task[]>,
   listPlans: (effortId: number) => ipcRenderer.invoke('plans:list', effortId) as Promise<Plan[]>,
   getPlan: (planRef: string) => ipcRenderer.invoke('plans:show', planRef) as Promise<Plan>,

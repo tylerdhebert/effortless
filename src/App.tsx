@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { DiscussionPanel } from './components/effort/DiscussionPanel'
 import { DiscussionThreadItem } from './components/effort/DiscussionThreadItem'
+import { EffortSummarySection } from './components/effort/EffortSummarySection'
 import { EffortCreationForm } from './components/sidebar/EffortCreationForm'
 import { InputRequestList } from './components/effort/InputRequestList'
 import { ManageSurface } from './components/manage/ManageSurface'
@@ -22,8 +23,6 @@ import {
   effortSupportsDiscussion,
   effortSupportsPlans,
   effortSupportsTasks,
-  preferredDiscussionSummary,
-  preferredPlanSummary,
 } from './lib/helpers'
 import { useDiscussionMutations } from './hooks/useDiscussionMutations'
 import { useEffortMutations } from './hooks/useEffortMutations'
@@ -122,11 +121,6 @@ function App() {
   const supportsTasks = template ? effortSupportsTasks(template) : false
   const supportsDiscussion = template ? effortSupportsDiscussion(template) : false
   const usesBugfixOverview = template === 'bugfix'
-  const preferredPlan = preferredPlanSummary(plansQuery.data ?? [])
-  const preferredDiscussion = preferredDiscussionSummary(
-    discussionQuery.data ?? [],
-    inputsQuery.data ?? [],
-  )
 
   const commentsQuery = useQuery({
     queryKey: ['task-comments', selectedTask?.id],
@@ -466,36 +460,12 @@ function App() {
                 />
               ) : null}
 
-              {selectedEffort.template === 'investigation' && !supportsPlans ? (
-                <section className="surface-section template-summary-section">
-                  <div className="section-title">
-                    <span>findings</span>
-                    <span>{preferredPlan?.plan.shortRef ?? 'no summary yet'}</span>
-                  </div>
-                  <div className="template-summary-body">
-                    {preferredPlan ? (
-                      <p>{preferredPlan.body}</p>
-                    ) : (
-                      <p className="empty-state">no findings yet</p>
-                    )}
-                  </div>
-                </section>
+              {selectedEffort.template === 'investigation' ? (
+                <EffortSummarySection label="findings" summary={selectedEffort.summary} />
               ) : null}
 
               {selectedEffort.template === 'discussion' ? (
-                <section className="surface-section template-summary-section">
-                  <div className="section-title">
-                    <span>summary</span>
-                    <span>{preferredDiscussion?.label ?? 'no summary yet'}</span>
-                  </div>
-                  <div className="template-summary-body">
-                    {preferredDiscussion ? (
-                      <p>{preferredDiscussion.body}</p>
-                    ) : (
-                      <p className="empty-state">no summary yet</p>
-                    )}
-                  </div>
-                </section>
+                <EffortSummarySection label="conversation recap" summary={selectedEffort.summary} />
               ) : null}
 
               {supportsTasks ? (
@@ -530,6 +500,14 @@ function App() {
                     />
                   </div>
                 </section>
+              ) : null}
+
+              {selectedEffort.template === 'delivery' ? (
+                <EffortSummarySection label="effort summary" summary={selectedEffort.summary} />
+              ) : null}
+
+              {selectedEffort.template === 'bugfix' ? (
+                <EffortSummarySection label="bugfix summary" summary={selectedEffort.summary} />
               ) : null}
             </div>
           </>

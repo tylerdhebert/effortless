@@ -1,11 +1,11 @@
-import { createEffort, getEffortByRef, listEfforts, updateEffortStatus } from '../../../core/efforts'
+import { createEffort, getEffortByRef, listEfforts, updateEffortStatus, updateEffortSummary } from '../../../core/efforts'
 import { listDiscussionMessages } from '../../../core/discussion'
 import { listInputRequests } from '../../../core/inputs'
 import { resolveMandateText } from '../../../core/mandates'
 import { listPlans } from '../../../core/plans'
 import { listReferences } from '../../../core/references'
 import { listTasks } from '../../../core/tasks'
-import { option, requiredOption } from '../args'
+import { bodyArg, option, requiredOption } from '../args'
 import { db } from '../context'
 import { planState, printReference } from '../render'
 
@@ -43,6 +43,11 @@ export async function handleEffort(surface: string, command: string): Promise<bo
     console.log(`${effort.shortRef} ${effort.template} ${effort.status}`)
     console.log(effort.title)
     console.log(effort.description)
+    if (effort.summary) {
+      console.log('')
+      console.log('summary')
+      console.log(effort.summary)
+    }
     return true
   }
 
@@ -65,6 +70,12 @@ export async function handleEffort(surface: string, command: string): Promise<bo
     console.log('')
     console.log('description')
     console.log(effort.description)
+
+    if (effort.summary) {
+      console.log('')
+      console.log('summary')
+      console.log(effort.summary)
+    }
 
     if (acceptedPlan) {
       console.log('')
@@ -143,8 +154,15 @@ export async function handleEffort(surface: string, command: string): Promise<bo
     return true
   }
 
-  console.log('effort commands: create, list, show, context, complete')
-  console.log('planned: summary')
+  if (command === 'summary') {
+    const effort = getEffortByRef(db, requiredOption('--effort'))
+    const summary = bodyArg()
+    const updated = updateEffortSummary(db, effort.id, summary)
+    console.log(`${updated.shortRef} summary updated`)
+    return true
+  }
+
+  console.log('effort commands: create, list, show, context, summary, complete')
   return true
 }
 

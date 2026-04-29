@@ -12,6 +12,7 @@ type EffortRow = {
   plan_requires_review: number
   needs_tasks: number
   status: Effort['status']
+  summary: string | null
   created_at: string
   updated_at: string
 }
@@ -95,6 +96,16 @@ export function updateEffortStatus(db: AppDatabase, effortId: number, status: Ef
   return getEffort(db, effortId)
 }
 
+export function updateEffortSummary(db: AppDatabase, effortId: number, summary: string): Effort {
+  db.prepare(`UPDATE efforts SET summary = ?, updated_at = ? WHERE id = ?`).run(
+    summary.trim(),
+    new Date().toISOString(),
+    effortId,
+  )
+  bumpAppState(db)
+  return getEffort(db, effortId)
+}
+
 function mapEffort(row: EffortRow): Effort {
   return {
     id: row.id,
@@ -106,6 +117,7 @@ function mapEffort(row: EffortRow): Effort {
     planRequiresReview: Boolean(row.plan_requires_review),
     needsTasks: Boolean(row.needs_tasks),
     status: row.status,
+    summary: row.summary,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }

@@ -190,6 +190,7 @@ export function initializeSchema(db: AppDatabase): void {
   ensureColumn(db, 'plans', 'accepted_at', 'TEXT')
   ensureColumn(db, 'input_requests', 'short_ref', 'TEXT')
   ensureColumn(db, 'efforts', 'needs_tasks', 'INTEGER NOT NULL DEFAULT 1')
+  ensureColumn(db, 'efforts', 'summary', 'TEXT')
 }
 
 export function bumpAppState(db: AppDatabase): void {
