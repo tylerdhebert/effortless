@@ -73,6 +73,7 @@ interface Window {
       createEffort: (input: CreateEffortInput) => Promise<Effort>
       updateEffortSummary: (effortId: number, summary: string) => Promise<Effort>
       listTasks: (effortId: number) => Promise<Task[]>
+      listAllTasks: () => Promise<Task[]>
       listPlans: (effortId: number) => Promise<Plan[]>
       getPlan: (planRef: string) => Promise<Plan>
       listPlanComments: (planId: number) => Promise<PlanComment[]>

@@ -61,12 +61,8 @@ export function Sidebar({
   }, [tasks, repos])
 
   const repoOptions = useMemo(() => {
-    const names = new Set<string>()
-    for (const set of effortRepoNames.values()) {
-      for (const name of set) names.add(name)
-    }
-    return Array.from(names).sort()
-  }, [effortRepoNames])
+    return repos.map((r) => r.name).sort()
+  }, [repos])
 
   const filteredEfforts = useMemo(() => {
     if (statusFilter.length === 0 && repoFilter.length === 0) return efforts

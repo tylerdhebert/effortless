@@ -46,6 +46,7 @@ import {
   getTaskDiffView,
   listTaskComments,
   listTasks,
+  listAllTasks,
   markTaskReady,
   requestTaskChanges,
   updateTaskDetails,
@@ -139,6 +140,7 @@ ipcMain.handle('efforts:updateSummary', (_event, effortId: number, summary: stri
 )
 
 ipcMain.handle('tasks:list', (_event, effortId: number) => listTasks(db, effortId))
+ipcMain.handle('tasks:listAll', () => listAllTasks(db))
 ipcMain.handle('plans:list', (_event, effortId: number) => listPlans(db, effortId))
 ipcMain.handle('plans:show', (_event, planRef: string) => getPlanByRef(db, planRef))
 ipcMain.handle('plans:comments', (_event, planId: number) => listPlanComments(db, planId))

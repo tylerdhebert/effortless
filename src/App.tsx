@@ -106,6 +106,11 @@ function App() {
     enabled: Boolean(selectedEffort),
   })
 
+  const allTasksQuery = useQuery({
+    queryKey: ['all-tasks'],
+    queryFn: () => window.effortless.listAllTasks(),
+  })
+
   const plansQuery = useQuery({
     queryKey: ['plans', selectedEffort?.id],
     queryFn: () => window.effortless.listPlans(selectedEffort!.id),
@@ -391,7 +396,7 @@ function App() {
     <main className="app-shell">
       <Sidebar
         efforts={effortsQuery.data ?? []}
-        tasks={tasksQuery.data ?? []}
+        tasks={allTasksQuery.data ?? []}
         repos={reposQuery.data ?? []}
         selectedEffortId={selectedEffort?.id ?? null}
         reposCount={reposQuery.data?.length ?? 0}

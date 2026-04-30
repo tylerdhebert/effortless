@@ -56,6 +56,13 @@ export function listTasks(db: AppDatabase, effortId: number): Task[] {
     .map(mapTask)
 }
 
+export function listAllTasks(db: AppDatabase): Task[] {
+  return db
+    .prepare<TaskRow>(`SELECT * FROM tasks ORDER BY id ASC`)
+    .all()
+    .map(mapTask)
+}
+
 export function createTask(db: AppDatabase, input: CreateTaskInput): Task {
   const now = new Date().toISOString()
   const result = db
