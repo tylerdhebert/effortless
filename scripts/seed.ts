@@ -258,6 +258,7 @@ async function seedDeliveryEffort(
     template: 'delivery',
     planRequiresReview: true,
     needsTasks: true,
+    status: 'complete',
     summary: 'Plan review flow, repo-backed task detail, and input requests are all wired. One task accepted, one task returned for changes, one task waiting for human review.',
   })
 
@@ -478,6 +479,7 @@ function insertEffort(
     planRequiresReview: boolean
     needsTasks: boolean
     summary?: string
+    status?: Effort['status']
   },
 ): Effort {
   const now = new Date().toISOString()
@@ -487,10 +489,10 @@ function insertEffort(
       INSERT INTO efforts (
         title, description, template, accepted_plan_id, plan_requires_review, needs_tasks, status, summary, created_at, updated_at
       )
-      VALUES (?, ?, ?, NULL, ?, ?, 'active', ?, ?, ?)
+      VALUES (?, ?, ?, NULL, ?, ?, ?, ?, ?, ?)
     `,
     )
-    .run(input.title, input.description, input.template, input.planRequiresReview ? 1 : 0, input.needsTasks ? 1 : 0, input.summary ?? null, now, now)
+    .run(input.title, input.description, input.template, input.planRequiresReview ? 1 : 0, input.needsTasks ? 1 : 0, input.status ?? 'active', input.summary ?? null, now, now)
 
   const id = Number(result.lastInsertRowid)
   db.prepare(`UPDATE efforts SET short_ref = ? WHERE id = ?`).run(`eff-${id}`, id)
