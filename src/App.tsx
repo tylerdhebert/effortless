@@ -137,6 +137,16 @@ function App() {
   const hasPendingPlan = (plansQuery.data ?? []).some((p) => p.readyAt && !p.acceptedAt)
   const hasReviewingTask = (tasksQuery.data ?? []).some((t) => t.status === 'reviewing')
 
+  const taskPendingInputIds = useMemo(() => {
+    const set = new Set<number>()
+    for (const input of inputsQuery.data ?? []) {
+      if (input.status === 'pending' && input.taskId != null) {
+        set.add(input.taskId)
+      }
+    }
+    return set
+  }, [inputsQuery.data])
+
   const taskRepoOptions = useMemo(() => {
     const map = new Map<string, string>()
     for (const task of tasksQuery.data ?? []) {
@@ -448,11 +458,8 @@ function App() {
                     </div>
                     <div className="chip-group">
                       <small>status</small>
-                      <span style={{ color: effortStatusColor(selectedEffort.status) }}>{selectedEffort.status}</span>
+                      <span style={{ borderColor: effortStatusColor(selectedEffort.status), boxShadow: `0 0 2px ${effortStatusColor(selectedEffort.status)}33` }}>{selectedEffort.status}</span>
                     </div>
-                    {effortPendingMap.get(selectedEffort.id) ? (
-                      <WarningIndicator title="needs input" pulse size={16} />
-                    ) : null}
                   </div>
                 </div>
               </div>
@@ -609,30 +616,33 @@ function App() {
                       <span>tasks ({filteredTasks.length})</span>
                     </span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginLeft: 'auto' }}>
-                      {taskRepoOptions.length > 0 ? (
-                        <select
-                          value={taskRepoFilter}
-                          onChange={(e) => setTaskRepoFilter(e.target.value)}
-                          disabled={taskRepoOptions.length <= 1}
-                          style={{ width: 'auto', padding: '4px 28px 4px 10px', fontSize: '0.68rem' }}
-                        >
-                          <option value="all">all repos</option>
-                          {taskRepoOptions.map(([repoId, repoName]) => (
-                            <option key={repoId} value={repoId}>{repoName}</option>
-                          ))}
-                        </select>
-                      ) : null}
                       {hasReviewingTask ? (
                         <WarningIndicator title="task needs review" pulse size={14} />
                       ) : null}
                       {selectedTask ? <span>{selectedTask.status}</span> : null}
                     </div>
                   </div>
+                  {taskRepoOptions.length > 0 ? (
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '10px' }}>
+                      <select
+                        value={taskRepoFilter}
+                        onChange={(e) => setTaskRepoFilter(e.target.value)}
+                        disabled={taskRepoOptions.length <= 1}
+                        style={{ width: 'auto', padding: '4px 28px 4px 10px', fontSize: '0.68rem' }}
+                      >
+                        <option value="all">all repos</option>
+                        {taskRepoOptions.map(([repoId, repoName]) => (
+                          <option key={repoId} value={repoId}>{repoName}</option>
+                        ))}
+                      </select>
+                    </div>
+                  ) : null}
                   <div className="task-workspace">
                     <TaskList
                       tasks={filteredTasks}
                       selectedTaskId={selectedTaskId}
                       onSelectTask={setSelectedTaskId}
+                      pendingTaskIds={taskPendingInputIds}
                     />
                     <TaskDetailPane
                       task={selectedTask}

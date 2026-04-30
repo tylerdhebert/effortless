@@ -1,4 +1,5 @@
 import type { Task } from '../../../core/types'
+import { WarningIndicator } from '../notifications/WarningIndicator'
 import styles from './TaskList.module.css'
 
 const statusColors: Record<string, string> = {
@@ -14,9 +15,10 @@ type TaskListProps = {
   tasks: Task[]
   selectedTaskId: number | null
   onSelectTask: (taskId: number) => void
+  pendingTaskIds?: Set<number>
 }
 
-export function TaskList({ tasks, selectedTaskId, onSelectTask }: TaskListProps) {
+export function TaskList({ tasks, selectedTaskId, onSelectTask, pendingTaskIds }: TaskListProps) {
   if (tasks.length === 0) {
     return <p className="empty-state">no tasks</p>
   }
@@ -38,6 +40,9 @@ export function TaskList({ tasks, selectedTaskId, onSelectTask }: TaskListProps)
                   aria-hidden="true"
                 />
                 <span className={styles['task-list-ref']}>{task.shortRef}</span>
+                {pendingTaskIds?.has(task.id) ? (
+                  <WarningIndicator title="needs input" size={12} />
+                ) : null}
               </div>
               <span className={styles['task-list-status']}>{task.status}</span>
               {task.ownerAgentId ? (

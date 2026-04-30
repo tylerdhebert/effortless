@@ -132,11 +132,12 @@
   flex-shrink: 0;
 }
 
-.effort-row-meta {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+.effort-row-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
 .manage-nav {

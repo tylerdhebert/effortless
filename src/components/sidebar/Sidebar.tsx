@@ -135,11 +135,13 @@ export function Sidebar({
                   </span>
                   <span>{effort.shortRef}</span>
                   <small>{formatTemplate(effort.template)}</small>
+                  <span
+                    className={styles['effort-row-status-dot']}
+                    style={{ background: effortStatusColor(effort.status) }}
+                    title={effort.status}
+                  />
                 </div>
                 <strong>{effort.title}</strong>
-                <div className={styles['effort-row-meta']}>
-                  <span style={{ color: effortStatusColor(effort.status) }}>{effort.status}</span>
-                </div>
               </button>
             ))}
 
