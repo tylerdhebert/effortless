@@ -77,7 +77,7 @@ function App() {
     refetchInterval: 2000,
   })
 
-  const { notifications, count: notificationCount } = useNotifications()
+  const { notifications, count: notificationCount, isLoading: notificationsLoading } = useNotifications()
 
   const effortPendingMap = new Map<number, boolean>()
   for (const notification of notifications) {
@@ -383,6 +383,8 @@ function App() {
     <main className="app-shell">
       <Sidebar
         efforts={effortsQuery.data ?? []}
+        tasks={tasksQuery.data ?? []}
+        repos={reposQuery.data ?? []}
         selectedEffortId={selectedEffort?.id ?? null}
         reposCount={reposQuery.data?.length ?? 0}
         mandatesCount={mandatesQuery.data?.length ?? 0}
@@ -402,6 +404,7 @@ function App() {
         <NotificationToast
           notifications={notifications}
           onNavigate={handleNotificationNavigate}
+          isLoading={notificationsLoading}
           toastDurationSeconds={appStateQuery.data?.toastDurationSeconds ?? 5}
           osNotificationsEnabled={appStateQuery.data?.osNotificationsEnabled ?? true}
           soundNotificationsEnabled={appStateQuery.data?.soundNotificationsEnabled ?? false}

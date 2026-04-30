@@ -6,6 +6,7 @@ import styles from './NotificationToast.module.css'
 type NotificationToastProps = {
   notifications: PendingNotification[]
   onNavigate: (notification: PendingNotification) => void
+  isLoading?: boolean
   toastDurationSeconds?: number
   osNotificationsEnabled?: boolean
   soundNotificationsEnabled?: boolean
@@ -15,6 +16,7 @@ type NotificationToastProps = {
 export function NotificationToast({
   notifications,
   onNavigate,
+  isLoading = false,
   toastDurationSeconds = 5,
   osNotificationsEnabled = true,
   soundNotificationsEnabled = false,
@@ -25,18 +27,22 @@ export function NotificationToast({
   const [newNotifications, setNewNotifications] = useState<PendingNotification[]>([])
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const prevIdsRef = useRef<Set<number>>(new Set())
-  const initialRef = useRef(true)
+  const hasEstablishedBaselineRef = useRef(false)
 
   const durationMs = toastDurationSeconds * 1000
   const current = newNotifications[index] ?? null
 
-  // Detect newly arrived notifications and toast only those
+  // Detect newly arrived notifications and toast only those.
+  // Wait until the first non-loading observation to establish the
+  // baseline so existing notifications aren't re-toasted on startup.
   useEffect(() => {
+    if (isLoading) return
+
     const currentIds = new Set(notifications.map((n) => n.id))
 
-    if (initialRef.current) {
+    if (!hasEstablishedBaselineRef.current) {
       prevIdsRef.current = currentIds
-      initialRef.current = false
+      hasEstablishedBaselineRef.current = true
       return
     }
 
@@ -75,7 +81,7 @@ export function NotificationToast({
         }
       }
     }
-  }, [notifications, osNotificationsEnabled, soundNotificationsEnabled])
+  }, [notifications, isLoading, osNotificationsEnabled, soundNotificationsEnabled])
 
   // Auto-dismiss timer
   const resetTimer = useCallback(() => {
