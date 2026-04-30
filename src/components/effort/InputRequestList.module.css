@@ -86,16 +86,29 @@
 .input-card-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 6px;
 }
 
-.input-card-header span,
-.input-card-header strong,
-.input-card-header small {
+.input-card-header-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.input-card-header-left span,
+.input-card-header-left strong {
   color: var(--muted);
   font-size: 0.69rem;
   letter-spacing: 0.04em;
+}
+
+.input-card-time {
+  color: var(--muted);
+  font-size: 0.69rem;
+  letter-spacing: 0.04em;
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
 .input-card-agent {
