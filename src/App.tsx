@@ -620,6 +620,7 @@ function App() {
                   </div>
                   {taskRepoOptions.length > 0 ? (
                     <div className="task-repo-filter">
+                      <small style={{paddingBottom: '4px'}}>filter by repo</small>
                       <select
                         value={taskRepoFilter}
                         onChange={(e) => setTaskRepoFilter(e.target.value)}

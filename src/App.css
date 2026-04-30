@@ -74,7 +74,7 @@
   align-items: flex-start;
 }
 
-.effort-header-meta .chip-group small, .repo-filter small {
+.effort-header-meta .chip-group small, .task-repo-filter small {
   color: var(--muted);
   font-size: 0.68rem;
   font-weight: 700;
@@ -472,6 +472,7 @@
   display: flex;
   justify-content: flex-end;
   padding: 0 0 10px;
+  flex-direction: column;
 }
 
 .task-repo-filter select {
