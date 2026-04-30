@@ -23,7 +23,7 @@
   gap: 14px;
   border: 1px solid var(--line);
   border-radius: 20px;
-  background: rgba(23, 27, 21, 0.92);
+  background: var(--panel);
   padding: 18px;
   width: 100%;
   max-width: 720px;
