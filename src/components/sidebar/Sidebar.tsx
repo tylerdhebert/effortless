@@ -80,6 +80,7 @@ export function Sidebar({
     })
   }, [efforts, statusFilter, repoFilter, effortRepoNames])
 
+
   function toggleStatus(status: string) {
     setStatusFilter((prev) =>
       prev.includes(status) ? prev.filter((s) => s !== status) : [...prev, status],
@@ -95,7 +96,7 @@ export function Sidebar({
   const showFilters = surfaceMode === 'effort' && (repoOptions.length > 0 || efforts.length > 0)
 
   return (
-    <aside className={styles['efforts-sidebar']}>
+    <aside className={styles['efforts-sidebar']} data-surface-mode={surfaceMode}>
       <div className={styles['sidebar-heading']}>
         <div className={styles['sidebar-title']}>
           <span className={styles['sidebar-dot']} aria-hidden="true" />

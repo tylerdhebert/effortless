@@ -10,6 +10,14 @@
   overflow: visible;
 }
 
+.efforts-sidebar[data-surface-mode="manage"] {
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+
+.efforts-sidebar[data-surface-mode="effort"] {
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+}
+
 .sidebar-heading {
   display: flex;
   align-items: center;
@@ -149,9 +157,9 @@
   display: grid;
   gap: 10px;
   width: 100%;
-  border: 1px solid transparent;
+  border: 1px solid var(--line);
   border-radius: 16px;
-  background: transparent;
+  background: var(--panel);
   cursor: pointer;
   padding: 12px 12px 12px 14px;
   text-align: left;
@@ -163,14 +171,14 @@
 
 .manage-card:hover {
   border-color: color-mix(in srgb, var(--accent) 14%, transparent);
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--surface);
 }
 
 .manage-card.selected {
   border-color: color-mix(in srgb, var(--accent) 18%, transparent);
   background:
     linear-gradient(90deg, color-mix(in srgb, var(--accent) 11%, transparent), rgba(255, 255, 255, 0.025) 24%),
-    rgba(255, 255, 255, 0.02);
+    var(--surface);
   box-shadow: inset 3px 0 0 var(--accent);
 }
 

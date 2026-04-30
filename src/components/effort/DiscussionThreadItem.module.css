@@ -15,7 +15,7 @@
   align-items: baseline;
   gap: 8px;
   min-width: 0;
-  color: #99a18f;
+  color: var(--muted);
   font-size: 0.72rem;
   line-height: 1.2;
 }
@@ -25,12 +25,12 @@
 }
 
 .discussion-thread-author {
-  color: #eef3e5;
+  color: var(--text-strong);
   font-weight: 650;
 }
 
 .discussion-thread-meta small {
-  color: #87907c;
+  color: var(--muted);
   font-size: 0.68rem;
 }
 
@@ -41,7 +41,7 @@
   border-radius: 16px 16px 16px 5px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.028), rgba(255, 255, 255, 0.01)),
-    rgba(40, 43, 39, 0.96);
+    var(--panel);
   padding: 11px 14px;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.018),
@@ -53,13 +53,13 @@
   border-color: color-mix(in srgb, var(--accent) 22%, transparent);
   border-radius: 16px 16px 5px 16px;
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--accent) 18%, transparent), color-mix(in srgb, var(--accent) 7.5%, transparent)),
-    rgba(46, 65, 39, 0.97);
+    linear-gradient(180deg, color-mix(in srgb, var(--accent) 12%, transparent), color-mix(in srgb, var(--accent) 5%, transparent)),
+    var(--panel);
 }
 
 .discussion-thread-card p {
   margin: 0;
-  color: #edf1e6;
+  color: var(--text);
   line-height: 1.55;
   white-space: pre-wrap;
 }

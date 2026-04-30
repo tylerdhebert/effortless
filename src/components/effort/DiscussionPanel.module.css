@@ -8,11 +8,11 @@
   display: grid;
   grid-template-rows: auto 1fr auto;
   gap: 0;
-  border: 1px solid color-mix(in srgb, var(--accent) 16%, transparent);
+  border: 1px solid var(--line);
   border-radius: 20px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 18%),
-    rgba(16, 20, 15, 0.985);
+    var(--surface);
   backdrop-filter: blur(18px);
   box-shadow: 0 32px 90px rgba(0, 0, 0, 0.5);
   overflow: hidden;
