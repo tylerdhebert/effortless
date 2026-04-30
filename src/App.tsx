@@ -15,7 +15,7 @@ import { EffortCreationForm } from './components/sidebar/EffortCreationForm'
 import { InputRequestList } from './components/effort/InputRequestList'
 import { ManageSurface } from './components/manage/ManageSurface'
 import { NotificationToast } from './components/notifications/NotificationToast'
-import { WarningIndicator } from './components/notifications/WarningIndicator'
+
 import { PlanSection } from './components/effort/PlanSection'
 import { ReferenceSection } from './components/effort/ReferenceSection'
 import { Sidebar } from './components/sidebar/Sidebar'
@@ -135,7 +135,7 @@ function App() {
   const supportsDiscussion = template ? effortSupportsDiscussion(template) : false
   const usesBugfixOverview = template === 'bugfix'
   const hasPendingPlan = (plansQuery.data ?? []).some((p) => p.readyAt && !p.acceptedAt)
-  const hasReviewingTask = (tasksQuery.data ?? []).some((t) => t.status === 'reviewing')
+
 
   const taskPendingInputIds = useMemo(() => {
     const set = new Set<number>()
@@ -446,19 +446,21 @@ function App() {
             <header className="effort-header">
               <div className="effort-header-copy">
                 <div className="effort-title-row">
-                  <h2>{selectedEffort.title}</h2>
-                  <div className="effort-header-meta">
-                    <div className="chip-group">
-                      <small>ref</small>
-                      <span>{selectedEffort.shortRef}</span>
-                    </div>
-                    <div className="chip-group">
-                      <small>type</small>
-                      <span>{selectedEffort.template.replace('-', ' ')}</span>
-                    </div>
-                    <div className="chip-group">
-                      <small>status</small>
-                      <span style={{ borderColor: effortStatusColor(selectedEffort.status), boxShadow: `0 0 2px ${effortStatusColor(selectedEffort.status)}33` }}>{selectedEffort.status}</span>
+                  <div style={{display: 'flex', flexDirection: 'column', gap: '2px'}}>
+                    <h2>{selectedEffort.title}</h2>
+                    <div className="effort-header-meta">
+                      <div className="chip-group">
+                        <small>ref</small>
+                        <span>{selectedEffort.shortRef}</span>
+                      </div>
+                      <div className="chip-group">
+                        <small>type</small>
+                        <span>{selectedEffort.template.replace('-', ' ')}</span>
+                      </div>
+                      <div className="chip-group">
+                        <small>status</small>
+                        <span style={{ borderColor: effortStatusColor(selectedEffort.status), boxShadow: `0 0 8px ${effortStatusColor(selectedEffort.status)}` }}>{selectedEffort.status}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -615,20 +617,13 @@ function App() {
                       <Hammer size={14} />
                       <span>tasks ({filteredTasks.length})</span>
                     </span>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginLeft: 'auto' }}>
-                      {hasReviewingTask ? (
-                        <WarningIndicator title="task needs review" pulse size={14} />
-                      ) : null}
-                      {selectedTask ? <span>{selectedTask.status}</span> : null}
-                    </div>
                   </div>
                   {taskRepoOptions.length > 0 ? (
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '10px' }}>
+                    <div className="task-repo-filter">
                       <select
                         value={taskRepoFilter}
                         onChange={(e) => setTaskRepoFilter(e.target.value)}
                         disabled={taskRepoOptions.length <= 1}
-                        style={{ width: 'auto', padding: '4px 28px 4px 10px', fontSize: '0.68rem' }}
                       >
                         <option value="all">all repos</option>
                         {taskRepoOptions.map(([repoId, repoName]) => (
