@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import type { Effort, Task } from '../../../core/types'
 import type { PendingNotification } from '../../../core/notifications'
-import { Home, Plus, Settings, Bell } from 'lucide-react'
+import { Home, Plus, Settings, Bell, Filter } from 'lucide-react'
 import { formatTemplate, effortStatusColor } from '../../lib/helpers'
 import { WarningIndicator } from '../notifications/WarningIndicator'
 import { NotificationFooter } from '../notifications/NotificationFooter'
@@ -44,7 +44,9 @@ export function Sidebar({
   notifications,
   onNavigateNotification,
 }: SidebarProps) {
+  const [filtersOpen, setFiltersOpen] = useState(false)
   const [statusFilter, setStatusFilter] = useState<string[]>([])
+  const [typeFilter, setTypeFilter] = useState<string[]>([])
   const [repoFilter, setRepoFilter] = useState<string[]>([])
 
   const effortRepoNames = useMemo(() => {
@@ -64,22 +66,34 @@ export function Sidebar({
     return repos.map((r) => r.name).sort()
   }, [repos])
 
+  const typeOptions = useMemo(() => {
+    const types = new Set<string>()
+    for (const effort of efforts) types.add(effort.template)
+    return Array.from(types).sort()
+  }, [efforts])
+
   const filteredEfforts = useMemo(() => {
-    if (statusFilter.length === 0 && repoFilter.length === 0) return efforts
+    if (statusFilter.length === 0 && typeFilter.length === 0 && repoFilter.length === 0) return efforts
     return efforts.filter((effort) => {
       const statusMatch = statusFilter.length === 0 || statusFilter.includes(effort.status)
+      const typeMatch = typeFilter.length === 0 || typeFilter.includes(effort.template)
       const effortRepos = effortRepoNames.get(effort.id)
       const repoMatch =
         repoFilter.length === 0 ||
         (effortRepos != null && repoFilter.some((r) => effortRepos.has(r)))
-      return statusMatch && repoMatch
+      return statusMatch && typeMatch && repoMatch
     })
-  }, [efforts, statusFilter, repoFilter, effortRepoNames])
-
+  }, [efforts, statusFilter, typeFilter, repoFilter, effortRepoNames])
 
   function toggleStatus(status: string) {
     setStatusFilter((prev) =>
       prev.includes(status) ? prev.filter((s) => s !== status) : [...prev, status],
+    )
+  }
+
+  function toggleType(type: string) {
+    setTypeFilter((prev) =>
+      prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type],
     )
   }
 
@@ -89,7 +103,7 @@ export function Sidebar({
     )
   }
 
-  const showFilters = surfaceMode === 'effort' && (repoOptions.length > 0 || efforts.length > 0)
+  const hasFilters = statusFilter.length > 0 || typeFilter.length > 0 || repoFilter.length > 0
 
   return (
     <aside className={styles['efforts-sidebar']} data-surface-mode={surfaceMode}>
@@ -123,42 +137,81 @@ export function Sidebar({
         </div>
       </div>
 
-      {showFilters ? (
+      {surfaceMode === 'effort' ? (
         <div className={styles['sidebar-filters']}>
-          <div className={styles['filter-group']}>
-            {(['active', 'complete', 'archived'] as const).map((status) => {
-              const active = statusFilter.includes(status)
-              const color = effortStatusColor(status)
-              return (
-                <button
-                  key={status}
-                  type="button"
-                  className={`${styles['filter-pill']} ${active ? styles.active : ''}`}
-                  style={active ? { borderColor: color, color, background: `${color}14` } : undefined}
-                  onClick={() => toggleStatus(status)}
-                >
-                  {status}
-                </button>
-              )
-            })}
-          </div>
-          {repoOptions.length > 0 ? (
-            <div className={styles['filter-group']}>
-              {repoOptions.map((repo) => {
-                const active = repoFilter.includes(repo)
-                return (
-                  <button
-                    key={repo}
-                    type="button"
-                    className={`${styles['filter-pill']} ${active ? styles.active : ''}`}
-                    onClick={() => toggleRepo(repo)}
-                  >
-                    {repo}
-                  </button>
-                )
-              })}
+          <button
+            type="button"
+            className={`${styles['filters-toggle']} ${hasFilters ? styles['has-filters'] : ''}`}
+            onClick={() => setFiltersOpen((prev) => !prev)}
+          >
+            <Filter size={14} />
+            <span>filter efforts</span>
+            {hasFilters ? <span className={styles['filters-count']}>{statusFilter.length + typeFilter.length + repoFilter.length}</span> : null}
+          </button>
+          {filtersOpen && (
+            <div className={styles['filters-body']}>
+              <div className={styles['filter-section']}>
+                <span className={styles['filter-section-label']}>by status</span>
+                <div className={styles['filter-group']}>
+                  {(['active', 'complete', 'archived'] as const).map((status) => {
+                    const active = statusFilter.includes(status)
+                    const color = effortStatusColor(status)
+                    return (
+                      <button
+                        key={status}
+                        type="button"
+                        className={`${styles['filter-pill']} ${active ? styles.active : ''}`}
+                        style={active ? { borderColor: color, color, background: `${color}14` } : undefined}
+                        onClick={() => toggleStatus(status)}
+                      >
+                        {status}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+              {typeOptions.length > 0 ? (
+                <div className={styles['filter-section']}>
+                  <span className={styles['filter-section-label']}>by type</span>
+                  <div className={styles['filter-group']}>
+                    {typeOptions.map((type) => {
+                      const active = typeFilter.includes(type)
+                      return (
+                        <button
+                          key={type}
+                          type="button"
+                          className={`${styles['filter-pill']} ${active ? styles.active : ''}`}
+                          onClick={() => toggleType(type)}
+                        >
+                          {formatTemplate(type)}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              ) : null}
+              {repoOptions.length > 0 ? (
+                <div className={styles['filter-section']}>
+                  <span className={styles['filter-section-label']}>by repo</span>
+                  <div className={styles['filter-group']}>
+                    {repoOptions.map((repo) => {
+                      const active = repoFilter.includes(repo)
+                      return (
+                        <button
+                          key={repo}
+                          type="button"
+                          className={`${styles['filter-pill']} ${active ? styles.active : ''}`}
+                          onClick={() => toggleRepo(repo)}
+                        >
+                          {repo}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              ) : null}
             </div>
-          ) : null}
+          )}
         </div>
       ) : null}
 
