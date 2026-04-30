@@ -13,7 +13,12 @@ export function CommentStream({ comments }: CommentStreamProps) {
         <article className={styles.comment} key={comment.id}>
           <div>
             <span>{comment.kind}</span>
-            <small>{comment.agentId ?? `${comment.author} - ${formatTimestamp(comment.createdAt)}`}</small>
+            <small>
+              {comment.author === 'agent' && comment.agentId
+                ? `agent: ${comment.agentId}`
+                : comment.author}
+              {' · '}{formatTimestamp(comment.createdAt)}
+            </small>
           </div>
           <p>{comment.body}</p>
           {comment.commitHash ? <code>{comment.commitHash}</code> : null}

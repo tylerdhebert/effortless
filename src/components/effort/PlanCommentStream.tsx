@@ -17,7 +17,12 @@ export function PlanCommentStream({ comments }: PlanCommentStreamProps) {
         <article className={commentStyles.comment} key={comment.id}>
           <div>
             <span>{comment.kind}</span>
-            <small>{comment.agentId ?? `${comment.author} • ${formatTimestamp(comment.createdAt)}`}</small>
+            <small>
+              {comment.author === 'agent' && comment.agentId
+                ? `agent: ${comment.agentId}`
+                : comment.author}
+              {' · '}{formatTimestamp(comment.createdAt)}
+            </small>
           </div>
           <p>{comment.body}</p>
         </article>

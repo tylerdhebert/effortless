@@ -63,6 +63,7 @@ export function InputRequestList({ inputs, onAnswer, isAnswering }: InputRequest
                 <div className={styles['input-card-header']}>
                   <span>{input.shortRef}</span>
                   <strong>{input.type}</strong>
+                  {input.agentId ? <span className={styles['input-card-agent']}>{input.agentId}</span> : null}
                   <small>{timeAgo(input.requestedAt)}</small>
                 </div>
                 <p className={styles['input-card-prompt']}>{input.prompt}</p>

@@ -17,8 +17,9 @@ export function ReviewRecord({ review, dateLabel, children }: ReviewRecordProps)
         <div>
           <span>{review.shortRef}</span>
           <strong>{review.verdict}</strong>
+          {review.authorAgentId ? <span className={styles['review-record-agent']}>{review.authorAgentId}</span> : null}
         </div>
-        <small>{dateLabel ?? (review.authorAgentId ?? formatTimestamp(review.createdAt))}</small>
+        <small>{dateLabel ?? formatTimestamp(review.createdAt)}</small>
       </div>
       <p>{review.body}</p>
       {children}

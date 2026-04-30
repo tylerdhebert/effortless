@@ -74,6 +74,13 @@
   text-transform: lowercase;
 }
 
+.task-list-agent {
+  color: rgb(140, 207, 98);
+  font-size: 0.65rem;
+  letter-spacing: 0.04em;
+  padding: 4px 7px;
+}
+
 .task-list-title {
   overflow: hidden;
   text-overflow: ellipsis;

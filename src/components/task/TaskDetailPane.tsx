@@ -151,6 +151,12 @@ export function TaskDetailPane({
                 <small>status</small>
                 <span>{task.status}</span>
               </div>
+              {task.ownerAgentId ? (
+                <div className={styles['chip-group']}>
+                  <small>agent</small>
+                  <span>{task.ownerAgentId}</span>
+                </div>
+              ) : null}
               <div className={styles['chip-group']}>
                 <small>repo</small>
                 <span>{taskRepo?.name ?? 'no repo'}</span>

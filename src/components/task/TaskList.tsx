@@ -30,17 +30,20 @@ export function TaskList({ tasks, selectedTaskId, onSelectTask }: TaskListProps)
           className={`${styles['task-list-row']} ${task.id === selectedTaskId ? styles.selected : ''}`}
           onClick={() => onSelectTask(task.id)}
         >
-          <div className={styles['task-list-meta']}>
-            <div className={styles['task-list-topline']}>
-              <span
-                className={styles['task-list-dot']}
-                style={{ background: statusColors[task.status] ?? statusColors.open }}
-                aria-hidden="true"
-              />
-              <span className={styles['task-list-ref']}>{task.shortRef}</span>
+            <div className={styles['task-list-meta']}>
+              <div className={styles['task-list-topline']}>
+                <span
+                  className={styles['task-list-dot']}
+                  style={{ background: statusColors[task.status] ?? statusColors.open }}
+                  aria-hidden="true"
+                />
+                <span className={styles['task-list-ref']}>{task.shortRef}</span>
+              </div>
+              <span className={styles['task-list-status']}>{task.status}</span>
+              {task.ownerAgentId ? (
+                <span className={styles['task-list-agent']}>{task.ownerAgentId}</span>
+              ) : null}
             </div>
-            <span className={styles['task-list-status']}>{task.status}</span>
-          </div>
           <strong className={styles['task-list-title']}>{task.title}</strong>
           <p className={styles['task-list-description']}>{task.description}</p>
         </button>
