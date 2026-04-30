@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import styles from './NotificationSettingsPanel.module.css'
 
 type NotificationSettings = {
@@ -20,14 +19,16 @@ export function NotificationSettingsPanel({
   onUpdate,
   isUpdating,
 }: NotificationSettingsPanelProps) {
-  const [localDuration, setLocalDuration] = useState(settings.toastDurationSeconds)
-
   return (
-    <div className={styles.panel}>
-      <h3>notification settings</h3>
+    <section className={styles.panel}>
+      <div className={styles.panelHeader}>
+        <div>
+          <h3>notification channels</h3>
+        </div>
+      </div>
 
-      <div className={styles.setting}>
-        <label className={styles.toggle}>
+      <div className={styles.form}>
+        <label className={styles.toggleRow}>
           <input
             type="checkbox"
             checked={settings.osNotificationsEnabled}
@@ -35,12 +36,10 @@ export function NotificationSettingsPanel({
             disabled={isUpdating}
           />
           <span>os notifications</span>
+          <small>native desktop notifications</small>
         </label>
-        <p className={styles.hint}>show native desktop notifications</p>
-      </div>
 
-      <div className={styles.setting}>
-        <label className={styles.toggle}>
+        <label className={styles.toggleRow}>
           <input
             type="checkbox"
             checked={settings.bannerNotificationsEnabled}
@@ -48,12 +47,10 @@ export function NotificationSettingsPanel({
             disabled={isUpdating}
           />
           <span>banner notifications</span>
+          <small>in-app toast banners</small>
         </label>
-        <p className={styles.hint}>show in-app toast banners</p>
-      </div>
 
-      <div className={styles.setting}>
-        <label className={styles.toggle}>
+        <label className={styles.toggleRow}>
           <input
             type="checkbox"
             checked={settings.badgeNotificationsEnabled}
@@ -61,12 +58,10 @@ export function NotificationSettingsPanel({
             disabled={isUpdating}
           />
           <span>badge notifications</span>
+          <small>warning badges on effort list</small>
         </label>
-        <p className={styles.hint}>show warning badges on effort list items</p>
-      </div>
 
-      <div className={styles.setting}>
-        <label className={styles.toggle}>
+        <label className={styles.toggleRow}>
           <input
             type="checkbox"
             checked={settings.soundNotificationsEnabled}
@@ -74,26 +69,30 @@ export function NotificationSettingsPanel({
             disabled={isUpdating}
           />
           <span>sound notifications</span>
+          <small>play a sound on new alerts</small>
         </label>
-        <p className={styles.hint}>play a sound when new notifications arrive</p>
-      </div>
 
-      <div className={styles.setting}>
-        <label className={styles.durationLabel}>
-          <span>toast duration</span>
-          <input
-            type="number"
-            min={1}
-            max={30}
-            value={localDuration}
-            onChange={(e) => setLocalDuration(Number(e.target.value))}
-            onBlur={() => onUpdate({ toastDurationSeconds: localDuration })}
-            disabled={isUpdating}
-          />
-          <span>seconds</span>
-        </label>
-        <p className={styles.hint}>how long toast banners stay visible</p>
+        <div className={styles.durationRow}>
+          <label htmlFor="toast-duration">toast duration</label>
+          <div className={styles.durationInput}>
+            <input
+              id="toast-duration"
+              type="number"
+              min={1}
+              max={30}
+              value={settings.toastDurationSeconds}
+              onChange={(e) => {
+                const val = Number(e.target.value)
+                if (val >= 1 && val <= 30) {
+                  onUpdate({ toastDurationSeconds: val })
+                }
+              }}
+              disabled={isUpdating}
+            />
+            <span>seconds</span>
+          </div>
+        </div>
       </div>
-    </div>
+    </section>
   )
 }

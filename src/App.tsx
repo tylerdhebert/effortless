@@ -569,29 +569,19 @@ function App() {
               </div>
 
               {supportsPlans ? (
-                <section className="surface-section">
-                  <div className="section-title">
-                    <span className="section-title-label">
-                      <ScrollText size={14} />
-                      <span>plans ({plansQuery.data?.length ?? 0})</span>
-                    </span>
-                    {hasPendingPlan ? (
-                      <WarningIndicator title="plan needs review" pulse size={14} />
-                    ) : null}
-                  </div>
-                  <PlanSection
-                    plans={plansQuery.data ?? []}
-                    selectedPlanId={selectedPlanId}
-                    onSelectPlan={setSelectedPlanId}
-                    planComments={planCommentsQuery.data ?? []}
-                    onAcceptPlan={(planId) => planMutations.acceptPlan.mutate(planId)}
-                    onReadyPlan={(planId) => planMutations.readyPlan.mutate(planId)}
-                    onRequestPlanChanges={(input) => planMutations.requestPlanChanges.mutate(input)}
-                    isAcceptingPlan={planMutations.acceptPlan.isPending}
-                    isReadyingPlan={planMutations.readyPlan.isPending}
-                    isRequestingPlanChanges={planMutations.requestPlanChanges.isPending}
-                  />
-                </section>
+                <PlanSection
+                  plans={plansQuery.data ?? []}
+                  selectedPlanId={selectedPlanId}
+                  onSelectPlan={setSelectedPlanId}
+                  planComments={planCommentsQuery.data ?? []}
+                  onAcceptPlan={(planId) => planMutations.acceptPlan.mutate(planId)}
+                  onReadyPlan={(planId) => planMutations.readyPlan.mutate(planId)}
+                  onRequestPlanChanges={(input) => planMutations.requestPlanChanges.mutate(input)}
+                  isAcceptingPlan={planMutations.acceptPlan.isPending}
+                  isReadyingPlan={planMutations.readyPlan.isPending}
+                  isRequestingPlanChanges={planMutations.requestPlanChanges.isPending}
+                  hasPendingPlan={hasPendingPlan}
+                />
               ) : null}
 
               {supportsTasks ? (

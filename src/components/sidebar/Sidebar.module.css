@@ -1,13 +1,13 @@
 .efforts-sidebar {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
   min-height: 0;
   position: relative;
   border-right: 1px solid var(--line);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.025), transparent 18%),
     var(--sidebar);
-  overflow: hidden;
+  overflow: visible;
 }
 
 .sidebar-heading {

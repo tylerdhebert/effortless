@@ -4,6 +4,7 @@ import { PlanCommentStream } from './PlanCommentStream'
 import { ChevronLeft, ChevronRight, ListOrdered } from 'lucide-react'
 import { isPlanWaiting, planStatus } from '../../lib/helpers'
 import { MarkdownDocument } from '../ui/MarkdownDocument'
+import { WarningIndicator } from '../notifications/WarningIndicator'
 import styles from './PlanSection.module.css'
 
 type PlanSectionProps = {
@@ -17,6 +18,7 @@ type PlanSectionProps = {
   isAcceptingPlan: boolean
   isReadyingPlan: boolean
   isRequestingPlanChanges: boolean
+  hasPendingPlan?: boolean
 }
 
 export function PlanSection({
@@ -30,6 +32,7 @@ export function PlanSection({
   isAcceptingPlan,
   isReadyingPlan,
   isRequestingPlanChanges,
+  hasPendingPlan = false,
 }: PlanSectionProps) {
   const [planFeedbackDrafts, setPlanFeedbackDrafts] = useState<Record<number, string>>({})
 
@@ -53,6 +56,9 @@ export function PlanSection({
             <ListOrdered size={14} />
             <span>plan</span>
           </span>
+          {hasPendingPlan ? (
+            <WarningIndicator title="plan needs review" pulse size={14} />
+          ) : null}
         </div>
         <p className="empty-state">no plans yet</p>
       </section>
@@ -66,6 +72,9 @@ export function PlanSection({
           <ListOrdered size={14} />
           <span>plan</span>
         </span>
+        {hasPendingPlan ? (
+          <WarningIndicator title="plan needs review" pulse size={14} />
+        ) : null}
       </div>
 
       <div className={styles['plan-pager']}>
