@@ -4,9 +4,10 @@
   right: 30px;
   z-index: 40;
   display: grid;
-  gap: 10px;
-  min-width: 280px;
-  max-width: 380px;
+  grid-template-rows: 1fr auto;
+  width: 320px;
+  min-height: 116px;
+  max-height: 140px;
   padding: 14px 16px;
   border-radius: 12px;
   border: 1px solid rgba(234, 179, 8, 0.3);
@@ -36,6 +37,8 @@
 .toastContent {
   display: grid;
   gap: 6px;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .toastHeader {
@@ -43,6 +46,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
+  flex-shrink: 0;
 }
 
 .toastKind {
@@ -76,11 +80,17 @@
   font-size: 0.88rem;
   line-height: 1.4;
   color: var(--text);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  text-overflow: ellipsis;
 }
 
 .toastMeta {
   font-size: 0.75rem;
   color: var(--muted);
+  flex-shrink: 0;
 }
 
 .toastPager {
@@ -89,7 +99,10 @@
   justify-content: center;
   gap: 10px;
   padding-top: 6px;
+  margin-top: 6px;
   border-top: 1px solid rgba(255, 255, 255, 0.06);
+  min-height: 28px;
+  flex-shrink: 0;
 }
 
 .toastPager button {

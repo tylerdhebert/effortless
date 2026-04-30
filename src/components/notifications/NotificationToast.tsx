@@ -25,6 +25,7 @@ export function NotificationToast({
   const [dismissedIds, setDismissedIds] = useState<Set<number>>(new Set())
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const prevIdsRef = useRef<string>('')
+  const initialRef = useRef(true)
 
   const durationMs = toastDurationSeconds * 1000
   const activeNotifications = notifications.filter((n) => !dismissedIds.has(n.id))
@@ -32,17 +33,23 @@ export function NotificationToast({
   const current = activeNotifications[index] ?? null
 
   // Show toast and trigger OS/sound notifications when new ones arrive
+  // Skip on initial mount so existing pending notifications don't re-alert
   useEffect(() => {
     const currentIds = notifications.map((n) => n.id).sort().join(',')
+    if (initialRef.current) {
+      prevIdsRef.current = currentIds
+      initialRef.current = false
+      return
+    }
+
     if (currentIds !== prevIdsRef.current && notifications.length > 0) {
-      const isNew = prevIdsRef.current !== ''
       prevIdsRef.current = currentIds
       setVisible(true)
       setIndex(0)
       setDismissedIds(new Set())
 
-      if (isNew && notifications[0]) {
-        const latest = notifications[0]
+      const latest = notifications[0]
+      if (latest) {
         if (osNotificationsEnabled) {
           window.effortless.showOSNotification(
             `${latest.effortShortRef}: ${latest.kind.replace('-', ' ')}`,
