@@ -43,7 +43,15 @@ import type {
 declare global {
 interface Window {
   effortless: {
-      getAppState: () => Promise<{ version: number; updatedAt: string }>
+      getAppState: () => Promise<{
+        version: number
+        updatedAt: string
+        osNotificationsEnabled: boolean
+        bannerNotificationsEnabled: boolean
+        badgeNotificationsEnabled: boolean
+        soundNotificationsEnabled: boolean
+        toastDurationSeconds: number
+      }>
       browsePath: (targetPath?: string | null, includeFiles?: boolean) => Promise<{
         path: string
         sep: string
@@ -101,6 +109,35 @@ interface Window {
       createReference: (input: CreateReferenceInput) => Promise<Reference>
       deleteReference: (refId: number) => Promise<void>
       captureDebugScreenshot: (relativePath?: string) => Promise<{ path: string; sha256: string }>
+      listPendingNotifications: () => Promise<Array<{
+        id: number
+        kind: 'plan-review' | 'task-review' | 'review-pass' | 'input-request'
+        effortId: number
+        effortShortRef: string
+        effortTitle: string
+        entityId: number
+        entityShortRef: string
+        entityType: string
+        message: string
+        startedAt: string
+      }>>
+      countPendingNotifications: () => Promise<number>
+      showOSNotification: (title: string, body: string) => Promise<void>
+      updateNotificationSettings: (settings: {
+        osNotificationsEnabled?: boolean
+        bannerNotificationsEnabled?: boolean
+        badgeNotificationsEnabled?: boolean
+        soundNotificationsEnabled?: boolean
+        toastDurationSeconds?: number
+      }) => Promise<{
+        version: number
+        updatedAt: string
+        osNotificationsEnabled: boolean
+        bannerNotificationsEnabled: boolean
+        badgeNotificationsEnabled: boolean
+        soundNotificationsEnabled: boolean
+        toastDurationSeconds: number
+      }>
     }
   }
 }

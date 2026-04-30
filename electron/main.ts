@@ -1,10 +1,11 @@
-import { app, BrowserWindow, ipcMain, shell } from 'electron'
+import { app, BrowserWindow, ipcMain, shell, Notification } from 'electron'
 import { fileURLToPath } from 'node:url'
 import { createHash } from 'node:crypto'
 import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { getLatestTaskBuild, runTaskBuild } from '../core/builds'
-import { getAppState, openDatabase } from '../core/db'
+import { getAppState, openDatabase, updateNotificationSettings } from '../core/db'
+import type { NotificationSettings } from '../core/db'
 import { createDiscussionMessage, listDiscussionMessages } from '../core/discussion'
 import { listEfforts, createEffort, updateEffortSummary } from '../core/efforts'
 import { browsePath } from '../core/filesystem'
@@ -15,6 +16,10 @@ import {
   listInputRequests,
   listPendingInputRequests,
 } from '../core/inputs'
+import {
+  listPendingNotifications,
+  countPendingNotifications,
+} from '../core/notifications'
 import {
   createMandate,
   deleteMandate,
@@ -116,6 +121,15 @@ ipcMain.handle('inputs:pending', (_event, effortId: number) => listPendingInputR
 ipcMain.handle('inputs:create', (_event, input: CreateInputRequestInput) => createInputRequest(db, input))
 ipcMain.handle('inputs:answer', (_event, input: AnswerInputRequestInput) => answerInputRequest(db, input))
 ipcMain.handle('inputs:show', (_event, inputRef: string) => getInputRequestByRef(db, inputRef))
+ipcMain.handle('notifications:list', () => listPendingNotifications(db))
+ipcMain.handle('notifications:count', () => countPendingNotifications(db))
+ipcMain.handle('notifications:show-os', (_event, title: string, body: string) => {
+  if (!Notification.isSupported()) return
+  new Notification({ title, body }).show()
+})
+ipcMain.handle('notifications:updateSettings', (_event, settings: NotificationSettings) =>
+  updateNotificationSettings(db, settings),
+)
 
 ipcMain.handle('efforts:create', (_event, input: { title: string; description: string; template: 'bugfix' | 'delivery' | 'investigation' | 'discussion' }) =>
   createEffort(db, input),

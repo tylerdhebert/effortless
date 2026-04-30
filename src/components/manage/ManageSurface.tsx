@@ -3,6 +3,7 @@ import { Pencil, Trash2 } from 'lucide-react'
 import type { Mandate, Repo, WorkSurface, MandateSourceType } from '../../../core/types'
 import { PathPicker } from '../ui/PathPicker'
 import { PillSwitcher } from '../ui/PillSwitcher'
+import { NotificationSettingsPanel } from '../notifications/NotificationSettingsPanel'
 import styles from './ManageSurface.module.css'
 
 type ManageSurfaceProps = {
@@ -20,7 +21,22 @@ type ManageSurfaceProps = {
   isCreatingMandate: boolean
   isUpdatingMandate: boolean
   isDeletingMandate: boolean
-  section: 'repos' | 'mandates'
+  section: 'repos' | 'mandates' | 'notifications'
+  notificationSettings?: {
+    osNotificationsEnabled: boolean
+    bannerNotificationsEnabled: boolean
+    badgeNotificationsEnabled: boolean
+    soundNotificationsEnabled: boolean
+    toastDurationSeconds: number
+  }
+  onUpdateNotificationSettings?: (settings: {
+    osNotificationsEnabled?: boolean
+    bannerNotificationsEnabled?: boolean
+    badgeNotificationsEnabled?: boolean
+    soundNotificationsEnabled?: boolean
+    toastDurationSeconds?: number
+  }) => void
+  isUpdatingNotificationSettings?: boolean
 }
 
 export function ManageSurface({
@@ -39,6 +55,9 @@ export function ManageSurface({
   isUpdatingMandate,
   isDeletingMandate,
   section,
+  notificationSettings,
+  onUpdateNotificationSettings,
+  isUpdatingNotificationSettings,
 }: ManageSurfaceProps) {
   const mandateSourceOptions: Array<{ id: MandateSourceType; label: string }> = [
     { id: 'body', label: 'inline text' },
@@ -364,6 +383,18 @@ export function ManageSurface({
                 {mandates.length === 0 ? <p className="empty-state">no mandates</p> : null}
               </div>
             </section>
+          </section>
+        ) : section === 'notifications' ? (
+          <section className={`${styles['manage-surface']} ${styles['manage-surface-notifications']}`}>
+            {notificationSettings && onUpdateNotificationSettings ? (
+              <NotificationSettingsPanel
+                settings={notificationSettings}
+                onUpdate={onUpdateNotificationSettings}
+                isUpdating={isUpdatingNotificationSettings ?? false}
+              />
+            ) : (
+              <p className="empty-state">notification settings unavailable</p>
+            )}
           </section>
         ) : null}
       </div>

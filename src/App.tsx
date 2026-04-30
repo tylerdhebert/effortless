@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   CircleHelp,
   Hammer,
@@ -14,6 +14,8 @@ import { EffortSummarySection } from './components/effort/EffortSummarySection'
 import { EffortCreationForm } from './components/sidebar/EffortCreationForm'
 import { InputRequestList } from './components/effort/InputRequestList'
 import { ManageSurface } from './components/manage/ManageSurface'
+import { NotificationToast } from './components/notifications/NotificationToast'
+import { WarningIndicator } from './components/notifications/WarningIndicator'
 import { PlanSection } from './components/effort/PlanSection'
 import { ReferenceSection } from './components/effort/ReferenceSection'
 import { Sidebar } from './components/sidebar/Sidebar'
@@ -33,13 +35,15 @@ import { useReferenceMutations } from './hooks/useReferenceMutations'
 import { useRepoMutations } from './hooks/useRepoMutations'
 import { useReviewMutations } from './hooks/useReviewMutations'
 import { useTaskMutations } from './hooks/useTaskMutations'
+import { useNotifications } from './hooks/useNotifications'
 import type { Reference } from '../core/types'
+import type { PendingNotification } from '../core/notifications'
 import './App.css'
 
 function App() {
   const queryClient = useQueryClient()
   const [surfaceMode, setSurfaceMode] = useState<'effort' | 'manage'>('effort')
-  const [manageSection, setManageSection] = useState<'repos' | 'mandates'>('repos')
+  const [manageSection, setManageSection] = useState<'repos' | 'mandates' | 'notifications'>('repos')
   const [selectedEffortId, setSelectedEffortId] = useState<number | null>(null)
   const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null)
   const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null)
@@ -70,6 +74,13 @@ function App() {
     queryFn: () => window.effortless.getAppState(),
     refetchInterval: 2000,
   })
+
+  const { notifications, count: notificationCount } = useNotifications()
+
+  const effortPendingMap = new Map<number, boolean>()
+  for (const notification of notifications) {
+    effortPendingMap.set(notification.effortId, true)
+  }
 
   const selectedEffort =
     effortsQuery.data?.find((effort) => effort.id === selectedEffortId) ?? effortsQuery.data?.[0]
@@ -121,6 +132,8 @@ function App() {
   const supportsTasks = template ? effortSupportsTasks(template) : false
   const supportsDiscussion = template ? effortSupportsDiscussion(template) : false
   const usesBugfixOverview = template === 'bugfix'
+  const hasPendingPlan = (plansQuery.data ?? []).some((p) => p.readyAt && !p.acceptedAt)
+  const hasReviewingTask = (tasksQuery.data ?? []).some((t) => t.status === 'reviewing')
 
   const commentsQuery = useQuery({
     queryKey: ['task-comments', selectedTask?.id],
@@ -164,6 +177,19 @@ function App() {
   const reviewMutations = useReviewMutations(selectedEffort?.id ?? null)
   const referenceMutations = useReferenceMutations(selectedEffort?.id ?? null)
   const { answerInput } = useInputMutations(selectedEffort?.id ?? null)
+
+  const updateNotificationSettings = useMutation({
+    mutationFn: (settings: {
+      osNotificationsEnabled?: boolean
+      bannerNotificationsEnabled?: boolean
+      badgeNotificationsEnabled?: boolean
+      soundNotificationsEnabled?: boolean
+      toastDurationSeconds?: number
+    }) => window.effortless.updateNotificationSettings(settings),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['app-state'] })
+    },
+  })
 
   useEffect(() => {
     if (!selectedEffortId && effortsQuery.data?.[0]) {
@@ -265,6 +291,55 @@ function App() {
     }
   }
 
+  async function handleNotificationNavigate(notification: PendingNotification) {
+    setSurfaceMode('effort')
+    setSelectedEffortId(notification.effortId)
+    setDiscussionOpen(false)
+
+    if (notification.kind === 'plan-review') {
+      setSelectedPlanId(notification.entityId)
+      setSelectedTaskId(null)
+      return
+    }
+
+    if (notification.kind === 'task-review') {
+      setSelectedTaskId(notification.entityId)
+      setSelectedPlanId(null)
+      return
+    }
+
+    if (notification.kind === 'review-pass') {
+      // notification.entityId is the task id for review-pass
+      setSelectedTaskId(notification.entityId)
+      setSelectedPlanId(null)
+      return
+    }
+
+    if (notification.kind === 'input-request') {
+      const input = await window.effortless.getInputRequest(notification.entityShortRef)
+      if (input.planId) {
+        setSelectedPlanId(input.planId)
+        setSelectedTaskId(null)
+      } else if (input.taskId) {
+        setSelectedTaskId(input.taskId)
+        setSelectedPlanId(null)
+      } else if (input.reviewId) {
+        const efforts = effortsQuery.data ?? await window.effortless.listEfforts()
+        for (const effort of efforts) {
+          const tasks = await window.effortless.listTasks(effort.id)
+          for (const task of tasks) {
+            const reviews = await window.effortless.listReviews(task.id)
+            if (reviews.some((r) => r.id === input.reviewId)) {
+              setSelectedTaskId(task.id)
+              setSelectedPlanId(null)
+              return
+            }
+          }
+        }
+      }
+    }
+  }
+
   useEffect(() => {
     if (!selectedPlanId && plansQuery.data?.[0]) {
       setSelectedPlanId(plansQuery.data[0].id)
@@ -290,9 +365,22 @@ function App() {
         onSetSurfaceMode={setSurfaceMode}
         onSetManageSection={setManageSection}
         onOpenCreateEffort={() => setCreateEffortOpen(true)}
+        effortPendingMap={effortPendingMap}
+        notificationCount={notificationCount}
+        notifications={notifications}
+        onNavigateNotification={handleNotificationNavigate}
       />
 
       <section className="effort-surface">
+        <NotificationToast
+          notifications={notifications}
+          onNavigate={handleNotificationNavigate}
+          toastDurationSeconds={appStateQuery.data?.toastDurationSeconds ?? 5}
+          osNotificationsEnabled={appStateQuery.data?.osNotificationsEnabled ?? true}
+          soundNotificationsEnabled={appStateQuery.data?.soundNotificationsEnabled ?? false}
+          bannerNotificationsEnabled={appStateQuery.data?.bannerNotificationsEnabled ?? true}
+        />
+
         {surfaceMode === 'manage' ? (
           <ManageSurface
             repos={reposQuery.data ?? []}
@@ -310,6 +398,21 @@ function App() {
             isUpdatingMandate={mandateMutations.updateMandate.isPending}
             isDeletingMandate={mandateMutations.deleteMandate.isPending}
             section={manageSection}
+            notificationSettings={
+              appStateQuery.data
+                ? {
+                    osNotificationsEnabled: appStateQuery.data.osNotificationsEnabled,
+                    bannerNotificationsEnabled: appStateQuery.data.bannerNotificationsEnabled,
+                    badgeNotificationsEnabled: appStateQuery.data.badgeNotificationsEnabled,
+                    soundNotificationsEnabled: appStateQuery.data.soundNotificationsEnabled,
+                    toastDurationSeconds: appStateQuery.data.toastDurationSeconds,
+                  }
+                : undefined
+            }
+            onUpdateNotificationSettings={(settings) =>
+              updateNotificationSettings.mutate(settings)
+            }
+            isUpdatingNotificationSettings={updateNotificationSettings.isPending}
           />
         ) : selectedEffort ? (
           <>
@@ -330,6 +433,9 @@ function App() {
                       <small>status</small>
                       <span>{selectedEffort.status}</span>
                     </div>
+                    {effortPendingMap.get(selectedEffort.id) ? (
+                      <WarningIndicator title="needs input" pulse size={16} />
+                    ) : null}
                   </div>
                 </div>
               </div>
@@ -463,18 +569,29 @@ function App() {
               </div>
 
               {supportsPlans ? (
-                <PlanSection
-                  plans={plansQuery.data ?? []}
-                  selectedPlanId={selectedPlanId}
-                  onSelectPlan={setSelectedPlanId}
-                  planComments={planCommentsQuery.data ?? []}
-                  onAcceptPlan={(planId) => planMutations.acceptPlan.mutate(planId)}
-                  onReadyPlan={(planId) => planMutations.readyPlan.mutate(planId)}
-                  onRequestPlanChanges={(input) => planMutations.requestPlanChanges.mutate(input)}
-                  isAcceptingPlan={planMutations.acceptPlan.isPending}
-                  isReadyingPlan={planMutations.readyPlan.isPending}
-                  isRequestingPlanChanges={planMutations.requestPlanChanges.isPending}
-                />
+                <section className="surface-section">
+                  <div className="section-title">
+                    <span className="section-title-label">
+                      <ScrollText size={14} />
+                      <span>plans ({plansQuery.data?.length ?? 0})</span>
+                    </span>
+                    {hasPendingPlan ? (
+                      <WarningIndicator title="plan needs review" pulse size={14} />
+                    ) : null}
+                  </div>
+                  <PlanSection
+                    plans={plansQuery.data ?? []}
+                    selectedPlanId={selectedPlanId}
+                    onSelectPlan={setSelectedPlanId}
+                    planComments={planCommentsQuery.data ?? []}
+                    onAcceptPlan={(planId) => planMutations.acceptPlan.mutate(planId)}
+                    onReadyPlan={(planId) => planMutations.readyPlan.mutate(planId)}
+                    onRequestPlanChanges={(input) => planMutations.requestPlanChanges.mutate(input)}
+                    isAcceptingPlan={planMutations.acceptPlan.isPending}
+                    isReadyingPlan={planMutations.readyPlan.isPending}
+                    isRequestingPlanChanges={planMutations.requestPlanChanges.isPending}
+                  />
+                </section>
               ) : null}
 
               {supportsTasks ? (
@@ -484,6 +601,9 @@ function App() {
                       <Hammer size={14} />
                       <span>tasks ({tasksQuery.data?.length ?? 0})</span>
                     </span>
+                    {hasReviewingTask ? (
+                      <WarningIndicator title="task needs review" pulse size={14} />
+                    ) : null}
                     {selectedTask ? <span>{selectedTask.status}</span> : null}
                   </div>
                   <div className="task-workspace">

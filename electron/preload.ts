@@ -2,17 +2,17 @@ import { contextBridge, ipcRenderer } from 'electron'
 import type {
   AnswerInputRequestInput,
   ApplyReviewInput,
-  CreateDiscussionMessageInput,
   ApproveTaskInput,
   CheckpointTaskInput,
   ClaimTaskInput,
   CreateEffortInput,
+  CreateDiscussionMessageInput,
+  DiffType,
   CreateInputRequestInput,
   CreateMandateInput,
   CreatePlanInput,
   CreateReferenceInput,
   CreateRepoInput,
-  DiffType,
   DiscussionMessage,
   Effort,
   InputRequest,
@@ -38,10 +38,20 @@ import type {
   UpdateTaskDetailsInput,
   WorkSurface,
 } from '../core/types'
+import type { PendingNotification } from '../core/notifications'
+import type { NotificationSettings } from '../core/db'
 
 contextBridge.exposeInMainWorld('effortless', {
   getAppState: () =>
-    ipcRenderer.invoke('app-state:get') as Promise<{ version: number; updatedAt: string }>,
+    ipcRenderer.invoke('app-state:get') as Promise<{
+      version: number
+      updatedAt: string
+      osNotificationsEnabled: boolean
+      bannerNotificationsEnabled: boolean
+      badgeNotificationsEnabled: boolean
+      soundNotificationsEnabled: boolean
+      toastDurationSeconds: number
+    }>,
   browsePath: (targetPath?: string | null, includeFiles = false) =>
     ipcRenderer.invoke('filesystem:browse', targetPath, includeFiles) as Promise<{
       path: string
@@ -133,4 +143,20 @@ contextBridge.exposeInMainWorld('effortless', {
   deleteReference: (refId: number) => ipcRenderer.invoke('references:delete', refId) as Promise<void>,
   captureDebugScreenshot: (relativePath?: string) =>
     ipcRenderer.invoke('debug:capture-screenshot', relativePath) as Promise<{ path: string; sha256: string }>,
+  listPendingNotifications: () =>
+    ipcRenderer.invoke('notifications:list') as Promise<PendingNotification[]>,
+  countPendingNotifications: () =>
+    ipcRenderer.invoke('notifications:count') as Promise<number>,
+  showOSNotification: (title: string, body: string) =>
+    ipcRenderer.invoke('notifications:show-os', title, body) as Promise<void>,
+  updateNotificationSettings: (settings: NotificationSettings) =>
+    ipcRenderer.invoke('notifications:updateSettings', settings) as Promise<{
+      version: number
+      updatedAt: string
+      osNotificationsEnabled: boolean
+      bannerNotificationsEnabled: boolean
+      badgeNotificationsEnabled: boolean
+      soundNotificationsEnabled: boolean
+      toastDurationSeconds: number
+    }>,
 })

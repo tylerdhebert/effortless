@@ -1,0 +1,123 @@
+.toast {
+  position: absolute;
+  top: 72px;
+  right: 30px;
+  z-index: 40;
+  display: grid;
+  gap: 10px;
+  min-width: 280px;
+  max-width: 380px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(234, 179, 8, 0.3);
+  background: rgba(20, 20, 12, 0.95);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+  animation: toast-in 200ms ease both;
+  transition: transform 120ms ease;
+}
+
+.toast:hover {
+  transform: translateY(-2px);
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.toastContent {
+  display: grid;
+  gap: 6px;
+}
+
+.toastHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.toastKind {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: lowercase;
+  letter-spacing: 0.04em;
+  color: rgb(234, 179, 8);
+}
+
+.toastClose {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.toastClose:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+}
+
+.toastMessage {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.4;
+  color: var(--text);
+}
+
+.toastMeta {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.toastPager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.toastPager button {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.toastPager button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+}
+
+.toastPager button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.toastPager span {
+  font-size: 0.72rem;
+  color: var(--muted);
+  min-width: 36px;
+  text-align: center;
+}

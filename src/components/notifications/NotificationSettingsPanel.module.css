@@ -1,0 +1,68 @@
+.panel {
+  display: grid;
+  gap: 20px;
+  padding: 20px;
+}
+
+.panel h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.setting {
+  display: grid;
+  gap: 6px;
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+.toggle input {
+  width: 18px;
+  height: 18px;
+  accent-color: rgb(140, 207, 98);
+  cursor: pointer;
+}
+
+.toggle input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.hint {
+  margin: 0;
+  padding-left: 28px;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.durationLabel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+.durationLabel input {
+  width: 56px;
+  padding: 6px 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.durationLabel input:disabled {
+  opacity: 0.5;
+}

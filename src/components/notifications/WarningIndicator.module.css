@@ -1,0 +1,21 @@
+.indicator {
+  display: inline-grid;
+  place-items: center;
+  color: rgb(234, 179, 8);
+  flex-shrink: 0;
+}
+
+.pulse {
+  animation: warning-pulse 2.5s ease-in-out infinite;
+}
+
+@keyframes warning-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(0.92);
+  }
+}

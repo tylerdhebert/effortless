@@ -6,6 +6,11 @@ export type AppDatabase = Database
 export type AppState = {
   version: number
   updatedAt: string
+  osNotificationsEnabled: boolean
+  bannerNotificationsEnabled: boolean
+  badgeNotificationsEnabled: boolean
+  soundNotificationsEnabled: boolean
+  toastDurationSeconds: number
 }
 
 export function openDatabase(): AppDatabase {
@@ -191,6 +196,11 @@ export function initializeSchema(db: AppDatabase): void {
   ensureColumn(db, 'input_requests', 'short_ref', 'TEXT')
   ensureColumn(db, 'efforts', 'needs_tasks', 'INTEGER NOT NULL DEFAULT 1')
   ensureColumn(db, 'efforts', 'summary', 'TEXT')
+  ensureColumn(db, 'app_state', 'os_notifications_enabled', 'INTEGER NOT NULL DEFAULT 1')
+  ensureColumn(db, 'app_state', 'banner_notifications_enabled', 'INTEGER NOT NULL DEFAULT 1')
+  ensureColumn(db, 'app_state', 'badge_notifications_enabled', 'INTEGER NOT NULL DEFAULT 1')
+  ensureColumn(db, 'app_state', 'sound_notifications_enabled', 'INTEGER NOT NULL DEFAULT 0')
+  ensureColumn(db, 'app_state', 'toast_duration_seconds', 'INTEGER NOT NULL DEFAULT 5')
 }
 
 export function bumpAppState(db: AppDatabase): void {
@@ -202,9 +212,49 @@ export function bumpAppState(db: AppDatabase): void {
   `).run(new Date().toISOString())
 }
 
+export type NotificationSettings = {
+  osNotificationsEnabled?: boolean
+  bannerNotificationsEnabled?: boolean
+  badgeNotificationsEnabled?: boolean
+  soundNotificationsEnabled?: boolean
+  toastDurationSeconds?: number
+}
+
+export function updateNotificationSettings(
+  db: AppDatabase,
+  settings: NotificationSettings,
+): AppState {
+  const current = getAppState(db)
+  db.prepare(`
+    UPDATE app_state
+    SET os_notifications_enabled = ?,
+        banner_notifications_enabled = ?,
+        badge_notifications_enabled = ?,
+        sound_notifications_enabled = ?,
+        toast_duration_seconds = ?
+    WHERE id = 1
+  `).run(
+    settings.osNotificationsEnabled ?? current.osNotificationsEnabled ? 1 : 0,
+    settings.bannerNotificationsEnabled ?? current.bannerNotificationsEnabled ? 1 : 0,
+    settings.badgeNotificationsEnabled ?? current.badgeNotificationsEnabled ? 1 : 0,
+    settings.soundNotificationsEnabled ?? current.soundNotificationsEnabled ? 1 : 0,
+    settings.toastDurationSeconds ?? current.toastDurationSeconds,
+  )
+  bumpAppState(db)
+  return getAppState(db)
+}
+
 export function getAppState(db: AppDatabase): AppState {
   const row = db
-    .prepare<{ version: number; updated_at: string }>(`SELECT version, updated_at FROM app_state WHERE id = 1`)
+    .prepare<{
+      version: number
+      updated_at: string
+      os_notifications_enabled: number
+      banner_notifications_enabled: number
+      badge_notifications_enabled: number
+      sound_notifications_enabled: number
+      toast_duration_seconds: number
+    }>(`SELECT version, updated_at, os_notifications_enabled, banner_notifications_enabled, badge_notifications_enabled, sound_notifications_enabled, toast_duration_seconds FROM app_state WHERE id = 1`)
     .get()
 
   if (!row) {
@@ -214,6 +264,11 @@ export function getAppState(db: AppDatabase): AppState {
   return {
     version: row.version,
     updatedAt: row.updated_at,
+    osNotificationsEnabled: Boolean(row.os_notifications_enabled),
+    bannerNotificationsEnabled: Boolean(row.banner_notifications_enabled),
+    badgeNotificationsEnabled: Boolean(row.badge_notifications_enabled),
+    soundNotificationsEnabled: Boolean(row.sound_notifications_enabled),
+    toastDurationSeconds: row.toast_duration_seconds,
   }
 }
 
