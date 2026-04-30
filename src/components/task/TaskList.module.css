@@ -26,12 +26,12 @@
 
 .task-list-row:hover {
   background: rgba(255, 255, 255, 0.02);
-  border-color: rgba(140, 207, 98, 0.1);
+  border-color: color-mix(in srgb, var(--accent) 10%, transparent);
 }
 
 .task-list-row.selected {
   background: rgba(255, 255, 255, 0.03);
-  border-color: rgba(140, 207, 98, 0.15);
+  border-color: color-mix(in srgb, var(--accent) 15%, transparent);
   box-shadow: inset 2px 0 0 var(--accent);
 }
 

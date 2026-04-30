@@ -101,7 +101,7 @@
 }
 
 .select-button {
-  background: rgba(140, 207, 98, 0.16) !important;
+  background: color-mix(in srgb, var(--accent) 16%, transparent) !important;
   color: var(--text-strong) !important;
 }
 

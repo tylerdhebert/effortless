@@ -6,7 +6,7 @@
 }
 
 .review-record.applied {
-  border-color: rgba(140, 207, 98, 0.24);
+  border-color: color-mix(in srgb, var(--accent) 24%, transparent);
 }
 
 .review-record p {

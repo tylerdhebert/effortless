@@ -30,7 +30,7 @@
 }
 
 .reference-title-actions button:hover {
-  border-color: rgba(140, 207, 98, 0.22);
+  border-color: color-mix(in srgb, var(--accent) 22%, transparent);
   color: var(--text);
   background: rgba(255, 255, 255, 0.045);
 }
@@ -111,9 +111,9 @@
 }
 
 .reference-open-button {
-  border: 1px solid rgba(140, 207, 98, 0.22);
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
   border-radius: 999px;
-  background: rgba(140, 207, 98, 0.08);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
   color: #cfe5c2;
   cursor: pointer;
   font-size: 0.68rem;
@@ -129,8 +129,8 @@
 }
 
 .reference-open-button:hover {
-  border-color: rgba(140, 207, 98, 0.38);
-  background: rgba(140, 207, 98, 0.14);
+  border-color: color-mix(in srgb, var(--accent) 38%, transparent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
   color: #eff8e9;
 }
 
@@ -196,8 +196,8 @@
 
 .reference-popover-item:hover,
 .reference-popover-item.selected {
-  border-color: rgba(140, 207, 98, 0.18);
-  background: rgba(140, 207, 98, 0.08);
+  border-color: color-mix(in srgb, var(--accent) 18%, transparent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
 }
 
 .reference-popover-item strong {
@@ -259,7 +259,7 @@
 }
 
 .reference-modal-header button:hover {
-  border-color: rgba(140, 207, 98, 0.22);
+  border-color: color-mix(in srgb, var(--accent) 22%, transparent);
   background: rgba(255, 255, 255, 0.055);
   color: var(--text);
 }
@@ -367,9 +367,9 @@
 
 .reference-field input:focus,
 .reference-field select:focus {
-  border-color: rgba(140, 207, 98, 0.34);
+  border-color: color-mix(in srgb, var(--accent) 34%, transparent);
   background: rgba(255, 255, 255, 0.045);
-  box-shadow: 0 0 0 3px rgba(140, 207, 98, 0.08);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 8%, transparent);
 }
 
 .reference-field input:disabled {
@@ -437,7 +437,7 @@
 }
 
 .reference-tree-task-toggle:hover {
-  border-color: rgba(140, 207, 98, 0.2);
+  border-color: color-mix(in srgb, var(--accent) 20%, transparent);
   background: rgba(255, 255, 255, 0.04);
   color: var(--text);
 }
@@ -471,8 +471,8 @@
 .reference-tree-leaf:hover,
 .reference-tree-item.selected,
 .reference-tree-leaf.selected {
-  border-color: rgba(140, 207, 98, 0.28);
-  background: rgba(140, 207, 98, 0.1);
+  border-color: color-mix(in srgb, var(--accent) 28%, transparent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
 }
 
 .reference-tree-group-row {
@@ -603,14 +603,14 @@
 }
 
 .reference-submit {
-  border: 1px solid rgba(140, 207, 98, 0.32);
-  background: rgba(140, 207, 98, 0.16);
+  border: 1px solid color-mix(in srgb, var(--accent) 32%, transparent);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
   color: #d9eccb;
 }
 
 .reference-submit:hover:not(:disabled) {
-  border-color: rgba(140, 207, 98, 0.46);
-  background: rgba(140, 207, 98, 0.22);
+  border-color: color-mix(in srgb, var(--accent) 46%, transparent);
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
   color: #eff8e9;
 }
 

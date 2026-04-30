@@ -65,7 +65,7 @@
 
 .plan-dot.accepted.active {
   opacity: 1;
-  box-shadow: 0 0 10px rgba(140, 207, 98, 0.4);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 40%, transparent);
 }
 
 .plan-card {
@@ -85,7 +85,7 @@
 
 .plan-card.accepted,
 .plan-card[data-state="accepted"] {
-  border-color: rgba(140, 207, 98, 0.28);
+  border-color: color-mix(in srgb, var(--accent) 28%, transparent);
 }
 
 .plan-card[data-state="waiting"] {

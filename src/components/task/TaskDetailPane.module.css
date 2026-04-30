@@ -356,14 +356,14 @@
 }
 
 .implementation-file:hover {
-  border-color: rgba(140, 207, 98, 0.16);
+  border-color: color-mix(in srgb, var(--accent) 16%, transparent);
   background: rgba(255, 255, 255, 0.03);
   color: var(--text);
 }
 
 .implementation-file.active {
-  border-color: rgba(140, 207, 98, 0.24);
-  background: rgba(140, 207, 98, 0.08);
+  border-color: color-mix(in srgb, var(--accent) 24%, transparent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
   color: var(--text);
 }
 

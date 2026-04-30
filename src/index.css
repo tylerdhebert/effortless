@@ -17,7 +17,7 @@
   --muted: #929984;
   --accent: #8ccf62;
   --placeholder: #707767;
-  --focus-shadow: rgba(140, 207, 98, 0.18);
+  --focus-shadow: color-mix(in srgb, var(--accent) 18%, transparent);
   --diff-insert-bg: rgba(46, 160, 67, 0.2);
   --diff-delete-bg: rgba(248, 81, 73, 0.2);
   --diff-gutter-insert-bg: rgba(46, 160, 67, 0.7);
@@ -142,7 +142,7 @@ input:focus,
 textarea:focus,
 select:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 1px var(--focus-shadow, rgba(140, 207, 98, 0.18));
+  box-shadow: 0 0 0 1px var(--focus-shadow, color-mix(in srgb, var(--accent) 18%, transparent));
 }
 
 ::-webkit-scrollbar {
@@ -187,17 +187,17 @@ select:focus {
   --diff-background-color: transparent;
   --diff-text-color: #dce2d1;
   --diff-font-family: "Cascadia Code", Consolas, "Courier New", monospace;
-  --diff-selection-background-color: rgba(140, 207, 98, 0.15);
+  --diff-selection-background-color: color-mix(in srgb, var(--accent) 15%, transparent);
   --diff-gutter-insert-background-color: #1a3a22;
   --diff-gutter-insert-text-color: #77d89c;
   --diff-gutter-delete-background-color: #3a1a1a;
   --diff-gutter-delete-text-color: #f38a8a;
-  --diff-gutter-selected-background-color: rgba(140, 207, 98, 0.2);
+  --diff-gutter-selected-background-color: color-mix(in srgb, var(--accent) 20%, transparent);
   --diff-code-insert-background-color: #122210;
   --diff-code-delete-background-color: #221010;
   --diff-code-insert-edit-background-color: #1e4a24;
   --diff-code-delete-edit-background-color: #4a1e1e;
-  --diff-code-selected-background-color: rgba(140, 207, 98, 0.12);
+  --diff-code-selected-background-color: color-mix(in srgb, var(--accent) 12%, transparent);
   --diff-omit-gutter-line-color: #728168;
 }
 

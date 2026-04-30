@@ -52,7 +52,7 @@
 }
 
 .markdown-document blockquote {
-  border-left: 2px solid rgba(140, 207, 98, 0.28);
+  border-left: 2px solid color-mix(in srgb, var(--accent) 28%, transparent);
   color: #c8cfbb;
   padding-left: 1rem;
 }

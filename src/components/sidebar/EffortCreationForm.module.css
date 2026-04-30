@@ -12,8 +12,8 @@
   min-height: 32px;
   border: 1px solid var(--line-strong);
   border-radius: 10px;
-  background: rgba(140, 207, 98, 0.12);
-  border-color: rgba(140, 207, 98, 0.28);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 28%, transparent);
   color: #dff1ce;
   cursor: pointer;
   font-size: 0.76rem;
@@ -82,9 +82,9 @@
 }
 
 .template-option.selected {
-  border-color: rgba(140, 207, 98, 0.35);
-  background: rgba(140, 207, 98, 0.1);
-  box-shadow: inset 0 0 0 1px rgba(140, 207, 98, 0.12);
+  border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 12%, transparent);
 }
 
 .template-option.deemphasized {
