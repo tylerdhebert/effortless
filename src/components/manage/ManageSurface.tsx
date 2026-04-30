@@ -2,9 +2,9 @@ import { useState } from 'react'
 import { Pencil, Trash2 } from 'lucide-react'
 import type { Mandate, Repo, WorkSurface, MandateSourceType } from '../../../core/types'
 import { PathPicker } from '../ui/PathPicker'
-import { PillSwitcher } from '../ui/PillSwitcher'
 import { NotificationSettingsPanel } from '../notifications/NotificationSettingsPanel'
 import { AppearanceSettingsPanel } from './AppearanceSettingsPanel'
+import { MandateTab } from './MandateTab'
 import styles from './ManageSurface.module.css'
 
 type ManageSurfaceProps = {
@@ -64,11 +64,6 @@ export function ManageSurface({
   currentTheme,
   onUpdateTheme,
 }: ManageSurfaceProps) {
-  const mandateSourceOptions: Array<{ id: MandateSourceType; label: string }> = [
-    { id: 'body', label: 'inline text' },
-    { id: 'file', label: 'file path' },
-  ]
-
   const [repoName, setRepoName] = useState('')
   const [repoPath, setRepoPath] = useState('')
   const [repoBaseBranch, setRepoBaseBranch] = useState('main')
@@ -79,33 +74,12 @@ export function ManageSurface({
   const [editingRepoBaseBranch, setEditingRepoBaseBranch] = useState('main')
   const [editingRepoBuildCommand, setEditingRepoBuildCommand] = useState('')
 
-  const [mandateWorkSurface, setMandateWorkSurface] = useState<WorkSurface>('task')
-  const [mandateSourceType, setMandateSourceType] = useState<MandateSourceType>('body')
-  const [mandateBody, setMandateBody] = useState('')
-  const [mandateFilePath, setMandateFilePath] = useState('')
-  const [mandateRepoId, setMandateRepoId] = useState('')
-  const [editingMandateId, setEditingMandateId] = useState<number | null>(null)
-  const [editingMandateWorkSurface, setEditingMandateWorkSurface] = useState<WorkSurface>('task')
-  const [editingMandateSourceType, setEditingMandateSourceType] = useState<MandateSourceType>('body')
-  const [editingMandateBody, setEditingMandateBody] = useState('')
-  const [editingMandateFilePath, setEditingMandateFilePath] = useState('')
-  const [editingMandateRepoId, setEditingMandateRepoId] = useState('')
-
   function resetRepoEditor() {
     setEditingRepoId(null)
     setEditingRepoName('')
     setEditingRepoPath('')
     setEditingRepoBaseBranch('main')
     setEditingRepoBuildCommand('')
-  }
-
-  function resetMandateEditor() {
-    setEditingMandateId(null)
-    setEditingMandateWorkSurface('task')
-    setEditingMandateSourceType('body')
-    setEditingMandateBody('')
-    setEditingMandateFilePath('')
-    setEditingMandateRepoId('')
   }
 
   function beginRepoEdit(repo: Repo) {
@@ -115,17 +89,6 @@ export function ManageSurface({
     setEditingRepoBaseBranch(repo.baseBranch)
     setEditingRepoBuildCommand(repo.buildCommand ?? '')
   }
-
-  function beginMandateEdit(mandate: Mandate) {
-    setEditingMandateId(mandate.id)
-    setEditingMandateWorkSurface(mandate.workSurface)
-    setEditingMandateSourceType(mandate.sourceType)
-    setEditingMandateBody(mandate.body ?? '')
-    setEditingMandateFilePath(mandate.filePath ?? '')
-    setEditingMandateRepoId(mandate.repoId ? String(mandate.repoId) : '')
-  }
-
-  const activeMandateSourceType = editingMandateId ? editingMandateSourceType : mandateSourceType
 
   return (
     <>
@@ -241,152 +204,19 @@ export function ManageSurface({
             <section className={styles['manage-panel']}>
               <div className={styles['manage-panel-header']}>
                 <div>
-                  <h3>{editingMandateId ? 'edit mandate' : 'add mandate'}</h3>
-                </div>
-              </div>
-
-              <form
-                className={`${styles['repo-form']} ${styles['manage-form']}`}
-                onSubmit={(event) => {
-                  event.preventDefault()
-                  if (editingMandateId) {
-                    if (editingMandateSourceType === 'body' && !editingMandateBody.trim()) return
-                    if (editingMandateSourceType === 'file' && !editingMandateFilePath.trim()) return
-                    updateMandate({
-                      mandateId: editingMandateId,
-                      workSurface: editingMandateWorkSurface,
-                      repoId: editingMandateRepoId ? Number(editingMandateRepoId) : null,
-                      sourceType: editingMandateSourceType,
-                      body: editingMandateSourceType === 'body' ? editingMandateBody : null,
-                      filePath: editingMandateSourceType === 'file' ? editingMandateFilePath : null,
-                    }).then(() => resetMandateEditor())
-                  } else {
-                    if (mandateSourceType === 'body' && !mandateBody.trim()) return
-                    if (mandateSourceType === 'file' && !mandateFilePath.trim()) return
-                    createMandate({
-                      workSurface: mandateWorkSurface,
-                      repoId: mandateRepoId ? Number(mandateRepoId) : null,
-                      sourceType: mandateSourceType,
-                      body: mandateSourceType === 'body' ? mandateBody : null,
-                      filePath: mandateSourceType === 'file' ? mandateFilePath : null,
-                    }).then(() => { setMandateBody(''); setMandateFilePath('') })
-                  }
-                }}
-              >
-                <select
-                  aria-label="work surface"
-                  value={editingMandateId ? editingMandateWorkSurface : mandateWorkSurface}
-                  onChange={(event) =>
-                    editingMandateId
-                      ? setEditingMandateWorkSurface(event.target.value as WorkSurface)
-                      : setMandateWorkSurface(event.target.value as WorkSurface)
-                  }
-                >
-                  <option value="effort">effort</option>
-                  <option value="plan">plan</option>
-                  <option value="task">task</option>
-                  <option value="review">review</option>
-                  <option value="discussion">discussion</option>
-                </select>
-                <select
-                  aria-label="repo override"
-                  value={editingMandateId ? editingMandateRepoId : mandateRepoId}
-                  onChange={(event) =>
-                    editingMandateId ? setEditingMandateRepoId(event.target.value) : setMandateRepoId(event.target.value)
-                  }
-                >
-                  <option value="">global (no repo override)</option>
-                  {repos.map((repo) => (
-                    <option key={repo.id} value={String(repo.id)}>
-                      {repo.name}
-                    </option>
-                  ))}
-                </select>
-                <PillSwitcher
-                  ariaLabel="mandate source type"
-                  options={mandateSourceOptions}
-                  value={activeMandateSourceType}
-                  onChange={(nextValue) => {
-                    if (editingMandateId) {
-                      setEditingMandateSourceType(nextValue)
-                    } else {
-                      setMandateSourceType(nextValue)
-                    }
-                  }}
-                />
-                {activeMandateSourceType === 'body' ? (
-                  <textarea
-                    aria-label="mandate body"
-                    placeholder="mandate instructions"
-                    value={editingMandateId ? editingMandateBody : mandateBody}
-                    onChange={(event) =>
-                      editingMandateId ? setEditingMandateBody(event.target.value) : setMandateBody(event.target.value)
-                    }
-                    rows={4}
-                  />
-                ) : (
-                  <PathPicker
-                    ariaLabel="mandate file path"
-                    placeholder="file path"
-                    selectFiles
-                    value={editingMandateId ? editingMandateFilePath : mandateFilePath}
-                    onChange={(path) =>
-                      editingMandateId ? setEditingMandateFilePath(path) : setMandateFilePath(path)
-                    }
-                  />
-                )}
-                <div className={styles['manage-repo-actions']}>
-                  <button type="submit" disabled={editingMandateId ? isUpdatingMandate : isCreatingMandate}>
-                    {editingMandateId ? (isUpdatingMandate ? 'saving' : 'save mandate') : isCreatingMandate ? 'creating' : 'add mandate'}
-                  </button>
-                  {editingMandateId ? (
-                    <button type="button" onClick={resetMandateEditor} disabled={isUpdatingMandate}>
-                      cancel
-                    </button>
-                  ) : null}
-                </div>
-              </form>
-            </section>
-
-            <section className={styles['manage-panel']}>
-              <div className={styles['manage-panel-header']}>
-                <div>
                   <h3>mandates</h3>
                 </div>
               </div>
-
-              <div className={`${styles['repo-list']} ${styles['manage-repo-list']}`}>
-                {mandates.map((mandate) => (
-                  <article className={`${styles['repo-row']} ${styles['manage-repo-row']}`} key={mandate.id}>
-                    <div>
-                      <strong>{mandate.workSurface}</strong>
-                      <span>{mandate.shortRef}</span>
-                      {mandate.repoId ? (
-                        <small>repo:{repos.find((r) => r.id === mandate.repoId)?.name ?? mandate.repoId}</small>
-                      ) : (
-                        <small>global</small>
-                      )}
-                    </div>
-                    {mandate.sourceType === 'body' ? (
-                      <p className={styles['mandate-body-preview']}>
-                        {mandate.body ? (mandate.body.length > 120 ? mandate.body.slice(0, 120) + '...' : mandate.body) : '(empty)'}
-                      </p>
-                    ) : (
-                      <p>{mandate.filePath}</p>
-                    )}
-                    <div className={styles['manage-repo-actions']}>
-                      <button type="button" className="icon-btn" onClick={() => beginMandateEdit(mandate)} aria-label="edit">
-                        <Pencil size={12} />
-                      </button>
-                      <button type="button" className="icon-btn" onClick={() => deleteMandate(mandate.id)} disabled={isDeletingMandate} aria-label="remove">
-                        <Trash2 size={12} />
-                      </button>
-                    </div>
-                  </article>
-                ))}
-
-                {mandates.length === 0 ? <p className="empty-state">no mandates</p> : null}
-              </div>
+              <MandateTab
+                repos={repos}
+                mandates={mandates}
+                createMandate={createMandate}
+                updateMandate={updateMandate}
+                deleteMandate={deleteMandate}
+                isCreating={isCreatingMandate}
+                isUpdating={isUpdatingMandate}
+                isDeleting={isDeletingMandate}
+              />
             </section>
           </section>
         ) : section === 'notifications' ? (
