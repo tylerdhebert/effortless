@@ -22,56 +22,56 @@ export function NotificationToast({
 }: NotificationToastProps) {
   const [visible, setVisible] = useState(false)
   const [index, setIndex] = useState(0)
-  const [dismissedIds, setDismissedIds] = useState<Set<number>>(new Set())
+  const [newNotifications, setNewNotifications] = useState<PendingNotification[]>([])
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const prevIdsRef = useRef<string>('')
+  const prevIdsRef = useRef<Set<number>>(new Set())
   const initialRef = useRef(true)
 
   const durationMs = toastDurationSeconds * 1000
-  const activeNotifications = notifications.filter((n) => !dismissedIds.has(n.id))
-  const hasNotifications = activeNotifications.length > 0
-  const current = activeNotifications[index] ?? null
+  const current = newNotifications[index] ?? null
 
-  // Show toast and trigger OS/sound notifications when new ones arrive
-  // Skip on initial mount so existing pending notifications don't re-alert
+  // Detect newly arrived notifications and toast only those
   useEffect(() => {
-    const currentIds = notifications.map((n) => n.id).sort().join(',')
+    const currentIds = new Set(notifications.map((n) => n.id))
+
     if (initialRef.current) {
       prevIdsRef.current = currentIds
       initialRef.current = false
       return
     }
 
-    if (currentIds !== prevIdsRef.current && notifications.length > 0) {
-      prevIdsRef.current = currentIds
+    const arrived = notifications.filter((n) => !prevIdsRef.current.has(n.id))
+    prevIdsRef.current = currentIds
+
+    if (arrived.length > 0) {
+      setNewNotifications(arrived)
       setVisible(true)
       setIndex(0)
-      setDismissedIds(new Set())
 
-      const latest = notifications[0]
-      if (latest) {
-        if (osNotificationsEnabled) {
+      if (osNotificationsEnabled) {
+        for (const notification of arrived) {
           window.effortless.showOSNotification(
-            `${latest.effortShortRef}: ${latest.kind.replace('-', ' ')}`,
-            latest.message,
+            `${notification.effortShortRef}: ${notification.kind.replace('-', ' ')}`,
+            notification.message,
           )
         }
-        if (soundNotificationsEnabled) {
-          try {
-            const ctx = new AudioContext()
-            const osc = ctx.createOscillator()
-            const gain = ctx.createGain()
-            osc.connect(gain)
-            gain.connect(ctx.destination)
-            osc.frequency.value = 880
-            osc.type = 'sine'
-            gain.gain.setValueAtTime(0.1, ctx.currentTime)
-            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3)
-            osc.start(ctx.currentTime)
-            osc.stop(ctx.currentTime + 0.3)
-          } catch {
-            // ignore audio errors
-          }
+      }
+
+      if (soundNotificationsEnabled) {
+        try {
+          const ctx = new AudioContext()
+          const osc = ctx.createOscillator()
+          const gain = ctx.createGain()
+          osc.connect(gain)
+          gain.connect(ctx.destination)
+          osc.frequency.value = 880
+          osc.type = 'sine'
+          gain.gain.setValueAtTime(0.1, ctx.currentTime)
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3)
+          osc.start(ctx.currentTime)
+          osc.stop(ctx.currentTime + 0.3)
+        } catch {
+          // ignore audio errors
         }
       }
     }
@@ -82,12 +82,13 @@ export function NotificationToast({
     if (timerRef.current) {
       clearTimeout(timerRef.current)
     }
-    if (visible && hasNotifications) {
+    if (visible && newNotifications.length > 0) {
       timerRef.current = setTimeout(() => {
         setVisible(false)
+        setNewNotifications([])
       }, durationMs)
     }
-  }, [visible, hasNotifications, durationMs])
+  }, [visible, newNotifications.length, durationMs])
 
   useEffect(() => {
     resetTimer()
@@ -104,18 +105,21 @@ export function NotificationToast({
 
   function handleDismiss(event: React.MouseEvent) {
     event.stopPropagation()
-    setDismissedIds((prev) => new Set(prev).add(current.id))
-    if (activeNotifications.length <= 1) {
+    const remaining = newNotifications.filter((_, i) => i !== index)
+    if (remaining.length === 0) {
       setVisible(false)
+      setNewNotifications([])
     } else {
-      setIndex((prev) => Math.min(prev, activeNotifications.length - 2))
+      setNewNotifications(remaining)
+      setIndex((prev) => Math.min(prev, remaining.length - 1))
       resetTimer()
     }
   }
 
   function handleNavigate() {
     onNavigate(current)
-    handleDismiss({ stopPropagation: () => {} } as React.MouseEvent)
+    setVisible(false)
+    setNewNotifications([])
   }
 
   function handlePrev(event: React.MouseEvent) {
@@ -126,7 +130,7 @@ export function NotificationToast({
 
   function handleNext(event: React.MouseEvent) {
     event.stopPropagation()
-    setIndex((prev) => Math.min(activeNotifications.length - 1, prev + 1))
+    setIndex((prev) => Math.min(newNotifications.length - 1, prev + 1))
     resetTimer()
   }
 
@@ -168,7 +172,7 @@ export function NotificationToast({
           </span>
         </div>
       </div>
-      {activeNotifications.length > 1 && (
+      {newNotifications.length > 1 && (
         <div className={styles.toastPager}>
           <button
             type="button"
@@ -179,12 +183,12 @@ export function NotificationToast({
             <ChevronLeft size={14} />
           </button>
           <span>
-            {index + 1} / {activeNotifications.length}
+            {index + 1} / {newNotifications.length}
           </span>
           <button
             type="button"
             onClick={handleNext}
-            disabled={index === activeNotifications.length - 1}
+            disabled={index === newNotifications.length - 1}
             aria-label="next notification"
           >
             <ChevronRight size={14} />

@@ -55,7 +55,7 @@
 .menu {
   position: absolute;
   bottom: calc(100% + 8px);
-  right: 0;
+  right: 12px;
   z-index: 100;
   width: 268px;
   max-height: 360px;

@@ -121,8 +121,15 @@
 .effort-row-heading {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 8px;
+}
+
+.effort-row-indicator {
+  display: inline-grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
 }
 
 .effort-row-meta {

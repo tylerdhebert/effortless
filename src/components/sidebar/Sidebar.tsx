@@ -128,11 +128,13 @@ export function Sidebar({
                 type="button"
               >
                 <div className={styles['effort-row-heading']}>
+                  <span className={styles['effort-row-indicator']}>
+                    {effortPendingMap.get(effort.id) ? (
+                      <WarningIndicator title="needs input" size={12} />
+                    ) : null}
+                  </span>
                   <span>{effort.shortRef}</span>
                   <small>{formatTemplate(effort.template)}</small>
-                  {effortPendingMap.get(effort.id) ? (
-                    <WarningIndicator title="needs input" size={12} />
-                  ) : null}
                 </div>
                 <strong>{effort.title}</strong>
                 <div className={styles['effort-row-meta']}>
