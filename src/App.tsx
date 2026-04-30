@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   CircleHelp,
@@ -22,6 +22,7 @@ import { Sidebar } from './components/sidebar/Sidebar'
 import { TaskDetailPane } from './components/task/TaskDetailPane'
 import { TaskList } from './components/task/TaskList'
 import {
+  effortStatusColor,
   effortSupportsDiscussion,
   effortSupportsPlans,
   effortSupportsTasks,
@@ -47,6 +48,7 @@ function App() {
   const [selectedEffortId, setSelectedEffortId] = useState<number | null>(null)
   const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null)
   const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null)
+  const [taskRepoFilter, setTaskRepoFilter] = useState<string>('all')
   const [discussionOpen, setDiscussionOpen] = useState(false)
   const [discussionDraft, setDiscussionDraft] = useState('')
   const [createEffortOpen, setCreateEffortOpen] = useState(false)
@@ -134,6 +136,21 @@ function App() {
   const usesBugfixOverview = template === 'bugfix'
   const hasPendingPlan = (plansQuery.data ?? []).some((p) => p.readyAt && !p.acceptedAt)
   const hasReviewingTask = (tasksQuery.data ?? []).some((t) => t.status === 'reviewing')
+
+  const taskRepoOptions = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const task of tasksQuery.data ?? []) {
+      if (task.repoId == null) continue
+      const repo = reposQuery.data?.find((r) => r.id === task.repoId)
+      if (repo) map.set(String(repo.id), repo.name)
+    }
+    return Array.from(map.entries())
+  }, [tasksQuery.data, reposQuery.data])
+
+  const filteredTasks = useMemo(() => {
+    if (taskRepoFilter === 'all') return tasksQuery.data ?? []
+    return (tasksQuery.data ?? []).filter((t) => String(t.repoId) === taskRepoFilter)
+  }, [tasksQuery.data, taskRepoFilter])
 
   const commentsQuery = useQuery({
     queryKey: ['task-comments', selectedTask?.id],
@@ -431,7 +448,7 @@ function App() {
                     </div>
                     <div className="chip-group">
                       <small>status</small>
-                      <span>{selectedEffort.status}</span>
+                      <span style={{ color: effortStatusColor(selectedEffort.status) }}>{selectedEffort.status}</span>
                     </div>
                     {effortPendingMap.get(selectedEffort.id) ? (
                       <WarningIndicator title="needs input" pulse size={16} />
@@ -589,16 +606,31 @@ function App() {
                   <div className="section-title">
                     <span className="section-title-label">
                       <Hammer size={14} />
-                      <span>tasks ({tasksQuery.data?.length ?? 0})</span>
+                      <span>tasks ({filteredTasks.length})</span>
                     </span>
-                    {hasReviewingTask ? (
-                      <WarningIndicator title="task needs review" pulse size={14} />
-                    ) : null}
-                    {selectedTask ? <span>{selectedTask.status}</span> : null}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginLeft: 'auto' }}>
+                      {taskRepoOptions.length > 0 ? (
+                        <select
+                          value={taskRepoFilter}
+                          onChange={(e) => setTaskRepoFilter(e.target.value)}
+                          disabled={taskRepoOptions.length <= 1}
+                          style={{ width: 'auto', padding: '4px 28px 4px 10px', fontSize: '0.68rem' }}
+                        >
+                          <option value="all">all repos</option>
+                          {taskRepoOptions.map(([repoId, repoName]) => (
+                            <option key={repoId} value={repoId}>{repoName}</option>
+                          ))}
+                        </select>
+                      ) : null}
+                      {hasReviewingTask ? (
+                        <WarningIndicator title="task needs review" pulse size={14} />
+                      ) : null}
+                      {selectedTask ? <span>{selectedTask.status}</span> : null}
+                    </div>
                   </div>
                   <div className="task-workspace">
                     <TaskList
-                      tasks={tasksQuery.data ?? []}
+                      tasks={filteredTasks}
                       selectedTaskId={selectedTaskId}
                       onSelectTask={setSelectedTaskId}
                     />

@@ -27,6 +27,16 @@ export function formatTemplate(template: string) {
   return template.replace('-', ' ')
 }
 
+export const effortStatusColors: Record<string, string> = {
+  active: '#1565c0',
+  complete: '#2ecc71',
+  archived: '#9e9e9e',
+}
+
+export function effortStatusColor(status: string): string {
+  return effortStatusColors[status] ?? 'inherit'
+}
+
 export function effortSupportsPlans(template: EffortTemplate) {
   return template === 'delivery' || template === 'investigation'
 }

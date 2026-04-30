@@ -1,7 +1,7 @@
 import type { Effort } from '../../../core/types'
 import type { PendingNotification } from '../../../core/notifications'
 import { Home, Plus, Settings, Bell } from 'lucide-react'
-import { formatTemplate } from '../../lib/helpers'
+import { formatTemplate, effortStatusColor } from '../../lib/helpers'
 import { WarningIndicator } from '../notifications/WarningIndicator'
 import { NotificationFooter } from '../notifications/NotificationFooter'
 import styles from './Sidebar.module.css'
@@ -138,7 +138,7 @@ export function Sidebar({
                 </div>
                 <strong>{effort.title}</strong>
                 <div className={styles['effort-row-meta']}>
-                  <span>{effort.status}</span>
+                  <span style={{ color: effortStatusColor(effort.status) }}>{effort.status}</span>
                 </div>
               </button>
             ))}
