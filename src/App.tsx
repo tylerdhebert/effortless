@@ -373,27 +373,27 @@ function App() {
               />
             ) : null}
 
-            {(selectedEffort.status === 'complete' || selectedEffort.status === 'archived') ? (
-              <div style={{ padding: '0 30px' }}>
-                {selectedEffort.template === 'investigation' ? (
-                  <EffortSummarySection label="findings" summary={selectedEffort.summary} />
-                ) : null}
-                {selectedEffort.template === 'discussion' ? (
-                  <EffortSummarySection label="conversation recap" summary={selectedEffort.summary} />
-                ) : null}
-                {selectedEffort.template === 'delivery' ? (
-                  <EffortSummarySection label="effort summary" summary={selectedEffort.summary} />
-                ) : null}
-                {selectedEffort.template === 'bugfix' ? (
-                  <EffortSummarySection label="bugfix summary" summary={selectedEffort.summary} />
-                ) : null}
-              </div>
-            ) : null}
-
             <div
               ref={effortScrollRef}
               className={`effort-scroll ${supportsTasks ? 'effort-scroll--delivery' : 'effort-scroll--compact'}`}
             >
+              {(selectedEffort.status === 'complete' || selectedEffort.status === 'archived') ? (
+                <div style={{ padding: '0 30px', marginBottom: '18px' }}>
+                  {selectedEffort.template === 'investigation' ? (
+                    <EffortSummarySection label="findings" summary={selectedEffort.summary} />
+                  ) : null}
+                  {selectedEffort.template === 'discussion' ? (
+                    <EffortSummarySection label="conversation recap" summary={selectedEffort.summary} />
+                  ) : null}
+                  {selectedEffort.template === 'delivery' ? (
+                    <EffortSummarySection label="effort summary" summary={selectedEffort.summary} />
+                  ) : null}
+                  {selectedEffort.template === 'bugfix' ? (
+                    <EffortSummarySection label="bugfix summary" summary={selectedEffort.summary} />
+                  ) : null}
+                </div>
+              ) : null}
+
               <div
                 className={`effort-overview-grid ${supportsDiscussion ? 'has-discussion' : 'no-discussion'} ${usesBugfixOverview ? 'bugfix-overview-grid' : ''}`}
               >
