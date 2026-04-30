@@ -51,6 +51,7 @@ contextBridge.exposeInMainWorld('effortless', {
       badgeNotificationsEnabled: boolean
       soundNotificationsEnabled: boolean
       toastDurationSeconds: number
+      theme: string
     }>,
   browsePath: (targetPath?: string | null, includeFiles = false) =>
     ipcRenderer.invoke('filesystem:browse', targetPath, includeFiles) as Promise<{
@@ -158,5 +159,6 @@ contextBridge.exposeInMainWorld('effortless', {
       badgeNotificationsEnabled: boolean
       soundNotificationsEnabled: boolean
       toastDurationSeconds: number
+      theme: string
     }>,
 })

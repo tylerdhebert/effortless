@@ -1,7 +1,7 @@
 :root {
   font-family: Aptos, "Segoe UI", sans-serif;
-  color: #e8e6d9;
-  background: #11130f;
+  color: var(--body-text, #e8e6d9);
+  background: var(--body-bg, #11130f);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   --main: #12140f;
@@ -16,6 +16,8 @@
   --text-strong: #f2f1e7;
   --muted: #929984;
   --accent: #8ccf62;
+  --placeholder: #707767;
+  --focus-shadow: rgba(140, 207, 98, 0.18);
   --diff-insert-bg: rgba(46, 160, 67, 0.2);
   --diff-delete-bg: rgba(248, 81, 73, 0.2);
   --diff-gutter-insert-bg: rgba(46, 160, 67, 0.7);
@@ -26,7 +28,7 @@ body {
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
-  background: #11130f;
+  background: var(--body-bg, #11130f);
 }
 
 h1,
@@ -128,7 +130,7 @@ select option {
 
 input::placeholder,
 textarea::placeholder {
-  color: #707767;
+  color: var(--placeholder, #707767);
 }
 
 textarea {
@@ -140,7 +142,7 @@ input:focus,
 textarea:focus,
 select:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 1px rgba(140, 207, 98, 0.18);
+  box-shadow: 0 0 0 1px var(--focus-shadow, rgba(140, 207, 98, 0.18));
 }
 
 ::-webkit-scrollbar {

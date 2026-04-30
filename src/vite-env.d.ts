@@ -51,6 +51,7 @@ interface Window {
         badgeNotificationsEnabled: boolean
         soundNotificationsEnabled: boolean
         toastDurationSeconds: number
+        theme: string
       }>
       browsePath: (targetPath?: string | null, includeFiles?: boolean) => Promise<{
         path: string
@@ -129,6 +130,7 @@ interface Window {
         badgeNotificationsEnabled?: boolean
         soundNotificationsEnabled?: boolean
         toastDurationSeconds?: number
+        theme?: string
       }) => Promise<{
         version: number
         updatedAt: string
@@ -137,6 +139,7 @@ interface Window {
         badgeNotificationsEnabled: boolean
         soundNotificationsEnabled: boolean
         toastDurationSeconds: number
+        theme: string
       }>
     }
   }

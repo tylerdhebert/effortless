@@ -11,6 +11,7 @@ export type AppState = {
   badgeNotificationsEnabled: boolean
   soundNotificationsEnabled: boolean
   toastDurationSeconds: number
+  theme: string
 }
 
 export function openDatabase(): AppDatabase {
@@ -201,6 +202,7 @@ export function initializeSchema(db: AppDatabase): void {
   ensureColumn(db, 'app_state', 'badge_notifications_enabled', 'INTEGER NOT NULL DEFAULT 1')
   ensureColumn(db, 'app_state', 'sound_notifications_enabled', 'INTEGER NOT NULL DEFAULT 0')
   ensureColumn(db, 'app_state', 'toast_duration_seconds', 'INTEGER NOT NULL DEFAULT 5')
+  ensureColumn(db, 'app_state', 'theme', 'TEXT NOT NULL DEFAULT \'grass\'')
 }
 
 export function bumpAppState(db: AppDatabase): void {
@@ -218,6 +220,7 @@ export type NotificationSettings = {
   badgeNotificationsEnabled?: boolean
   soundNotificationsEnabled?: boolean
   toastDurationSeconds?: number
+  theme?: string
 }
 
 export function updateNotificationSettings(
@@ -231,7 +234,8 @@ export function updateNotificationSettings(
         banner_notifications_enabled = ?,
         badge_notifications_enabled = ?,
         sound_notifications_enabled = ?,
-        toast_duration_seconds = ?
+        toast_duration_seconds = ?,
+        theme = ?
     WHERE id = 1
   `).run(
     settings.osNotificationsEnabled ?? current.osNotificationsEnabled ? 1 : 0,
@@ -239,6 +243,7 @@ export function updateNotificationSettings(
     settings.badgeNotificationsEnabled ?? current.badgeNotificationsEnabled ? 1 : 0,
     settings.soundNotificationsEnabled ?? current.soundNotificationsEnabled ? 1 : 0,
     settings.toastDurationSeconds ?? current.toastDurationSeconds,
+    settings.theme ?? current.theme,
   )
   bumpAppState(db)
   return getAppState(db)
@@ -254,7 +259,8 @@ export function getAppState(db: AppDatabase): AppState {
       badge_notifications_enabled: number
       sound_notifications_enabled: number
       toast_duration_seconds: number
-    }>(`SELECT version, updated_at, os_notifications_enabled, banner_notifications_enabled, badge_notifications_enabled, sound_notifications_enabled, toast_duration_seconds FROM app_state WHERE id = 1`)
+      theme: string
+    }>(`SELECT version, updated_at, os_notifications_enabled, banner_notifications_enabled, badge_notifications_enabled, sound_notifications_enabled, toast_duration_seconds, theme FROM app_state WHERE id = 1`)
     .get()
 
   if (!row) {
@@ -269,6 +275,7 @@ export function getAppState(db: AppDatabase): AppState {
     badgeNotificationsEnabled: Boolean(row.badge_notifications_enabled),
     soundNotificationsEnabled: Boolean(row.sound_notifications_enabled),
     toastDurationSeconds: row.toast_duration_seconds,
+    theme: row.theme,
   }
 }
 

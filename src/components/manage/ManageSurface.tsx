@@ -4,6 +4,7 @@ import type { Mandate, Repo, WorkSurface, MandateSourceType } from '../../../cor
 import { PathPicker } from '../ui/PathPicker'
 import { PillSwitcher } from '../ui/PillSwitcher'
 import { NotificationSettingsPanel } from '../notifications/NotificationSettingsPanel'
+import { AppearanceSettingsPanel } from './AppearanceSettingsPanel'
 import styles from './ManageSurface.module.css'
 
 type ManageSurfaceProps = {
@@ -21,7 +22,7 @@ type ManageSurfaceProps = {
   isCreatingMandate: boolean
   isUpdatingMandate: boolean
   isDeletingMandate: boolean
-  section: 'repos' | 'mandates' | 'notifications'
+  section: 'repos' | 'mandates' | 'notifications' | 'appearance'
   notificationSettings?: {
     osNotificationsEnabled: boolean
     bannerNotificationsEnabled: boolean
@@ -37,6 +38,8 @@ type ManageSurfaceProps = {
     toastDurationSeconds?: number
   }) => void
   isUpdatingNotificationSettings?: boolean
+  currentTheme?: string
+  onUpdateTheme?: (theme: string) => void
 }
 
 export function ManageSurface({
@@ -58,6 +61,8 @@ export function ManageSurface({
   notificationSettings,
   onUpdateNotificationSettings,
   isUpdatingNotificationSettings,
+  currentTheme,
+  onUpdateTheme,
 }: ManageSurfaceProps) {
   const mandateSourceOptions: Array<{ id: MandateSourceType; label: string }> = [
     { id: 'body', label: 'inline text' },
@@ -395,6 +400,13 @@ export function ManageSurface({
             ) : (
               <p className="empty-state">notification settings unavailable</p>
             )}
+          </section>
+        ) : section === 'appearance' ? (
+          <section className={`${styles['manage-surface']} ${styles['manage-surface-notifications']}`}>
+            <AppearanceSettingsPanel
+              currentTheme={currentTheme ?? 'grass'}
+              onUpdateTheme={onUpdateTheme ?? (() => {})}
+            />
           </section>
         ) : null}
       </div>

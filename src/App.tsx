@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { applyTheme } from './themes'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   CircleHelp,
@@ -44,7 +45,7 @@ import './App.css'
 function App() {
   const queryClient = useQueryClient()
   const [surfaceMode, setSurfaceMode] = useState<'effort' | 'manage'>('effort')
-  const [manageSection, setManageSection] = useState<'repos' | 'mandates' | 'notifications'>('repos')
+  const [manageSection, setManageSection] = useState<'repos' | 'mandates' | 'notifications' | 'appearance'>('repos')
   const [selectedEffortId, setSelectedEffortId] = useState<number | null>(null)
   const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null)
   const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null)
@@ -76,6 +77,12 @@ function App() {
     queryFn: () => window.effortless.getAppState(),
     refetchInterval: 2000,
   })
+
+  useEffect(() => {
+    if (appStateQuery.data?.theme) {
+      applyTheme(appStateQuery.data.theme)
+    }
+  }, [appStateQuery.data?.theme])
 
   const { notifications, count: notificationCount, isLoading: notificationsLoading } = useNotifications()
 
@@ -212,6 +219,7 @@ function App() {
       badgeNotificationsEnabled?: boolean
       soundNotificationsEnabled?: boolean
       toastDurationSeconds?: number
+      theme?: string
     }) => window.effortless.updateNotificationSettings(settings),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['app-state'] })
@@ -443,6 +451,10 @@ function App() {
               updateNotificationSettings.mutate(settings)
             }
             isUpdatingNotificationSettings={updateNotificationSettings.isPending}
+            currentTheme={appStateQuery.data?.theme ?? 'grass'}
+            onUpdateTheme={(theme) =>
+              updateNotificationSettings.mutate({ theme })
+            }
           />
         ) : selectedEffort ? (
           <>

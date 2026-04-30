@@ -15,10 +15,10 @@ type SidebarProps = {
   reposCount: number
   mandatesCount: number
   surfaceMode: 'effort' | 'manage'
-  manageSection: 'repos' | 'mandates' | 'notifications'
+  manageSection: 'repos' | 'mandates' | 'notifications' | 'appearance'
   onSelectEffort: (effortId: number) => void
   onSetSurfaceMode: (mode: 'effort' | 'manage') => void
-  onSetManageSection: (section: 'repos' | 'mandates' | 'notifications') => void
+  onSetManageSection: (section: 'repos' | 'mandates' | 'notifications' | 'appearance') => void
   onOpenCreateEffort: () => void
   effortPendingMap: Map<number, boolean>
   notificationCount: number
@@ -196,6 +196,16 @@ export function Sidebar({
               <div className={styles['manage-card-heading']}>
                 <strong>notifications</strong>
                 <Bell size={14} />
+              </div>
+            </button>
+            <button
+              className={`${styles['manage-card']} ${manageSection === 'appearance' ? styles.selected : ''}`}
+              type="button"
+              onClick={() => onSetManageSection('appearance')}
+            >
+              <div className={styles['manage-card-heading']}>
+                <strong>appearance</strong>
+                <span>theme</span>
               </div>
             </button>
           </div>
