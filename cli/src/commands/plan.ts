@@ -1,8 +1,9 @@
 import { createPlan, getPlanByRef, listPlanComments, listPlans, markPlanReady } from '../../../core/plans'
+import { resolveMandate } from '../../../core/mandates'
 import { requiredOption, bodyArg } from '../args'
 import { db, wait } from '../context'
 import { printPlan } from '../render'
-import type { Plan } from '../../../core/types'
+import type { Plan, WorkSurface } from '../../../core/types'
 
 export async function handlePlan(surface: string, command: string): Promise<boolean> {
   if (surface !== 'plan') return false
@@ -43,6 +44,45 @@ export async function handlePlan(surface: string, command: string): Promise<bool
     for (const comment of comments) {
       console.log(`${comment.kind} ${comment.agentId ?? comment.author}: ${comment.body}`)
     }
+    return true
+  }
+
+  if (command === 'context') {
+    const plan = getPlanByRef(db, requiredOption('--plan'))
+    printPlan(plan)
+    console.log('')
+    console.log('body')
+    console.log(plan.body)
+
+    if (plan.summary) {
+      console.log('')
+      console.log('summary')
+      console.log(plan.summary)
+    }
+
+    const comments = listPlanComments(db, plan.id)
+    if (comments.length > 0) {
+      console.log('')
+      console.log('comments')
+      for (const comment of comments) {
+        console.log(`${comment.kind} ${comment.agentId ?? comment.author}: ${comment.body}`)
+      }
+    }
+
+    const surfaces: WorkSurface[] = ['effort', 'plan', 'task', 'review', 'discussion']
+    const mandates = surfaces
+      .map((surface) => ({ surface, resolved: resolveMandate(db, surface, null) }))
+      .filter((entry) => entry.resolved != null)
+
+    if (mandates.length > 0) {
+      console.log('')
+      console.log('mandates')
+      for (const { surface, resolved } of mandates) {
+        console.log(`${surface} (${resolved!.source})`)
+        console.log(resolved!.text)
+      }
+    }
+
     return true
   }
 

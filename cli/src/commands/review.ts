@@ -1,9 +1,10 @@
 import { getReviewByRef, listReviews, submitReview } from '../../../core/reviews'
-import { listTaskComments } from '../../../core/tasks'
+import { getTask, listTaskComments } from '../../../core/tasks'
+import { resolveMandate } from '../../../core/mandates'
 import { requiredOption, bodyArg } from '../args'
 import { db, resolveTask, wait } from '../context'
 import { printReview } from '../render'
-import type { Review } from '../../../core/types'
+import type { Review, WorkSurface } from '../../../core/types'
 
 export async function handleReview(surface: string, command: string): Promise<boolean> {
   if (surface !== 'review') return false
@@ -52,6 +53,50 @@ export async function handleReview(surface: string, command: string): Promise<bo
     const review = getReviewByRef(db, requiredOption('--review'))
     printReview(review)
     console.log(review.body)
+    return true
+  }
+
+  if (command === 'context') {
+    const review = getReviewByRef(db, requiredOption('--review'))
+    printReview(review)
+    console.log('')
+    console.log('body')
+    console.log(review.body)
+
+    if (review.summary) {
+      console.log('')
+      console.log('summary')
+      console.log(review.summary)
+    }
+
+    const task = getTask(db, review.taskId)
+    console.log('')
+    console.log(`task ${task.shortRef}`)
+    console.log(`${task.status} ${task.title}`)
+
+    const comments = listTaskComments(db, task.id)
+    if (comments.length > 0) {
+      console.log('')
+      console.log('comments')
+      for (const comment of comments) {
+        console.log(`${comment.kind} ${comment.agentId ?? comment.author}: ${comment.body}`)
+      }
+    }
+
+    const surfaces: WorkSurface[] = ['effort', 'plan', 'task', 'review', 'discussion']
+    const mandates = surfaces
+      .map((surface) => ({ surface, resolved: resolveMandate(db, surface, task.repoId) }))
+      .filter((entry) => entry.resolved != null)
+
+    if (mandates.length > 0) {
+      console.log('')
+      console.log('mandates')
+      for (const { surface, resolved } of mandates) {
+        console.log(`${surface} (${resolved!.source})`)
+        console.log(resolved!.text)
+      }
+    }
+
     return true
   }
 

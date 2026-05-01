@@ -98,35 +98,47 @@ export function getMandateByRef(db: AppDatabase, mandateRef: string): Mandate {
   return mapMandate(row)
 }
 
-export function resolveMandateText(
+export function resolveMandate(
   db: AppDatabase,
   workSurface: WorkSurface,
   repoId?: number | null,
-): string | null {
-  let mandate: Mandate | null = null
-
+): { mandate: Mandate; text: string; source: 'repo' | 'global' } | null {
   if (repoId != null) {
     const repoRow = db
       .prepare<MandateRow>(`SELECT * FROM mandates WHERE work_surface = ? AND repo_id = ?`)
       .get(workSurface, repoId)
     if (repoRow) {
-      mandate = mapMandate(repoRow)
+      const mandate = mapMandate(repoRow)
+      const text = readMandateContent(mandate)
+      if (text) {
+        return { mandate, text, source: 'repo' }
+      }
     }
   }
 
-  if (!mandate) {
-    const globalRow = db
-      .prepare<MandateRow>(`SELECT * FROM mandates WHERE work_surface = ? AND repo_id IS NULL`)
-      .get(workSurface)
-    if (globalRow) {
-      mandate = mapMandate(globalRow)
+  const globalRow = db
+    .prepare<MandateRow>(`SELECT * FROM mandates WHERE work_surface = ? AND repo_id IS NULL`)
+    .get(workSurface)
+  if (globalRow) {
+    const mandate = mapMandate(globalRow)
+    const text = readMandateContent(mandate)
+    if (text) {
+      return { mandate, text, source: 'global' }
     }
   }
 
-  if (!mandate) {
-    return null
-  }
+  return null
+}
 
+export function resolveMandateText(
+  db: AppDatabase,
+  workSurface: WorkSurface,
+  repoId?: number | null,
+): string | null {
+  return resolveMandate(db, workSurface, repoId)?.text ?? null
+}
+
+function readMandateContent(mandate: Mandate): string | null {
   if (mandate.sourceType === 'file' && mandate.filePath) {
     try {
       return fs.readFileSync(mandate.filePath, 'utf-8')
@@ -134,7 +146,6 @@ export function resolveMandateText(
       return null
     }
   }
-
   return mandate.body
 }
 

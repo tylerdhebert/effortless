@@ -2,8 +2,10 @@ import {
   createDiscussionMessage,
   listDiscussionMessages,
 } from '../../../core/discussion'
+import { resolveMandate } from '../../../core/mandates'
 import { bodyArg, requiredOption } from '../args'
 import { db, wait } from '../context'
+import type { WorkSurface } from '../../../core/types'
 
 export async function handleDiscuss(surface: string, command: string): Promise<boolean> {
   if (surface !== 'discuss') return false
@@ -42,6 +44,42 @@ export async function handleDiscuss(surface: string, command: string): Promise<b
     const effort = getEffortByRef(db, requiredOption('--effort'))
     const latestSeenId = listDiscussionMessages(db, effort.id)[0]?.id ?? 0
     await waitForNextUserMessage(effort.id, latestSeenId)
+    return true
+  }
+
+  if (command === 'context') {
+    const { getEffortByRef } = await import('../../../core/efforts')
+    const effort = getEffortByRef(db, requiredOption('--effort'))
+    console.log(`${effort.shortRef} ${effort.template} ${effort.status}`)
+    console.log(effort.title)
+    console.log('')
+    console.log('description')
+    console.log(effort.description)
+
+    const messages = listDiscussionMessages(db, effort.id)
+    if (messages.length > 0) {
+      console.log('')
+      console.log('discussion')
+      for (const message of messages) {
+        console.log(`${message.author}${message.agentId ? `:${message.agentId}` : ''} ${message.createdAt}`)
+        console.log(message.body)
+      }
+    }
+
+    const surfaces: WorkSurface[] = ['effort', 'plan', 'task', 'review', 'discussion']
+    const mandates = surfaces
+      .map((surface) => ({ surface, resolved: resolveMandate(db, surface, null) }))
+      .filter((entry) => entry.resolved != null)
+
+    if (mandates.length > 0) {
+      console.log('')
+      console.log('mandates')
+      for (const { surface, resolved } of mandates) {
+        console.log(`${surface} (${resolved!.source})`)
+        console.log(resolved!.text)
+      }
+    }
+
     return true
   }
 

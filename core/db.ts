@@ -173,6 +173,8 @@ export function initializeSchema(db: AppDatabase): void {
       updated_at TEXT NOT NULL
     );
 
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_mandates_surface_repo ON mandates(work_surface, COALESCE(repo_id, -1));
+
     CREATE TABLE IF NOT EXISTS "references" (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       short_ref TEXT UNIQUE,

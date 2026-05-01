@@ -9,10 +9,13 @@ import {
   markTaskReady,
   updateTaskDetails,
 } from '../../../core/tasks'
+import { getRepo } from '../../../core/repos'
+import { listReferences } from '../../../core/references'
+import { resolveMandate } from '../../../core/mandates'
 import { option, requiredOption, bodyArg } from '../args'
 import { db, resolveTask, wait } from '../context'
-import { printTask } from '../render'
-import type { Task } from '../../../core/types'
+import { printReference, printTask } from '../render'
+import type { Task, WorkSurface } from '../../../core/types'
 
 export async function handleTask(surface: string, command: string): Promise<boolean> {
   if (surface !== 'task') return false
@@ -70,6 +73,73 @@ export async function handleTask(surface: string, command: string): Promise<bool
     for (const comment of comments) {
       console.log(`${comment.kind} ${comment.agentId ?? comment.author}: ${comment.body}`)
     }
+    return true
+  }
+
+  if (command === 'context') {
+    const task = resolveTask(db, requiredOption('--task'))
+    printTask(task)
+    console.log(task.title)
+    console.log('')
+    console.log('description')
+    console.log(task.description)
+
+    if (task.handoffSummary) {
+      console.log('')
+      console.log('handoff')
+      console.log(task.handoffSummary)
+    }
+
+    if (task.artifact) {
+      console.log('')
+      console.log('artifact')
+      console.log(task.artifact)
+    }
+
+    if (task.repoId) {
+      const repo = getRepo(db, task.repoId)
+      console.log('')
+      console.log('repo')
+      console.log(`${repo.shortRef} ${repo.name}`)
+      console.log(`path ${repo.path}`)
+      console.log(`base ${repo.baseBranch}`)
+      if (repo.buildCommand) {
+        console.log(`build ${repo.buildCommand}`)
+      }
+    }
+
+    const comments = listTaskComments(db, task.id)
+    if (comments.length > 0) {
+      console.log('')
+      console.log('comments')
+      for (const comment of comments) {
+        console.log(`${comment.kind} ${comment.agentId ?? comment.author}: ${comment.body}`)
+      }
+    }
+
+    const references = listReferences(db, 'task', task.id)
+    if (references.length > 0) {
+      console.log('')
+      console.log('references')
+      for (const reference of references) {
+        printReference(reference)
+      }
+    }
+
+    const surfaces: WorkSurface[] = ['effort', 'plan', 'task', 'review', 'discussion']
+    const mandates = surfaces
+      .map((surface) => ({ surface, resolved: resolveMandate(db, surface, task.repoId) }))
+      .filter((entry) => entry.resolved != null)
+
+    if (mandates.length > 0) {
+      console.log('')
+      console.log('mandates')
+      for (const { surface, resolved } of mandates) {
+        console.log(`${surface} (${resolved!.source})`)
+        console.log(resolved!.text)
+      }
+    }
+
     return true
   }
 
