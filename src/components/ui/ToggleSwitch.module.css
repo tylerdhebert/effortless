@@ -1,0 +1,61 @@
+.toggle-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.toggle-label {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: lowercase;
+}
+
+.toggle-track {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--field);
+  cursor: pointer;
+  padding: 0;
+  transition:
+    border-color 140ms ease,
+    background 140ms ease;
+}
+
+.toggle-track:hover {
+  border-color: var(--line-strong);
+}
+
+.toggle-track.checked {
+  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+.toggle-track:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: var(--muted);
+  transition:
+    transform 140ms ease,
+    background 140ms ease;
+}
+
+.toggle-track.checked .toggle-thumb {
+  transform: translateX(16px);
+  background: var(--accent);
+}

@@ -393,6 +393,26 @@ function getTaskComment(db: AppDatabase, id: number): TaskComment {
   return mapTaskComment(row)
 }
 
+export function updateTaskRequiresReview(db: AppDatabase, taskId: number, requiresReview: boolean): Task {
+  db.prepare(`UPDATE tasks SET requires_review = ?, updated_at = ? WHERE id = ?`).run(
+    requiresReview ? 1 : 0,
+    new Date().toISOString(),
+    taskId,
+  )
+  bumpAppState(db)
+  return getTask(db, taskId)
+}
+
+export function updateTaskReviewRequiresReview(db: AppDatabase, taskId: number, reviewRequiresReview: boolean): Task {
+  db.prepare(`UPDATE tasks SET review_requires_review = ?, updated_at = ? WHERE id = ?`).run(
+    reviewRequiresReview ? 1 : 0,
+    new Date().toISOString(),
+    taskId,
+  )
+  bumpAppState(db)
+  return getTask(db, taskId)
+}
+
 function mapTask(row: TaskRow): Task {
   return {
     id: row.id,

@@ -81,6 +81,8 @@ contextBridge.exposeInMainWorld('effortless', {
     ipcRenderer.invoke('efforts:create', input) as Promise<Effort>,
   updateEffortSummary: (effortId: number, summary: string) =>
     ipcRenderer.invoke('efforts:updateSummary', effortId, summary) as Promise<Effort>,
+  updateEffortPlanRequiresReview: (effortId: number, planRequiresReview: boolean) =>
+    ipcRenderer.invoke('efforts:updatePlanRequiresReview', effortId, planRequiresReview) as Promise<Effort>,
   listTasks: (effortId: number) => ipcRenderer.invoke('tasks:list', effortId) as Promise<Task[]>,
   listAllTasks: () => ipcRenderer.invoke('tasks:listAll') as Promise<Task[]>,
   listPlans: (effortId: number) => ipcRenderer.invoke('plans:list', effortId) as Promise<Plan[]>,
@@ -124,6 +126,10 @@ contextBridge.exposeInMainWorld('effortless', {
     ipcRenderer.invoke('tasks:conflicts', taskId) as Promise<TaskConflictView>,
   updateTaskDetails: (input: UpdateTaskDetailsInput) =>
     ipcRenderer.invoke('tasks:updateDetails', input) as Promise<Task>,
+  updateTaskRequiresReview: (taskId: number, requiresReview: boolean) =>
+    ipcRenderer.invoke('tasks:updateRequiresReview', taskId, requiresReview) as Promise<Task>,
+  updateTaskReviewRequiresReview: (taskId: number, reviewRequiresReview: boolean) =>
+    ipcRenderer.invoke('tasks:updateReviewRequiresReview', taskId, reviewRequiresReview) as Promise<Task>,
   approveTask: (input: ApproveTaskInput) =>
     ipcRenderer.invoke('tasks:approve', input) as Promise<Task>,
   requestTaskChanges: (input: RequestTaskChangesInput) =>

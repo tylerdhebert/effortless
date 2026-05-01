@@ -106,6 +106,16 @@ export function updateEffortSummary(db: AppDatabase, effortId: number, summary: 
   return getEffort(db, effortId)
 }
 
+export function updateEffortPlanRequiresReview(db: AppDatabase, effortId: number, planRequiresReview: boolean): Effort {
+  db.prepare(`UPDATE efforts SET plan_requires_review = ?, updated_at = ? WHERE id = ?`).run(
+    planRequiresReview ? 1 : 0,
+    new Date().toISOString(),
+    effortId,
+  )
+  bumpAppState(db)
+  return getEffort(db, effortId)
+}
+
 function mapEffort(row: EffortRow): Effort {
   return {
     id: row.id,

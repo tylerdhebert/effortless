@@ -72,6 +72,7 @@ interface Window {
       listEfforts: () => Promise<Effort[]>
       createEffort: (input: CreateEffortInput) => Promise<Effort>
       updateEffortSummary: (effortId: number, summary: string) => Promise<Effort>
+      updateEffortPlanRequiresReview: (effortId: number, planRequiresReview: boolean) => Promise<Effort>
       listTasks: (effortId: number) => Promise<Task[]>
       listAllTasks: () => Promise<Task[]>
       listPlans: (effortId: number) => Promise<Plan[]>
@@ -99,6 +100,8 @@ interface Window {
       getTaskCommits: (taskId: number) => Promise<TaskCommitView>
       getTaskConflicts: (taskId: number) => Promise<TaskConflictView>
       updateTaskDetails: (input: UpdateTaskDetailsInput) => Promise<Task>
+      updateTaskRequiresReview: (taskId: number, requiresReview: boolean) => Promise<Task>
+      updateTaskReviewRequiresReview: (taskId: number, reviewRequiresReview: boolean) => Promise<Task>
       approveTask: (input: ApproveTaskInput) => Promise<Task>
       requestTaskChanges: (input: RequestTaskChangesInput) => Promise<Task>
       listMandates: () => Promise<Mandate[]>

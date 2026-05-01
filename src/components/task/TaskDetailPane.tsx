@@ -20,6 +20,7 @@ import { ReviewHistory } from './ReviewHistory'
 import { ReviewRecord } from './ReviewRecord'
 import { reviewSummary } from '../../lib/helpers'
 import { PillSwitcher } from '../ui/PillSwitcher'
+import { ToggleSwitch } from '../ui/ToggleSwitch'
 import styles from './TaskDetailPane.module.css'
 
 type TaskDetailPaneProps = {
@@ -33,9 +34,13 @@ type TaskDetailPaneProps = {
   onRunBuild: (taskId: number) => void
   onApplyReview: (reviewId: number) => void
   onRequestReviewChanges: (input: { reviewId: number; body: string }) => void
+  onUpdateTaskRequiresReview: (taskId: number, requiresReview: boolean) => void
+  onUpdateTaskReviewRequiresReview: (taskId: number, reviewRequiresReview: boolean) => void
   isRunningBuild: boolean
   isApplyingReview: boolean
   isRequestingReviewChanges: boolean
+  isUpdatingTaskRequiresReview: boolean
+  isUpdatingTaskReviewRequiresReview: boolean
 }
 
 export function TaskDetailPane({
@@ -49,9 +54,13 @@ export function TaskDetailPane({
   onRunBuild,
   onApplyReview,
   onRequestReviewChanges,
+  onUpdateTaskRequiresReview,
+  onUpdateTaskReviewRequiresReview,
   isRunningBuild,
   isApplyingReview,
   isRequestingReviewChanges,
+  isUpdatingTaskRequiresReview,
+  isUpdatingTaskReviewRequiresReview,
 }: TaskDetailPaneProps) {
   const [reviewFeedback, setReviewFeedback] = useState('')
   const [surfaceMode, setSurfaceMode] = useState<'meta' | 'work'>('meta')
@@ -174,6 +183,18 @@ export function TaskDetailPane({
                   {task.worktreePath ?? 'no worktree yet'}
                 </span>
               </div>
+              <ToggleSwitch
+                label="review"
+                checked={task.requiresReview}
+                onChange={(checked) => onUpdateTaskRequiresReview(task.id, checked)}
+                disabled={isUpdatingTaskRequiresReview}
+              />
+              <ToggleSwitch
+                label="review gating"
+                checked={task.reviewRequiresReview}
+                onChange={(checked) => onUpdateTaskReviewRequiresReview(task.id, checked)}
+                disabled={isUpdatingTaskReviewRequiresReview}
+              />
             </div>
           </div>
           <div className={styles['task-header-controls']}>

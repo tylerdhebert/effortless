@@ -16,6 +16,7 @@ import { EffortCreationForm } from './components/sidebar/EffortCreationForm'
 import { InputRequestList } from './components/effort/InputRequestList'
 import { ManageSurface } from './components/manage/ManageSurface'
 import { NotificationToast } from './components/notifications/NotificationToast'
+import { ToggleSwitch } from './components/ui/ToggleSwitch'
 
 import { PlanSection } from './components/effort/PlanSection'
 import { ReferenceSection } from './components/effort/ReferenceSection'
@@ -204,7 +205,7 @@ function App() {
     enabled: Boolean(selectedTask),
   })
 
-  const { createEffort } = useEffortMutations()
+  const { createEffort, updateEffortPlanRequiresReview } = useEffortMutations()
   const repoMutations = useRepoMutations(selectedEffort?.id ?? null)
   const mandateMutations = useMandateMutations()
   const { createDiscussionMessage } = useDiscussionMutations(selectedEffort?.id ?? null)
@@ -481,6 +482,19 @@ function App() {
                         <small>status</small>
                         <span style={{ borderColor: effortStatusColor(selectedEffort.status), boxShadow: `0 0 8px ${effortStatusColor(selectedEffort.status)}` }}>{selectedEffort.status}</span>
                       </div>
+                      {supportsPlans ? (
+                        <ToggleSwitch
+                          label="plan review"
+                          checked={selectedEffort.planRequiresReview}
+                          onChange={(checked) =>
+                            updateEffortPlanRequiresReview.mutate({
+                              effortId: selectedEffort.id,
+                              planRequiresReview: checked,
+                            })
+                          }
+                          disabled={updateEffortPlanRequiresReview.isPending}
+                        />
+                      ) : null}
                     </div>
                   </div>
                 </div>
@@ -671,9 +685,17 @@ function App() {
                       onRunBuild={(taskId) => taskMutations.runBuild.mutate(taskId)}
                       onApplyReview={(reviewId) => reviewMutations.applyReview.mutate({ reviewId })}
                       onRequestReviewChanges={(input) => reviewMutations.requestReviewChanges.mutate(input)}
+                      onUpdateTaskRequiresReview={(taskId, requiresReview) =>
+                        taskMutations.updateTaskRequiresReview.mutate({ taskId, requiresReview })
+                      }
+                      onUpdateTaskReviewRequiresReview={(taskId, reviewRequiresReview) =>
+                        taskMutations.updateTaskReviewRequiresReview.mutate({ taskId, reviewRequiresReview })
+                      }
                       isRunningBuild={taskMutations.runBuild.isPending}
                       isApplyingReview={reviewMutations.applyReview.isPending}
                       isRequestingReviewChanges={reviewMutations.requestReviewChanges.isPending}
+                      isUpdatingTaskRequiresReview={taskMutations.updateTaskRequiresReview.isPending}
+                      isUpdatingTaskReviewRequiresReview={taskMutations.updateTaskReviewRequiresReview.isPending}
                     />
                   </div>
                 </section>

@@ -43,5 +43,25 @@ export function useTaskMutations(selectedEffortId: number | null) {
     },
   })
 
-  return { readyTask, updateTaskDetails, ensureTaskWorktree, runBuild }
+  const updateTaskRequiresReview = useMutation({
+    mutationFn: ({ taskId, requiresReview }: { taskId: number; requiresReview: boolean }) =>
+      window.effortless.updateTaskRequiresReview(taskId, requiresReview),
+    onSuccess: async (task) => {
+      if (selectedEffortId) {
+        await invalidateTask(task.id, selectedEffortId)
+      }
+    },
+  })
+
+  const updateTaskReviewRequiresReview = useMutation({
+    mutationFn: ({ taskId, reviewRequiresReview }: { taskId: number; reviewRequiresReview: boolean }) =>
+      window.effortless.updateTaskReviewRequiresReview(taskId, reviewRequiresReview),
+    onSuccess: async (task) => {
+      if (selectedEffortId) {
+        await invalidateTask(task.id, selectedEffortId)
+      }
+    },
+  })
+
+  return { readyTask, updateTaskDetails, ensureTaskWorktree, runBuild, updateTaskRequiresReview, updateTaskReviewRequiresReview }
 }

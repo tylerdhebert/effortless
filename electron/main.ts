@@ -7,7 +7,7 @@ import { getLatestTaskBuild, runTaskBuild } from '../core/builds'
 import { getAppState, openDatabase, updateNotificationSettings } from '../core/db'
 import type { NotificationSettings } from '../core/db'
 import { createDiscussionMessage, listDiscussionMessages } from '../core/discussion'
-import { listEfforts, createEffort, updateEffortSummary } from '../core/efforts'
+import { listEfforts, createEffort, updateEffortSummary, updateEffortPlanRequiresReview } from '../core/efforts'
 import { browsePath } from '../core/filesystem'
 import {
   answerInputRequest,
@@ -50,6 +50,8 @@ import {
   markTaskReady,
   requestTaskChanges,
   updateTaskDetails,
+  updateTaskRequiresReview,
+  updateTaskReviewRequiresReview,
 } from '../core/tasks'
 import type {
   AnswerInputRequestInput,
@@ -138,6 +140,9 @@ ipcMain.handle('efforts:create', (_event, input: { title: string; description: s
 ipcMain.handle('efforts:updateSummary', (_event, effortId: number, summary: string) =>
   updateEffortSummary(db, effortId, summary),
 )
+ipcMain.handle('efforts:updatePlanRequiresReview', (_event, effortId: number, planRequiresReview: boolean) =>
+  updateEffortPlanRequiresReview(db, effortId, planRequiresReview),
+)
 
 ipcMain.handle('tasks:list', (_event, effortId: number) => listTasks(db, effortId))
 ipcMain.handle('tasks:listAll', () => listAllTasks(db))
@@ -179,6 +184,12 @@ ipcMain.handle('tasks:commits', (_event, taskId: number) => getTaskCommitView(db
 ipcMain.handle('tasks:conflicts', (_event, taskId: number) => getTaskConflictView(db, taskId))
 ipcMain.handle('tasks:updateDetails', (_event, input: UpdateTaskDetailsInput) =>
   updateTaskDetails(db, input),
+)
+ipcMain.handle('tasks:updateRequiresReview', (_event, taskId: number, requiresReview: boolean) =>
+  updateTaskRequiresReview(db, taskId, requiresReview),
+)
+ipcMain.handle('tasks:updateReviewRequiresReview', (_event, taskId: number, reviewRequiresReview: boolean) =>
+  updateTaskReviewRequiresReview(db, taskId, reviewRequiresReview),
 )
 ipcMain.handle('builds:latest', (_event, taskId: number) => getLatestTaskBuild(db, taskId))
 ipcMain.handle('builds:run', (_event, taskId: number) => runTaskBuild(db, taskId))

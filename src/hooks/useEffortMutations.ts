@@ -13,5 +13,13 @@ export function useEffortMutations() {
     },
   })
 
-  return { createEffort }
+  const updateEffortPlanRequiresReview = useMutation({
+    mutationFn: ({ effortId, planRequiresReview }: { effortId: number; planRequiresReview: boolean }) =>
+      window.effortless.updateEffortPlanRequiresReview(effortId, planRequiresReview),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['efforts'] })
+    },
+  })
+
+  return { createEffort, updateEffortPlanRequiresReview }
 }
