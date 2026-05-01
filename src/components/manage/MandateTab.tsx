@@ -1,4 +1,4 @@
-import { useMemo, useState, useRef, useCallback } from 'react'
+import { useMemo, useState, useRef, useCallback, useEffect } from 'react'
 import type { Mandate, Repo, WorkSurface } from '../../../core/types'
 import { PathPicker } from '../ui/PathPicker'
 import styles from './MandateTab.module.css'
@@ -128,7 +128,7 @@ export function MandateTab({
             const activeSource = mandate?.sourceType ?? 'body'
             return (
               <MandateRow
-                key={surface}
+                key={`${selectedContext}-${surface}`}
                 surface={surface}
                 mandate={mandate}
                 activeSource={activeSource}
@@ -163,15 +163,12 @@ function MandateRow({
   const [body, setBody] = useState(mandate?.body ?? '')
   const [filePath, setFilePath] = useState(mandate?.filePath ?? '')
 
-  // sync when mandate changes (e.g. after delete/create)
-  const mandateKey = mandate ? `${mandate.id}-${mandate.sourceType}` : 'none'
-  const prevKeyRef = useRef(mandateKey)
-  if (prevKeyRef.current !== mandateKey) {
-    prevKeyRef.current = mandateKey
+  // Sync local state whenever the mandate prop changes (context switch, delete, etc.)
+  useEffect(() => {
     setSourceType(activeSource)
     setBody(mandate?.body ?? '')
     setFilePath(mandate?.filePath ?? '')
-  }
+  }, [mandate, activeSource])
 
   function save() {
     const b = sourceType === 'body' ? (body.trim() || null) : null
@@ -188,24 +185,14 @@ function MandateRow({
             <button
               type="button"
               className={`${styles.sourceBtn} ${sourceType === 'body' ? styles.sourceActive : ''}`}
-              onClick={() => {
-                setSourceType('body')
-                if (mandate && mandate.sourceType !== 'body') {
-                  onSave(surface, 'body', body.trim() || null, null)
-                }
-              }}
+              onClick={() => setSourceType('body')}
             >
               text
             </button>
             <button
               type="button"
               className={`${styles.sourceBtn} ${sourceType === 'file' ? styles.sourceActive : ''}`}
-              onClick={() => {
-                setSourceType('file')
-                if (mandate && mandate.sourceType !== 'file') {
-                  onSave(surface, 'file', null, filePath.trim() || null)
-                }
-              }}
+              onClick={() => setSourceType('file')}
             >
               file
             </button>
