@@ -274,6 +274,8 @@ function createWindow() {
     ...(isMac
       ? { titleBarStyle: 'hidden' as const }
       : { frame: false }),
+    minWidth: 960,
+    minHeight: 600,
     icon: path.join(process.env.VITE_PUBLIC, 'assets', 'icon.png'),
     webPreferences: {
       backgroundThrottling: false,
