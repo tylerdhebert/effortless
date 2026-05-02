@@ -25,7 +25,11 @@ export function TitleBar() {
     <header className={styles['title-bar']}>
       {isMac ? (
         <div className={styles['traffic-light-spacer']} aria-hidden="true" />
-      ) : (
+      ) : null}
+      <div className={styles['title-bar-content']}>
+        <span className={styles['app-title']}>effortless</span>
+      </div>
+      {isMac ? null : (
         <div className={styles['window-controls']}>
           <button
             type="button"
@@ -53,9 +57,6 @@ export function TitleBar() {
           </button>
         </div>
       )}
-      <div className={styles['title-bar-content']}>
-        <span className={styles['app-title']}>effortless</span>
-      </div>
     </header>
   )
 }
