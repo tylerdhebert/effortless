@@ -42,6 +42,11 @@ import type { PendingNotification } from '../core/notifications'
 import type { NotificationSettings } from '../core/db'
 
 contextBridge.exposeInMainWorld('effortless', {
+  platform: process.platform,
+  minimizeWindow: () => ipcRenderer.invoke('window:minimize'),
+  maximizeWindow: () => ipcRenderer.invoke('window:maximize'),
+  closeWindow: () => ipcRenderer.invoke('window:close'),
+  isWindowMaximized: () => ipcRenderer.invoke('window:isMaximized') as Promise<boolean>,
   getAppState: () =>
     ipcRenderer.invoke('app-state:get') as Promise<{
       version: number

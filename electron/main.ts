@@ -247,14 +247,41 @@ ipcMain.handle('debug:capture-screenshot', async (_event, relativePath?: string)
   }
 })
 
+ipcMain.handle('window:minimize', () => {
+  win?.minimize()
+})
+
+ipcMain.handle('window:maximize', () => {
+  if (win?.isMaximized()) {
+    win.unmaximize()
+  } else {
+    win?.maximize()
+  }
+})
+
+ipcMain.handle('window:close', () => {
+  win?.close()
+})
+
+ipcMain.handle('window:isMaximized', () => {
+  return win?.isMaximized() ?? false
+})
+
+const isMac = process.platform === 'darwin'
+
 function createWindow() {
   win = new BrowserWindow({
+    ...(isMac
+      ? { titleBarStyle: 'hidden' as const }
+      : { frame: false }),
     icon: path.join(process.env.VITE_PUBLIC, 'assets', 'icon.png'),
     webPreferences: {
       backgroundThrottling: false,
       preload: path.join(__dirname, 'preload.mjs'),
     },
   })
+
+  win.maximize()
 
   if (VITE_DEV_SERVER_URL) {
     win.loadURL(VITE_DEV_SERVER_URL)

@@ -6,6 +6,7 @@
 .app-shell {
   display: grid;
   grid-template-columns: 308px minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
   height: 100vh;
   min-height: 100vh;
   overflow: hidden;
@@ -14,6 +15,10 @@
     radial-gradient(circle at top right, color-mix(in srgb, var(--accent) 6%, transparent), transparent 28%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.015), transparent 24%),
     var(--main);
+}
+
+.app-shell > header:first-child {
+  grid-column: 1 / -1;
 }
 
 .effort-surface {

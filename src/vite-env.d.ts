@@ -43,6 +43,11 @@ import type {
 declare global {
 interface Window {
   effortless: {
+      platform: string
+      minimizeWindow: () => Promise<void>
+      maximizeWindow: () => Promise<void>
+      closeWindow: () => Promise<void>
+      isWindowMaximized: () => Promise<boolean>
       getAppState: () => Promise<{
         version: number
         updatedAt: string

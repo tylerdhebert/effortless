@@ -17,6 +17,7 @@ import { InputRequestList } from './components/effort/InputRequestList'
 import { ManageSurface } from './components/manage/ManageSurface'
 import { NotificationToast } from './components/notifications/NotificationToast'
 import { ToggleSwitch } from './components/ui/ToggleSwitch'
+import { TitleBar } from './components/ui/TitleBar'
 
 import { PlanSection } from './components/effort/PlanSection'
 import { ReferenceSection } from './components/effort/ReferenceSection'
@@ -395,6 +396,7 @@ function App() {
 
   return (
     <main className="app-shell">
+      <TitleBar />
       <Sidebar
         efforts={effortsQuery.data ?? []}
         tasks={allTasksQuery.data ?? []}
