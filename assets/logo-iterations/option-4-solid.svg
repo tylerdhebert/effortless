@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <style>
+    .canopy {
+      fill: #111;
+    }
+    .shaft {
+      fill: none;
+      stroke: #111;
+      stroke-width: 28;
+      stroke-linecap: round;
+    }
+    .finial {
+      fill: #111;
+    }
+    .letter {
+      fill: #111;
+      font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+    }
+  </style>
+
+  <!-- Solid canopy shape -->
+  <path class="canopy" d="M 256 60 C 160 60 80 120 60 220 C 100 180 140 180 170 220 C 210 170 240 170 256 220 C 272 170 300 170 342 220 C 372 180 412 180 452 220 C 430 120 350 60 256 60 Z" />
+
+  <!-- Shaft -->
+  <path class="shaft" d="M 256 220 L 256 360" />
+
+  <!-- Finial -->
+  <circle cx="256" cy="58" r="18" class="finial" />
+
+  <!-- efl in heavy sans-serif -->
+  <text class="letter" x="170" y="420" font-size="100">e</text>
+  <text class="letter" x="235" y="420" font-size="110">f</text>
+  <text class="letter" x="305" y="420" font-size="105">l</text>
+</svg>

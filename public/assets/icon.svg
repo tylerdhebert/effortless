@@ -1,66 +1,74 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <style>
+    .bg {
+      fill: #394234;
+    }
+    .white-stroke {
+      fill: none;
+      stroke: #707767;
+      stroke-width: 16;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .black-stroke {
+      fill: none;
+      stroke: #171b15;
+      stroke-width: 16;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .white-fill {
+      fill: #707767;
+    }
+    .letter {
+      fill: #707767;
+      font-family: Georgia, 'Times New Roman', serif;
+      font-weight: 700;
+    }
+  </style>
 
-  <defs>
-    <style>
-      .umbrella-stroke {
-        fill: none;
-        stroke: #111;
-        stroke-width: 14;
-        stroke-linecap: round;
-        stroke-linejoin: round;
-      }
+  <!-- Phthalo blue circle -->
+  <circle cx="256" cy="256" r="240" class="bg" />
 
-      .umbrella-rib {
-        fill: none;
-        stroke: #111;
-        stroke-width: 10;
-        stroke-linecap: round;
-        stroke-linejoin: round;
-      }
+  <g transform="translate(256, 260) scale(1.28) translate(-256, -260) translate(0, 18)">
+    <!-- Full shaft (black, forms f) -->
+    <path class="black-stroke" d="M 256 365 L 256 90" />
 
-      .letter-serif {
-        fill: #111;
-        font-family: Georgia, 'Times New Roman', serif;
-        font-weight: 500;
-      }
+    <!-- Crossbar (black, forms f) -->
+    <path class="black-stroke" d="M 228 290 L 288 290" />
 
-      .letter-script-path {
-        fill: none;
-        stroke: #111;
-        stroke-width: 6;
-        stroke-linecap: round;
-        stroke-linejoin: round;
-      }
-    </style>
-  </defs>
+    <!-- Left canopy arc (white) -->
+    <path class="white-stroke" d="M 80 230 C 100 130 170 80 256 80" />
 
-  <g id="logo-mark" transform="translate(-98 8) scale(1.2)">
-    <g id="umbrella">
-      <path class="umbrella-stroke" d="M326 215 L391 363" />
+    <!-- Right canopy arc (white) -->
+    <path class="white-stroke" d="M 256 80 C 340 80 410 130 432 230" />
 
-      <path class="umbrella-stroke" d="M199 213 C211 154 264 103 326 103 C386 103 431 150 446 207" />
-      <path class="umbrella-stroke" d="M199 213 C222 194 244 194 260 213 C280 192 304 192 326 213 C348 192 371 194 388 213 C410 194 431 196 446 207" />
+    <!-- Left scallops (white) -->
+    <path class="white-stroke" d="M 80 230 C 120 190 150 190 180 230" />
+    <path class="white-stroke" d="M 180 230 C 210 180 240 180 256 230" />
 
-      <path class="umbrella-rib" d="M326 103 C292 132 273 167 260 213" />
-      <path class="umbrella-rib" d="M326 103 C318 137 318 176 326 213" />
-      <path class="umbrella-rib" d="M326 103 C360 132 378 168 388 213" />
+    <!-- Right scallops (white) -->
+    <path class="white-stroke" d="M 332 230 C 362 190 400 190 432 230" />
 
-      <circle cx="326" cy="101" r="11" fill="#111" />
-    </g>
+    <!-- Left rib (white) -->
+    <path class="white-stroke" d="M 256 80 C 200 130 170 180 180 230" />
 
-    <g id="efl-letters">
-      <text class="letter-serif" x="223" y="363" font-size="78" transform="rotate(-8 223 363)">e</text>
-      <text class="letter-serif" x="256" y="352" font-size="86" transform="rotate(4 256 352)">f</text>
+    <!-- Middle rib (white) -->
+    <path class="white-stroke" d="M 256 80 C 256 140 256 190 256 230" />
 
-      <path
-        class="letter-script-path"
-        d="M 289 362
-           C 300 352, 308 336, 312 316
-           C 317 286, 303 282, 298 302
-           C 294 322, 304 344, 324 357
-           C 338 366, 351 365, 360 356"
-        transform="translate(5 0) rotate(-9 326 352)"
-      />
-    </g>
+    <!-- Right rib (white) -->
+    <path class="white-stroke" d="M 256 80 C 310 130 340 180 332 230" />
+
+    <!-- Middle-right scallop (black, forms f hook) -->
+    <path class="black-stroke" d="M 256 231 C 272 180 300 180 332 231" />
+
+    <!-- Finial -->
+    <circle cx="256" cy="78" r="14" class="white-fill" />
+
+    <!-- e -->
+    <text class="letter" x="150" y="340" font-size="130">e</text>
+
+    <!-- l -->
+    <text class="letter" x="286" y="340" font-size="130">l</text>
   </g>
 </svg>

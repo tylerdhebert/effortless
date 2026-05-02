@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <style>
+    .heavy-stroke {
+      fill: none;
+      stroke: #111;
+      stroke-width: 28;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .heavy-fill {
+      fill: #111;
+    }
+    .letter {
+      fill: #111;
+      font-family: Georgia, 'Times New Roman', serif;
+      font-weight: 700;
+    }
+  </style>
+
+  <!-- Umbrella canopy -->
+  <path class="heavy-stroke" d="M 256 360 L 256 200" />
+  <path class="heavy-stroke" d="M 60 220 C 80 120 160 60 256 60 C 350 60 430 120 452 220" />
+  <path class="heavy-stroke" d="M 60 220 C 100 180 140 180 170 220 C 210 170 240 170 256 220 C 272 170 300 170 342 220 C 372 180 412 180 452 220" />
+
+  <!-- Ribs -->
+  <path class="heavy-stroke" d="M 256 60 C 200 110 170 160 170 220" />
+  <path class="heavy-stroke" d="M 256 60 C 256 120 256 170 256 220" />
+  <path class="heavy-stroke" d="M 256 60 C 310 110 340 160 342 220" />
+
+  <!-- Finial -->
+  <circle cx="256" cy="58" r="18" class="heavy-fill" />
+
+  <!-- efl letters, bold and tight -->
+  <text class="letter" x="160" y="420" font-size="110">e</text>
+  <text class="letter" x="220" y="420" font-size="120">f</text>
+
+  <!-- Script l, thicker -->
+  <path class="heavy-stroke" d="M 330 410 C 350 380 370 340 370 290 C 370 250 340 250 330 290 C 320 330 350 370 390 390 C 410 400 430 400 450 390" />
+</svg>

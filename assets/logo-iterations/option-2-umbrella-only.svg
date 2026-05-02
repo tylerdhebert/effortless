@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <style>
+    .umbrella {
+      fill: none;
+      stroke: #111;
+      stroke-width: 28;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .finial {
+      fill: #111;
+    }
+  </style>
+
+  <!-- Shaft -->
+  <path class="umbrella" d="M 256 360 L 256 120" />
+
+  <!-- Canopy -->
+  <path class="umbrella" d="M 60 220 C 80 120 160 60 256 60 C 350 60 430 120 452 220" />
+  <path class="umbrella" d="M 60 220 C 100 180 140 180 170 220 C 210 170 240 170 256 220 C 272 170 300 170 342 220 C 372 180 412 180 452 220" />
+
+  <!-- Ribs -->
+  <path class="umbrella" d="M 256 60 C 200 110 170 160 170 220" />
+  <path class="umbrella" d="M 256 60 C 256 120 256 170 256 220" />
+  <path class="umbrella" d="M 256 60 C 310 110 340 160 342 220" />
+
+  <!-- Finial -->
+  <circle cx="256" cy="58" r="18" class="finial" />
+</svg>

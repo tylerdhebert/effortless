@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <style>
+    .bg {
+      fill: #1565c0;
+    }
+    .white-stroke {
+      fill: none;
+      stroke: #fff;
+      stroke-width: 20;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .white-fill {
+      fill: #fff;
+    }
+    .letter {
+      fill: #fff;
+      font-family: Georgia, 'Times New Roman', serif;
+      font-weight: 700;
+    }
+  </style>
+
+  <!-- Phthalo blue circle -->
+  <circle cx="256" cy="256" r="240" class="bg" />
+
+  <!-- Umbrella shaft -->
+  <path class="white-stroke" d="M 256 360 L 256 150" />
+
+  <!-- Canopy -->
+  <path class="white-stroke" d="M 80 230 C 100 130 170 80 256 80 C 340 80 410 130 432 230" />
+  <path class="white-stroke" d="M 80 230 C 120 190 150 190 180 230 C 210 180 240 180 256 230 C 272 180 300 180 332 230 C 362 190 400 190 432 230" />
+
+  <!-- Ribs -->
+  <path class="white-stroke" d="M 256 80 C 200 130 170 180 180 230" />
+  <path class="white-stroke" d="M 256 80 C 256 140 256 190 256 230" />
+  <path class="white-stroke" d="M 256 80 C 310 130 340 180 332 230" />
+
+  <!-- Finial -->
+  <circle cx="256" cy="78" r="14" class="white-fill" />
+
+  <!-- efl letters -->
+  <text class="letter" x="175" y="390" font-size="80">e</text>
+  <text class="letter" x="225" y="390" font-size="90">f</text>
+
+  <!-- Script l -->
+  <path class="white-stroke" d="M 315 385 C 330 360 345 330 345 295 C 345 260 320 260 312 290 C 305 320 330 350 365 365 C 380 372 395 372 410 365" />
+</svg>
