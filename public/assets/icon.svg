@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+
+  <defs>
+    <style>
+      .umbrella-stroke {
+        fill: none;
+        stroke: #111;
+        stroke-width: 14;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .umbrella-rib {
+        fill: none;
+        stroke: #111;
+        stroke-width: 10;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .letter-serif {
+        fill: #111;
+        font-family: Georgia, 'Times New Roman', serif;
+        font-weight: 500;
+      }
+
+      .letter-script-path {
+        fill: none;
+        stroke: #111;
+        stroke-width: 6;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+    </style>
+  </defs>
+
+  <g id="logo-mark" transform="translate(-98 8) scale(1.2)">
+    <g id="umbrella">
+      <path class="umbrella-stroke" d="M326 215 L391 363" />
+
+      <path class="umbrella-stroke" d="M199 213 C211 154 264 103 326 103 C386 103 431 150 446 207" />
+      <path class="umbrella-stroke" d="M199 213 C222 194 244 194 260 213 C280 192 304 192 326 213 C348 192 371 194 388 213 C410 194 431 196 446 207" />
+
+      <path class="umbrella-rib" d="M326 103 C292 132 273 167 260 213" />
+      <path class="umbrella-rib" d="M326 103 C318 137 318 176 326 213" />
+      <path class="umbrella-rib" d="M326 103 C360 132 378 168 388 213" />
+
+      <circle cx="326" cy="101" r="11" fill="#111" />
+    </g>
+
+    <g id="efl-letters">
+      <text class="letter-serif" x="223" y="363" font-size="78" transform="rotate(-8 223 363)">e</text>
+      <text class="letter-serif" x="256" y="352" font-size="86" transform="rotate(4 256 352)">f</text>
+
+      <path
+        class="letter-script-path"
+        d="M 289 362
+           C 300 352, 308 336, 312 316
+           C 317 286, 303 282, 298 302
+           C 294 322, 304 344, 324 357
+           C 338 366, 351 365, 360 356"
+        transform="translate(5 0) rotate(-9 326 352)"
+      />
+    </g>
+  </g>
+</svg>

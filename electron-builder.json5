@@ -4,12 +4,14 @@
   "appId": "com.tyler.effortless",
   "asar": true,
   "productName": "effortless",
+  "icon": "assets/icon",
   "directories": {
     "output": "release/${version}"
   },
   "files": [
     "dist",
-    "dist-electron"
+    "dist-electron",
+    "assets"
   ],
   "mac": {
     "target": [
