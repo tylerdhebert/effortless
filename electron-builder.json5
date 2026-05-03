@@ -13,6 +13,18 @@
     "dist-electron",
     "assets"
   ],
+  "extraResources": [
+    {
+      "from": "dist-cli",
+      "to": "cli"
+    }
+  ],
+  "extraFiles": [
+    {
+      "from": "build/win/efl.cmd",
+      "to": "efl.cmd"
+    }
+  ],
   "mac": {
     "target": [
       "dmg"
