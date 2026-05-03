@@ -1,9 +1,21 @@
 import { createPlan, getPlanByRef, listPlanComments, listPlans, markPlanReady } from '../../../core/plans'
-import { resolveMandate } from '../../../core/mandates'
+import { getEffort } from '../../../core/efforts'
+import { listDiscussionMessages } from '../../../core/discussion'
+import { listTasks } from '../../../core/tasks'
 import { requiredOption, bodyArg } from '../args'
 import { db, wait } from '../context'
+import {
+  printArtifactPreview,
+  printComments,
+  printExpandedReferences,
+  printHandoffSummary,
+  printLatestUpdate,
+  printRelatedMandates,
+  printSurfaceMandate,
+  printTemplateWorkflow,
+} from '../contextSections'
 import { printPlan } from '../render'
-import type { Plan, WorkSurface } from '../../../core/types'
+import type { Plan } from '../../../core/types'
 
 export async function handlePlan(surface: string, command: string): Promise<boolean> {
   if (surface !== 'plan') return false
@@ -49,39 +61,31 @@ export async function handlePlan(surface: string, command: string): Promise<bool
 
   if (command === 'context') {
     const plan = getPlanByRef(db, requiredOption('--plan'))
+    const effort = getEffort(db, plan.effortId)
+    const plans = listPlans(db, effort.id)
+    const tasks = listTasks(db, effort.id)
     printPlan(plan)
-    console.log('')
-    console.log('body')
-    console.log(plan.body)
-
-    if (plan.summary) {
-      console.log('')
-      console.log('summary')
-      console.log(plan.summary)
-    }
+    console.log(`effort ${effort.shortRef} ${effort.template} ${effort.status}`)
+    console.log(effort.title)
+    printSurfaceMandate(db, 'plan')
+    printTemplateWorkflow(effort, {
+      plans: plans.length,
+      acceptedPlans: plans.filter((candidate) => candidate.accepted).length,
+      tasks: tasks.length,
+      acceptedTasks: tasks.filter((task) => task.status === 'accepted').length,
+      mergedTasks: tasks.filter((task) => task.status === 'merged').length,
+      discussionMessages: listDiscussionMessages(db, effort.id).length,
+    })
+    printRelatedMandates(db, ['effort', 'task', 'review', 'discussion'])
 
     const comments = listPlanComments(db, plan.id)
-    if (comments.length > 0) {
-      console.log('')
-      console.log('comments')
-      for (const comment of comments) {
-        console.log(`${comment.kind} ${comment.agentId ?? comment.author}: ${comment.body}`)
-      }
-    }
+    printLatestUpdate(comments)
+    printHandoffSummary(plan.summary)
+    printArtifactPreview(plan.body, `efl plan show --plan ${plan.shortRef}`)
 
-    const surfaces: WorkSurface[] = ['effort', 'plan', 'task', 'review', 'discussion']
-    const mandates = surfaces
-      .map((surface) => ({ surface, resolved: resolveMandate(db, surface, null) }))
-      .filter((entry) => entry.resolved != null)
-
-    if (mandates.length > 0) {
-      console.log('')
-      console.log('mandates')
-      for (const { surface, resolved } of mandates) {
-        console.log(`${surface} (${resolved!.source})`)
-        console.log(resolved!.text)
-      }
-    }
+    const { listReferences } = await import('../../../core/references')
+    printExpandedReferences(db, listReferences(db, 'plan', plan.id))
+    printComments(comments)
 
     return true
   }

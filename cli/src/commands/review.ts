@@ -1,10 +1,23 @@
 import { getReviewByRef, listReviews, submitReview } from '../../../core/reviews'
+import { getLatestTaskBuild } from '../../../core/builds'
+import { getEffort } from '../../../core/efforts'
+import { getRepo } from '../../../core/repos'
 import { getTask, listTaskComments } from '../../../core/tasks'
-import { resolveMandate } from '../../../core/mandates'
 import { requiredOption, bodyArg } from '../args'
 import { db, resolveTask, wait } from '../context'
+import {
+  printArtifactPreview,
+  printComments,
+  printExpandedReferences,
+  printHandoffSummary,
+  printLatestUpdate,
+  printRelatedMandates,
+  printSection,
+  endSection,
+  printSurfaceMandate,
+} from '../contextSections'
 import { printReview } from '../render'
-import type { Review, WorkSurface } from '../../../core/types'
+import type { Review } from '../../../core/types'
 
 export async function handleReview(surface: string, command: string): Promise<boolean> {
   if (surface !== 'review') return false
@@ -58,44 +71,62 @@ export async function handleReview(surface: string, command: string): Promise<bo
 
   if (command === 'context') {
     const review = getReviewByRef(db, requiredOption('--review'))
+    const task = getTask(db, review.taskId)
+    const effort = getEffort(db, task.effortId)
     printReview(review)
-    console.log('')
-    console.log('body')
-    console.log(review.body)
+    printSurfaceMandate(db, 'review', task.repoId)
+    printRelatedMandates(db, ['effort', 'task'], task.repoId)
+    printHandoffSummary(review.summary)
+    printArtifactPreview(review.body, `efl review show --review ${review.shortRef}`)
 
-    if (review.summary) {
-      console.log('')
-      console.log('summary')
-      console.log(review.summary)
+    printSection('task')
+    console.log(`${task.shortRef}`)
+    console.log(`${task.status} ${task.title}`)
+    console.log(task.description)
+    if (task.handoffSummary) {
+      console.log('handoff')
+      console.log(task.handoffSummary)
+    }
+    endSection('task')
+
+    if (task.repoId) {
+      const repo = getRepo(db, task.repoId)
+      printSection('repo')
+      console.log(`${repo.shortRef} ${repo.name}`)
+      console.log(`path ${repo.path}`)
+      console.log(`base ${task.baseBranch ?? repo.baseBranch}`)
+      if (task.branchName) {
+        console.log(`branch ${task.branchName}`)
+      }
+      if (task.worktreePath) {
+        console.log(`worktree ${task.worktreePath}`)
+      }
+      if (repo.buildCommand) {
+        console.log(`build ${repo.buildCommand}`)
+      }
+      endSection('repo')
     }
 
-    const task = getTask(db, review.taskId)
     console.log('')
-    console.log(`task ${task.shortRef}`)
-    console.log(`${task.status} ${task.title}`)
+    console.log('effort')
+    console.log(`${effort.shortRef} ${effort.template} ${effort.status}`)
+    console.log(effort.title)
+
+    const latestBuild = getLatestTaskBuild(db, task.id)
+    if (latestBuild) {
+      console.log('')
+      console.log('latest build')
+      console.log(`${latestBuild.shortRef} ${latestBuild.status}`)
+      if (latestBuild.completedAt) {
+        console.log(`completed ${latestBuild.completedAt}`)
+      }
+    }
 
     const comments = listTaskComments(db, task.id)
-    if (comments.length > 0) {
-      console.log('')
-      console.log('comments')
-      for (const comment of comments) {
-        console.log(`${comment.kind} ${comment.agentId ?? comment.author}: ${comment.body}`)
-      }
-    }
-
-    const surfaces: WorkSurface[] = ['effort', 'plan', 'task', 'review', 'discussion']
-    const mandates = surfaces
-      .map((surface) => ({ surface, resolved: resolveMandate(db, surface, task.repoId) }))
-      .filter((entry) => entry.resolved != null)
-
-    if (mandates.length > 0) {
-      console.log('')
-      console.log('mandates')
-      for (const { surface, resolved } of mandates) {
-        console.log(`${surface} (${resolved!.source})`)
-        console.log(resolved!.text)
-      }
-    }
+    printLatestUpdate(comments)
+    const { listReferences } = await import('../../../core/references')
+    printExpandedReferences(db, listReferences(db, 'review', review.id))
+    printComments(comments)
 
     return true
   }

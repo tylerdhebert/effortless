@@ -48,8 +48,10 @@ import {
   listTasks,
   listAllTasks,
   markTaskReady,
+  mergeTask,
   requestTaskChanges,
   updateTaskDetails,
+  updateTaskAutoMerge,
   updateTaskRequiresReview,
   updateTaskReviewRequiresReview,
 } from '../core/tasks'
@@ -176,6 +178,7 @@ ipcMain.handle('tasks:checkpoint', (_event, input: CheckpointTaskInput) =>
 )
 
 ipcMain.handle('tasks:ready', (_event, taskId: number) => markTaskReady(db, taskId))
+ipcMain.handle('tasks:merge', (_event, taskId: number) => mergeTask(db, taskId))
 ipcMain.handle('tasks:worktree', (_event, taskId: number) => ensureTaskWorktree(db, taskId))
 ipcMain.handle('tasks:diff', (_event, taskId: number, type: DiffType = 'combined') =>
   getTaskDiffView(db, taskId, type),
@@ -190,6 +193,9 @@ ipcMain.handle('tasks:updateRequiresReview', (_event, taskId: number, requiresRe
 )
 ipcMain.handle('tasks:updateReviewRequiresReview', (_event, taskId: number, reviewRequiresReview: boolean) =>
   updateTaskReviewRequiresReview(db, taskId, reviewRequiresReview),
+)
+ipcMain.handle('tasks:updateAutoMerge', (_event, taskId: number, autoMerge: boolean) =>
+  updateTaskAutoMerge(db, taskId, autoMerge),
 )
 ipcMain.handle('builds:latest', (_event, taskId: number) => getLatestTaskBuild(db, taskId))
 ipcMain.handle('builds:run', (_event, taskId: number) => runTaskBuild(db, taskId))

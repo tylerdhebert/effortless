@@ -1,7 +1,7 @@
 import type { AppDatabase } from './db'
 import { bumpAppState } from './db'
 import { getHeadCommit } from './git'
-import { addTaskComment, getTask, updateTaskStatus } from './tasks'
+import { acceptTask, addTaskComment, getTask, updateTaskStatus } from './tasks'
 import type { ApplyReviewInput, RequestReviewChangesInput, Review, ReviewVerdict, SubmitReviewInput } from './types'
 
 type ReviewRow = {
@@ -114,19 +114,19 @@ async function applyReviewVerdict(
   commitHash: string | null,
 ): Promise<void> {
   const now = new Date().toISOString()
-  const nextStatus = review.verdict === 'approve' ? 'accepted' : 'changes-requested'
   const task = getTask(db, review.taskId)
   const resolvedCommitHash =
     commitHash ?? (review.verdict === 'approve' && task.worktreePath ? await getHeadCommit(task.worktreePath) : null)
 
   db.prepare(`UPDATE reviews SET applied_at = ? WHERE id = ?`).run(now, review.id)
-  updateTaskStatus(db, review.taskId, nextStatus)
 
   if (review.verdict === 'approve') {
     addTaskComment(db, review.taskId, 'user', null, 'approval', 'lgtm', resolvedCommitHash)
+    await acceptTask(db, review.taskId)
     return
   }
 
+  updateTaskStatus(db, review.taskId, 'changes-requested')
   addTaskComment(db, review.taskId, 'user', null, 'comment', review.body)
 }
 

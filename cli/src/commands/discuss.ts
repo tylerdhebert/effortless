@@ -2,10 +2,15 @@ import {
   createDiscussionMessage,
   listDiscussionMessages,
 } from '../../../core/discussion'
-import { resolveMandate } from '../../../core/mandates'
 import { bodyArg, requiredOption } from '../args'
 import { db, wait } from '../context'
-import type { WorkSurface } from '../../../core/types'
+import {
+  printComments,
+  printExpandedReferences,
+  printLatestUpdate,
+  printRelatedMandates,
+  printSurfaceMandate,
+} from '../contextSections'
 
 export async function handleDiscuss(surface: string, command: string): Promise<boolean> {
   if (surface !== 'discuss') return false
@@ -52,11 +57,14 @@ export async function handleDiscuss(surface: string, command: string): Promise<b
     const effort = getEffortByRef(db, requiredOption('--effort'))
     console.log(`${effort.shortRef} ${effort.template} ${effort.status}`)
     console.log(effort.title)
+    printSurfaceMandate(db, 'discussion')
+    printRelatedMandates(db, ['effort', 'plan', 'task', 'review'])
     console.log('')
     console.log('description')
     console.log(effort.description)
 
     const messages = listDiscussionMessages(db, effort.id)
+    printLatestUpdate(messages)
     if (messages.length > 0) {
       console.log('')
       console.log('discussion')
@@ -66,19 +74,14 @@ export async function handleDiscuss(surface: string, command: string): Promise<b
       }
     }
 
-    const surfaces: WorkSurface[] = ['effort', 'plan', 'task', 'review', 'discussion']
-    const mandates = surfaces
-      .map((surface) => ({ surface, resolved: resolveMandate(db, surface, null) }))
-      .filter((entry) => entry.resolved != null)
-
-    if (mandates.length > 0) {
-      console.log('')
-      console.log('mandates')
-      for (const { surface, resolved } of mandates) {
-        console.log(`${surface} (${resolved!.source})`)
-        console.log(resolved!.text)
-      }
-    }
+    const { listReferences } = await import('../../../core/references')
+    printExpandedReferences(db, listReferences(db, 'effort', effort.id))
+    printComments(messages.map((message) => ({
+      author: message.author,
+      agentId: message.agentId,
+      kind: 'comment' as const,
+      body: message.body,
+    })))
 
     return true
   }

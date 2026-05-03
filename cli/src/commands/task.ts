@@ -7,15 +7,30 @@ import {
   listTaskComments,
   listTasks,
   markTaskReady,
+  mergeTask,
   updateTaskDetails,
 } from '../../../core/tasks'
+import { getLatestTaskBuild } from '../../../core/builds'
+import { getEffort } from '../../../core/efforts'
+import { listPlans } from '../../../core/plans'
 import { getRepo } from '../../../core/repos'
 import { listReferences } from '../../../core/references'
-import { resolveMandate } from '../../../core/mandates'
 import { option, requiredOption, bodyArg } from '../args'
 import { db, resolveTask, wait } from '../context'
-import { printReference, printTask } from '../render'
-import type { Task, WorkSurface } from '../../../core/types'
+import {
+  printArtifactPreview,
+  printComments,
+  endSection,
+  printExpandedReferences,
+  printHandoffSummary,
+  printLatestUpdate,
+  printRelatedMandates,
+  printSection,
+  printSurfaceMandate,
+  printTemplateWorkflow,
+} from '../contextSections'
+import { printTask } from '../render'
+import type { Task } from '../../../core/types'
 
 export async function handleTask(surface: string, command: string): Promise<boolean> {
   if (surface !== 'task') return false
@@ -78,67 +93,78 @@ export async function handleTask(surface: string, command: string): Promise<bool
 
   if (command === 'context') {
     const task = resolveTask(db, requiredOption('--task'))
+    const effort = getEffort(db, task.effortId)
+    const plans = listPlans(db, effort.id)
+    const effortTasks = listTasks(db, effort.id)
     printTask(task)
     console.log(task.title)
+    printSurfaceMandate(db, 'task', task.repoId)
+    printTemplateWorkflow(effort, {
+      plans: plans.length,
+      acceptedPlans: plans.filter((plan) => plan.accepted).length,
+      tasks: effortTasks.length,
+      acceptedTasks: effortTasks.filter((candidate) => candidate.status === 'accepted').length,
+      mergedTasks: effortTasks.filter((candidate) => candidate.status === 'merged').length,
+    })
+    printRelatedMandates(db, ['effort', 'review'], task.repoId)
     console.log('')
     console.log('description')
     console.log(task.description)
 
-    if (task.handoffSummary) {
-      console.log('')
-      console.log('handoff')
-      console.log(task.handoffSummary)
-    }
-
-    if (task.artifact) {
-      console.log('')
-      console.log('artifact')
-      console.log(task.artifact)
-    }
+    const comments = listTaskComments(db, task.id)
+    printLatestUpdate(comments)
+    printHandoffSummary(task.handoffSummary)
+    printArtifactPreview(task.artifact, `efl task show --task ${task.shortRef}`)
 
     if (task.repoId) {
       const repo = getRepo(db, task.repoId)
-      console.log('')
-      console.log('repo')
+      printSection('repo')
       console.log(`${repo.shortRef} ${repo.name}`)
       console.log(`path ${repo.path}`)
       console.log(`base ${repo.baseBranch}`)
+      console.log(`task base ${task.baseBranch ?? repo.baseBranch}`)
       if (repo.buildCommand) {
         console.log(`build ${repo.buildCommand}`)
       }
+      endSection('repo')
     }
 
-    const comments = listTaskComments(db, task.id)
-    if (comments.length > 0) {
+    console.log('')
+    console.log('merge state')
+    console.log(`requires review ${task.requiresReview ? 'yes' : 'no'}`)
+    console.log(`review human approval req ${task.reviewRequiresReview ? 'yes' : 'no'}`)
+    console.log(`auto merge ${task.autoMerge ? 'on' : 'off'}`)
+    if (task.conflictedAt) {
+      console.log(`conflicted at ${task.conflictedAt}`)
+    }
+    if (task.mergedAt) {
+      console.log(`merged at ${task.mergedAt}`)
+    }
+    if (task.conflictDetails) {
+      console.log('conflict details')
+      console.log(task.conflictDetails)
+    }
+
+    const acceptedPlan = plans.find((plan) => plan.accepted)
+    if (acceptedPlan) {
       console.log('')
-      console.log('comments')
-      for (const comment of comments) {
-        console.log(`${comment.kind} ${comment.agentId ?? comment.author}: ${comment.body}`)
+      console.log(`accepted plan ${acceptedPlan.shortRef}`)
+      console.log(acceptedPlan.summary ?? acceptedPlan.body)
+    }
+
+    const latestBuild = getLatestTaskBuild(db, task.id)
+    if (latestBuild) {
+      console.log('')
+      console.log('latest build')
+      console.log(`${latestBuild.shortRef} ${latestBuild.status}`)
+      if (latestBuild.completedAt) {
+        console.log(`completed ${latestBuild.completedAt}`)
       }
     }
 
     const references = listReferences(db, 'task', task.id)
-    if (references.length > 0) {
-      console.log('')
-      console.log('references')
-      for (const reference of references) {
-        printReference(reference)
-      }
-    }
-
-    const surfaces: WorkSurface[] = ['effort', 'plan', 'task', 'review', 'discussion']
-    const mandates = surfaces
-      .map((surface) => ({ surface, resolved: resolveMandate(db, surface, task.repoId) }))
-      .filter((entry) => entry.resolved != null)
-
-    if (mandates.length > 0) {
-      console.log('')
-      console.log('mandates')
-      for (const { surface, resolved } of mandates) {
-        console.log(`${surface} (${resolved!.source})`)
-        console.log(resolved!.text)
-      }
-    }
+    printExpandedReferences(db, references)
+    printComments(comments)
 
     return true
   }
@@ -194,13 +220,20 @@ export async function handleTask(surface: string, command: string): Promise<bool
 
   if (command === 'ready') {
     const task = resolveTask(db, requiredOption('--task'))
-    const updated = markTaskReady(db, task.id)
+    const updated = await markTaskReady(db, task.id)
     printTask(updated)
 
     if (updated.status === 'reviewing') {
       await waitForTask(updated)
     }
 
+    return true
+  }
+
+  if (command === 'merge') {
+    const task = resolveTask(db, requiredOption('--task'))
+    const updated = await mergeTask(db, task.id)
+    printTask(updated)
     return true
   }
 

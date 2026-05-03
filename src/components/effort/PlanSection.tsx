@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, ListOrdered } from 'lucide-react'
 import { isPlanWaiting, planStatus } from '../../lib/helpers'
 import { MarkdownDocument } from '../ui/MarkdownDocument'
 import { WarningIndicator } from '../notifications/WarningIndicator'
+import { ToggleSwitch } from '../ui/ToggleSwitch'
 import styles from './PlanSection.module.css'
 
 type PlanSectionProps = {
@@ -19,6 +20,8 @@ type PlanSectionProps = {
   isReadyingPlan: boolean
   isRequestingPlanChanges: boolean
   hasPendingPlan?: boolean
+  humanApprovalRequired: boolean
+  onUpdateHumanApprovalRequired: (checked: boolean) => void
 }
 
 export function PlanSection({
@@ -33,6 +36,8 @@ export function PlanSection({
   isReadyingPlan,
   isRequestingPlanChanges,
   hasPendingPlan = false,
+  humanApprovalRequired,
+  onUpdateHumanApprovalRequired,
 }: PlanSectionProps) {
   const [planFeedbackDrafts, setPlanFeedbackDrafts] = useState<Record<number, string>>({})
 
@@ -56,9 +61,18 @@ export function PlanSection({
             <ListOrdered size={14} />
             <span>plan</span>
           </span>
-          {hasPendingPlan ? (
-            <WarningIndicator title="plan needs review" pulse size={14} />
-          ) : null}
+          <span className={styles['plan-header-center']}>
+            <ToggleSwitch
+              label="human approval req"
+              checked={humanApprovalRequired}
+              onChange={onUpdateHumanApprovalRequired}
+            />
+          </span>
+          <span className={styles['plan-header-side']}>
+            {hasPendingPlan ? (
+              <WarningIndicator title="plan needs review" pulse size={14} />
+            ) : null}
+          </span>
         </div>
         <p className="empty-state">no plans yet</p>
       </section>
@@ -72,9 +86,18 @@ export function PlanSection({
           <ListOrdered size={14} />
           <span>plan</span>
         </span>
-        {hasPendingPlan ? (
-          <WarningIndicator title="plan needs review" pulse size={14} />
-        ) : null}
+        <span className={styles['plan-header-center']}>
+          <ToggleSwitch
+            label="human approval req"
+            checked={humanApprovalRequired}
+            onChange={onUpdateHumanApprovalRequired}
+          />
+        </span>
+        <span className={styles['plan-header-side']}>
+          {hasPendingPlan ? (
+            <WarningIndicator title="plan needs review" pulse size={14} />
+          ) : null}
+        </span>
       </div>
 
       <div className={styles['plan-pager']}>

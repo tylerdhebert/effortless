@@ -1,6 +1,6 @@
 import type { AppDatabase } from './db'
 import { bumpAppState } from './db'
-import { checkConflicts, getCommits, getDiff, getHeadCommit, worktreeCreate } from './git'
+import { checkConflicts, getCommits, getDiff, getHeadCommit, mergeBranch, worktreeCreate, worktreeRemove } from './git'
 import { getRepo } from './repos'
 import type {
   ApproveTaskInput,
@@ -32,6 +32,10 @@ type TaskRow = {
   worktree_path: string | null
   requires_review: number
   review_requires_review: number
+  auto_merge: number
+  conflicted_at: string | null
+  conflict_details: string | null
+  merged_at: string | null
   handoff_summary: string | null
   artifact: string | null
   created_at: string
@@ -202,9 +206,14 @@ export function checkpointTask(db: AppDatabase, input: CheckpointTaskInput): Tas
   return comment
 }
 
-export function markTaskReady(db: AppDatabase, taskId: number): Task {
+export async function markTaskReady(db: AppDatabase, taskId: number): Promise<Task> {
   const task = getTask(db, taskId)
-  const nextStatus = task.requiresReview ? 'reviewing' : 'accepted'
+  if (!task.requiresReview) {
+    addTaskComment(db, taskId, 'agent', task.ownerAgentId, 'checkpoint', 'ready and accepted')
+    return acceptTask(db, taskId)
+  }
+
+  const nextStatus = 'reviewing'
   updateTaskStatus(db, taskId, nextStatus)
   addTaskComment(
     db,
@@ -212,7 +221,7 @@ export function markTaskReady(db: AppDatabase, taskId: number): Task {
     'agent',
     task.ownerAgentId,
     'checkpoint',
-    task.requiresReview ? 'ready for human review' : 'ready and accepted',
+    'ready for human review',
   )
   bumpAppState(db)
 
@@ -223,8 +232,8 @@ export async function approveTask(db: AppDatabase, input: ApproveTaskInput): Pro
   const task = getTask(db, input.taskId)
   const commitHash =
     input.commitHash ?? (task.worktreePath ? await getHeadCommit(task.worktreePath) : null)
-  updateTaskStatus(db, input.taskId, 'accepted')
   addTaskComment(db, input.taskId, 'user', null, 'approval', 'lgtm', commitHash)
+  await acceptTask(db, input.taskId)
   bumpAppState(db)
 
   return getTask(db, input.taskId)
@@ -311,6 +320,7 @@ export async function getTaskConflictView(
   )
 
   if (!result.hasConflicts) {
+    clearTaskConflict(db, taskId)
     return {
       taskId,
       hasConflicts: false,
@@ -319,12 +329,100 @@ export async function getTaskConflictView(
     }
   }
 
+  persistTaskConflict(db, taskId, result.details, result.files)
   return {
     taskId,
     hasConflicts: true,
     files: result.files,
     details: result.details.trimEnd(),
   }
+}
+
+export async function acceptTask(db: AppDatabase, taskId: number): Promise<Task> {
+  const task = getTask(db, taskId)
+  if (task.repoId && task.branchName && task.baseBranch) {
+    const repo = getRepo(db, task.repoId)
+    const conflicts = await checkConflicts(repo.path, task.branchName, task.baseBranch)
+    if (conflicts.hasConflicts) {
+      persistTaskConflict(db, taskId, conflicts.details, conflicts.files)
+      updateTaskStatus(db, taskId, 'conflicted')
+      addTaskComment(
+        db,
+        taskId,
+        'user',
+        null,
+        'comment',
+        `Conflict detected against ${task.baseBranch}. Affected files: ${conflicts.files.join(', ')}. Resolve in the worktree and mark ready again.`,
+      )
+      bumpAppState(db)
+      return getTask(db, taskId)
+    }
+    clearTaskConflict(db, taskId)
+  }
+
+  updateTaskStatus(db, taskId, 'accepted')
+  if (task.autoMerge) {
+    return mergeTask(db, taskId)
+  }
+
+  bumpAppState(db)
+  return getTask(db, taskId)
+}
+
+export async function mergeTask(db: AppDatabase, taskId: number): Promise<Task> {
+  const task = getTask(db, taskId)
+  if (task.status !== 'accepted') {
+    throw new Error('Task must be accepted before merge')
+  }
+  if (!task.repoId || !task.branchName || !task.baseBranch) {
+    throw new Error('Task needs repo, branch, and base branch before merge')
+  }
+
+  const repo = getRepo(db, task.repoId)
+  const conflicts = await checkConflicts(repo.path, task.branchName, task.baseBranch)
+  if (conflicts.hasConflicts) {
+    persistTaskConflict(db, taskId, conflicts.details, conflicts.files)
+    updateTaskStatus(db, taskId, 'conflicted')
+    addTaskComment(
+      db,
+      taskId,
+      'user',
+      null,
+      'comment',
+      `Conflict detected against ${task.baseBranch}. Affected files: ${conflicts.files.join(', ')}.`,
+    )
+    bumpAppState(db)
+    return getTask(db, taskId)
+  }
+
+  await mergeBranch(repo.path, task.branchName, task.baseBranch)
+  await worktreeRemove(repo.path, task.branchName)
+
+  const now = new Date().toISOString()
+  db.prepare(`
+    UPDATE tasks
+    SET status = 'merged',
+        conflicted_at = NULL,
+        conflict_details = NULL,
+        merged_at = ?,
+        updated_at = ?
+    WHERE id = ?
+  `).run(now, now, taskId)
+  addTaskComment(db, taskId, 'user', null, 'approval', `merged ${task.branchName} into ${task.baseBranch}`)
+  await refreshMergeableTaskConflicts(db, taskId)
+  bumpAppState(db)
+
+  return getTask(db, taskId)
+}
+
+export function updateTaskAutoMerge(db: AppDatabase, taskId: number, autoMerge: boolean): Task {
+  db.prepare(`UPDATE tasks SET auto_merge = ?, updated_at = ? WHERE id = ?`).run(
+    autoMerge ? 1 : 0,
+    new Date().toISOString(),
+    taskId,
+  )
+  bumpAppState(db)
+  return getTask(db, taskId)
 }
 
 export function updateTaskStatus(db: AppDatabase, taskId: number, status: Task['status']): void {
@@ -413,6 +511,64 @@ export function updateTaskReviewRequiresReview(db: AppDatabase, taskId: number, 
   return getTask(db, taskId)
 }
 
+function persistTaskConflict(db: AppDatabase, taskId: number, details: string, files: string[]): void {
+  db.prepare(`
+    UPDATE tasks
+    SET conflicted_at = ?,
+        conflict_details = ?,
+        updated_at = ?
+    WHERE id = ?
+  `).run(
+    new Date().toISOString(),
+    JSON.stringify({ output: details, files }),
+    new Date().toISOString(),
+    taskId,
+  )
+}
+
+function clearTaskConflict(db: AppDatabase, taskId: number): void {
+  db.prepare(`
+    UPDATE tasks
+    SET conflicted_at = NULL,
+        conflict_details = NULL,
+        updated_at = ?
+    WHERE id = ?
+  `).run(new Date().toISOString(), taskId)
+}
+
+async function refreshMergeableTaskConflicts(db: AppDatabase, mergedTaskId: number): Promise<void> {
+  const mergedTask = getTask(db, mergedTaskId)
+  if (!mergedTask.repoId || !mergedTask.baseBranch) return
+
+  const repo = getRepo(db, mergedTask.repoId)
+  const siblings = db.prepare<TaskRow>(`
+    SELECT * FROM tasks
+    WHERE repo_id = ?
+      AND base_branch = ?
+      AND id != ?
+      AND status IN ('accepted', 'reviewing', 'conflicted')
+  `).all(mergedTask.repoId, mergedTask.baseBranch, mergedTaskId).map(mapTask)
+
+  for (const sibling of siblings) {
+    if (!sibling.branchName) continue
+    const result = await checkConflicts(repo.path, sibling.branchName, mergedTask.baseBranch)
+    if (result.hasConflicts) {
+      persistTaskConflict(db, sibling.id, result.details, result.files)
+      if (sibling.status === 'accepted') updateTaskStatus(db, sibling.id, 'conflicted')
+      addTaskComment(
+        db,
+        sibling.id,
+        'user',
+        null,
+        'comment',
+        `Conflict detected after merge of ${mergedTask.branchName}. Affected files: ${result.files.join(', ')}.`,
+      )
+      continue
+    }
+    clearTaskConflict(db, sibling.id)
+  }
+}
+
 function mapTask(row: TaskRow): Task {
   return {
     id: row.id,
@@ -428,6 +584,10 @@ function mapTask(row: TaskRow): Task {
     worktreePath: row.worktree_path,
     requiresReview: Boolean(row.requires_review),
     reviewRequiresReview: Boolean(row.review_requires_review),
+    autoMerge: Boolean(row.auto_merge),
+    conflictedAt: row.conflicted_at,
+    conflictDetails: row.conflict_details,
+    mergedAt: row.merged_at,
     handoffSummary: row.handoff_summary,
     artifact: row.artifact,
     createdAt: row.created_at,

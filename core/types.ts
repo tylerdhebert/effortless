@@ -94,6 +94,10 @@ export type Task = {
   worktreePath: string | null
   requiresReview: boolean
   reviewRequiresReview: boolean
+  autoMerge: boolean
+  conflictedAt: string | null
+  conflictDetails: string | null
+  mergedAt: string | null
   handoffSummary: string | null
   artifact: string | null
   createdAt: string

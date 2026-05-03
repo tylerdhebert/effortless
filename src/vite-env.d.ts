@@ -100,6 +100,7 @@ interface Window {
       claimTask: (input: ClaimTaskInput) => Promise<Task>
       checkpointTask: (input: CheckpointTaskInput) => Promise<TaskComment>
       markTaskReady: (taskId: number) => Promise<Task>
+      mergeTask: (taskId: number) => Promise<Task>
       ensureTaskWorktree: (taskId: number) => Promise<Task>
       getTaskDiff: (taskId: number, type?: DiffType) => Promise<TaskDiffView>
       getTaskCommits: (taskId: number) => Promise<TaskCommitView>
@@ -107,6 +108,7 @@ interface Window {
       updateTaskDetails: (input: UpdateTaskDetailsInput) => Promise<Task>
       updateTaskRequiresReview: (taskId: number, requiresReview: boolean) => Promise<Task>
       updateTaskReviewRequiresReview: (taskId: number, reviewRequiresReview: boolean) => Promise<Task>
+      updateTaskAutoMerge: (taskId: number, autoMerge: boolean) => Promise<Task>
       approveTask: (input: ApproveTaskInput) => Promise<Task>
       requestTaskChanges: (input: RequestTaskChangesInput) => Promise<Task>
       listMandates: () => Promise<Mandate[]>

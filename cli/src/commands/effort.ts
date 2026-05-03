@@ -1,13 +1,21 @@
 import { createEffort, getEffortByRef, listEfforts, updateEffortStatus, updateEffortSummary } from '../../../core/efforts'
 import { listDiscussionMessages } from '../../../core/discussion'
 import { listInputRequests } from '../../../core/inputs'
-import { resolveMandateText } from '../../../core/mandates'
 import { listPlans } from '../../../core/plans'
 import { listReferences } from '../../../core/references'
 import { listTasks } from '../../../core/tasks'
 import { bodyArg, option, requiredOption } from '../args'
 import { db } from '../context'
-import { planState, printReference } from '../render'
+import {
+  printArtifactPreview,
+  printExpandedReferences,
+  printHandoffSummary,
+  printLatestUpdate,
+  printRelatedMandates,
+  printSurfaceMandate,
+  printTemplateWorkflow,
+} from '../contextSections'
+import { planState } from '../render'
 
 export async function handleEffort(surface: string, command: string): Promise<boolean> {
   if (surface !== 'effort') return false
@@ -59,28 +67,32 @@ export async function handleEffort(surface: string, command: string): Promise<bo
     const references = listReferences(db, 'effort', effort.id)
     const inputs = listInputRequests(db, effort.id)
     const messages = listDiscussionMessages(db, effort.id)
-    const effortMandate = resolveMandateText(db, 'effort')
-    const planMandate = resolveMandateText(db, 'plan')
-    const taskMandate = resolveMandateText(db, 'task')
-    const reviewMandate = resolveMandateText(db, 'review')
-    const discussionMandate = resolveMandateText(db, 'discussion')
 
     console.log(`${effort.shortRef} ${effort.template} ${effort.status}`)
     console.log(effort.title)
+    printSurfaceMandate(db, 'effort')
+    printTemplateWorkflow(effort, {
+      plans: plans.length,
+      acceptedPlans: plans.filter((plan) => plan.accepted).length,
+      tasks: tasks.length,
+      acceptedTasks: tasks.filter((task) => task.status === 'accepted').length,
+      mergedTasks: tasks.filter((task) => task.status === 'merged').length,
+      discussionMessages: messages.length,
+    })
+    printRelatedMandates(db, ['plan', 'task', 'review', 'discussion'])
     console.log('')
     console.log('description')
     console.log(effort.description)
 
-    if (effort.summary) {
-      console.log('')
-      console.log('summary')
-      console.log(effort.summary)
-    }
+    printLatestUpdate(messages)
+    printHandoffSummary(effort.summary)
 
     if (acceptedPlan) {
-      console.log('')
-      console.log(`accepted plan ${acceptedPlan.shortRef}`)
-      console.log(acceptedPlan.summary ?? acceptedPlan.body)
+      printArtifactPreview(
+        acceptedPlan.summary ?? acceptedPlan.body,
+        `efl plan show --plan ${acceptedPlan.shortRef}`,
+        `accepted plan ${acceptedPlan.shortRef}`,
+      )
     } else if (plans.length > 0) {
       console.log('')
       console.log('plans')
@@ -111,38 +123,7 @@ export async function handleEffort(surface: string, command: string): Promise<bo
       }
     }
 
-    if (references.length > 0) {
-      console.log('')
-      console.log('references')
-      for (const reference of references) {
-        printReference(reference)
-      }
-    }
-
-    if (messages.length > 0) {
-      const latest = messages[0]
-      console.log('')
-      console.log('latest discussion')
-      console.log(`${latest.author}${latest.agentId ? `:${latest.agentId}` : ''}`)
-      console.log(latest.body)
-    }
-
-    const mandates = [
-      ['effort', effortMandate],
-      ['plan', planMandate],
-      ['task', taskMandate],
-      ['review', reviewMandate],
-      ['discussion', discussionMandate],
-    ].filter((entry): entry is [string, string] => Boolean(entry[1]))
-
-    if (mandates.length > 0) {
-      console.log('')
-      console.log('mandates')
-      for (const [surface, mandate] of mandates) {
-        console.log(`${surface}`)
-        console.log(mandate)
-      }
-    }
+    printExpandedReferences(db, references)
 
     return true
   }

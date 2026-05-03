@@ -65,6 +65,17 @@
   box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.4);
 }
 
+:global(.collapsed-sidebar) .footer {
+  justify-content: center;
+}
+
+:global(.collapsed-sidebar) .menu {
+  right: auto;
+  bottom: 0;
+  left: calc(100% + 10px);
+  box-shadow: 8px 0 32px rgba(0, 0, 0, 0.4);
+}
+
 .empty {
   padding: 20px;
   text-align: center;

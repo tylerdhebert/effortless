@@ -32,15 +32,16 @@ type TaskDetailPaneProps = {
   commitView: TaskCommitView | null
   conflictView: TaskConflictView | null
   onRunBuild: (taskId: number) => void
+  onMergeTask: (taskId: number) => void
   onApplyReview: (reviewId: number) => void
   onRequestReviewChanges: (input: { reviewId: number; body: string }) => void
   onUpdateTaskRequiresReview: (taskId: number, requiresReview: boolean) => void
   onUpdateTaskReviewRequiresReview: (taskId: number, reviewRequiresReview: boolean) => void
+  onUpdateTaskAutoMerge: (taskId: number, autoMerge: boolean) => void
   isRunningBuild: boolean
+  isMergingTask: boolean
   isApplyingReview: boolean
   isRequestingReviewChanges: boolean
-  isUpdatingTaskRequiresReview: boolean
-  isUpdatingTaskReviewRequiresReview: boolean
 }
 
 export function TaskDetailPane({
@@ -52,15 +53,16 @@ export function TaskDetailPane({
   commitView,
   conflictView,
   onRunBuild,
+  onMergeTask,
   onApplyReview,
   onRequestReviewChanges,
   onUpdateTaskRequiresReview,
   onUpdateTaskReviewRequiresReview,
+  onUpdateTaskAutoMerge,
   isRunningBuild,
+  isMergingTask,
   isApplyingReview,
   isRequestingReviewChanges,
-  isUpdatingTaskRequiresReview,
-  isUpdatingTaskReviewRequiresReview,
 }: TaskDetailPaneProps) {
   const [reviewFeedback, setReviewFeedback] = useState('')
   const [surfaceMode, setSurfaceMode] = useState<'meta' | 'work'>('meta')
@@ -75,6 +77,7 @@ export function TaskDetailPane({
   const taskRepo = repos.find((repo) => repo.id === (task?.repoId ?? null)) ?? null
   const latestReview = reviews[0] ?? null
   const pendingReview = reviews.find((review) => !review.appliedAt) ?? null
+  const persistedConflict = parsePersistedConflict(task?.conflictDetails ?? null)
   const diffViewQuery = useQuery<TaskDiffView>({
     queryKey: ['task-diff', task?.id ?? null, diffType],
     queryFn: () => {
@@ -150,7 +153,14 @@ export function TaskDetailPane({
       <div className={styles['task-detail-header']}>
         <div className={styles['task-detail-header-row']}>
           <div className={styles['task-detail-header-copy']}>
-            <h3>{task.title}</h3>
+            <div className={styles['task-title-row']}>
+              <h3>{task.title}</h3>
+              <ToggleSwitch
+                label="human approval req"
+                checked={task.requiresReview}
+                onChange={(checked) => onUpdateTaskRequiresReview(task.id, checked)}
+              />
+            </div>
             <div className={styles['expanded-meta']}>
               <div className={styles['chip-group']}>
                 <small>ref</small>
@@ -183,18 +193,6 @@ export function TaskDetailPane({
                   {task.worktreePath ?? 'no worktree yet'}
                 </span>
               </div>
-              <ToggleSwitch
-                label="review"
-                checked={task.requiresReview}
-                onChange={(checked) => onUpdateTaskRequiresReview(task.id, checked)}
-                disabled={isUpdatingTaskRequiresReview}
-              />
-              <ToggleSwitch
-                label="review gating"
-                checked={task.reviewRequiresReview}
-                onChange={(checked) => onUpdateTaskReviewRequiresReview(task.id, checked)}
-                disabled={isUpdatingTaskReviewRequiresReview}
-              />
             </div>
           </div>
           <div className={styles['task-header-controls']}>
@@ -207,7 +205,7 @@ export function TaskDetailPane({
               value={surfaceMode}
               onChange={setSurfaceMode}
             />
-            <button
+              <button
               type="button"
               className={styles['task-header-action']}
               title="run build"
@@ -216,6 +214,15 @@ export function TaskDetailPane({
             >
               <Play size={14} aria-hidden="true" />
               <span>run build</span>
+            </button>
+            <button
+              type="button"
+              className={styles['task-header-action']}
+              title="merge task branch"
+              onClick={() => onMergeTask(task.id)}
+              disabled={isMergingTask || task.status !== 'accepted' || !taskRepo || !task.branchName}
+            >
+              <span>merge</span>
             </button>
           </div>
         </div>
@@ -252,7 +259,14 @@ export function TaskDetailPane({
           </div>
 
           <section className={styles['task-detail-section']}>
-            <h4>review</h4>
+            <div className={styles['review-section-header']}>
+              <h4>review</h4>
+              <ToggleSwitch
+                label="human approval req"
+                checked={task.reviewRequiresReview}
+                onChange={(checked) => onUpdateTaskReviewRequiresReview(task.id, checked)}
+              />
+            </div>
             <p className={styles['task-review-summary']}>{reviewSummary(task, latestReview)}</p>
 
             {pendingReview ? (
@@ -315,6 +329,11 @@ export function TaskDetailPane({
           <section className={styles['task-detail-section']}>
             <h4>implementation</h4>
             <div className={styles['implementation-controls']}>
+              <ToggleSwitch
+                label="auto merge"
+                checked={task.autoMerge}
+                onChange={(checked) => onUpdateTaskAutoMerge(task.id, checked)}
+              />
               <PillSwitcher
                 ariaLabel="implementation diff type"
                 options={[
@@ -379,16 +398,16 @@ export function TaskDetailPane({
               <article className={styles['implementation-card']}>
                 <div className={styles['implementation-card-header']}>
                   <strong>conflicts</strong>
-                  {conflictView ? (
-                    <small>{conflictView.hasConflicts ? 'conflicts found' : 'merge is clean'}</small>
+                  {conflictView || task.conflictedAt ? (
+                    <small>{conflictView?.hasConflicts || task.conflictedAt ? 'conflicts found' : 'merge is clean'}</small>
                   ) : null}
                 </div>
-                {conflictView?.hasConflicts ? (
+                {conflictView?.hasConflicts || task.conflictedAt ? (
                   <div className={styles['conflict-block']}>
-                    {conflictView.files.length > 0 ? (
-                      <p>{conflictView.files.join(', ')}</p>
+                    {(conflictView?.files.length ? conflictView.files : persistedConflict?.files ?? []).length > 0 ? (
+                      <p>{(conflictView?.files.length ? conflictView.files : persistedConflict?.files ?? []).join(', ')}</p>
                     ) : null}
-                    {conflictView.details ? <pre>{conflictView.details}</pre> : null}
+                    {conflictView?.details ?? persistedConflict?.output ? <pre>{conflictView?.details ?? persistedConflict?.output}</pre> : null}
                   </div>
                 ) : (
                   <p>no conflicts detected</p>
@@ -502,4 +521,17 @@ function resolveDiffFilePath(file: FileData): string {
   const rawPath =
     file.newPath !== '/dev/null' ? (file.newPath ?? '') : (file.oldPath ?? '')
   return sanitizeDiffPath(rawPath)
+}
+
+function parsePersistedConflict(value: string | null): { output: string; files: string[] } | null {
+  if (!value) return null
+  try {
+    const parsed = JSON.parse(value) as { output?: unknown; files?: unknown }
+    return {
+      output: typeof parsed.output === 'string' ? parsed.output : value,
+      files: Array.isArray(parsed.files) ? parsed.files.filter((file): file is string => typeof file === 'string') : [],
+    }
+  } catch {
+    return { output: value, files: [] }
+  }
 }

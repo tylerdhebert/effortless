@@ -121,6 +121,7 @@ contextBridge.exposeInMainWorld('effortless', {
   checkpointTask: (input: CheckpointTaskInput) =>
     ipcRenderer.invoke('tasks:checkpoint', input) as Promise<TaskComment>,
   markTaskReady: (taskId: number) => ipcRenderer.invoke('tasks:ready', taskId) as Promise<Task>,
+  mergeTask: (taskId: number) => ipcRenderer.invoke('tasks:merge', taskId) as Promise<Task>,
   ensureTaskWorktree: (taskId: number) =>
     ipcRenderer.invoke('tasks:worktree', taskId) as Promise<Task>,
   getTaskDiff: (taskId: number, type: DiffType = 'combined') =>
@@ -135,6 +136,8 @@ contextBridge.exposeInMainWorld('effortless', {
     ipcRenderer.invoke('tasks:updateRequiresReview', taskId, requiresReview) as Promise<Task>,
   updateTaskReviewRequiresReview: (taskId: number, reviewRequiresReview: boolean) =>
     ipcRenderer.invoke('tasks:updateReviewRequiresReview', taskId, reviewRequiresReview) as Promise<Task>,
+  updateTaskAutoMerge: (taskId: number, autoMerge: boolean) =>
+    ipcRenderer.invoke('tasks:updateAutoMerge', taskId, autoMerge) as Promise<Task>,
   approveTask: (input: ApproveTaskInput) =>
     ipcRenderer.invoke('tasks:approve', input) as Promise<Task>,
   requestTaskChanges: (input: RequestTaskChangesInput) =>

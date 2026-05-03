@@ -1,6 +1,7 @@
 import fs from 'node:fs'
 import Database from 'better-sqlite3'
 import { getAppPaths } from './appPaths'
+import { DEFAULT_GLOBAL_MANDATES } from './defaultMandates'
 
 export type AppDatabase = Database
 export type AppState = {
@@ -194,6 +195,10 @@ export function initializeSchema(db: AppDatabase): void {
   ensureColumn(db, 'tasks', 'worktree_path', 'TEXT')
   ensureColumn(db, 'tasks', 'handoff_summary', 'TEXT')
   ensureColumn(db, 'tasks', 'artifact', 'TEXT')
+  ensureColumn(db, 'tasks', 'auto_merge', 'INTEGER NOT NULL DEFAULT 0')
+  ensureColumn(db, 'tasks', 'conflicted_at', 'TEXT')
+  ensureColumn(db, 'tasks', 'conflict_details', 'TEXT')
+  ensureColumn(db, 'tasks', 'merged_at', 'TEXT')
   ensureColumn(db, 'plans', 'ready_at', 'TEXT')
   ensureColumn(db, 'plans', 'accepted_at', 'TEXT')
   ensureColumn(db, 'input_requests', 'short_ref', 'TEXT')
@@ -205,6 +210,7 @@ export function initializeSchema(db: AppDatabase): void {
   ensureColumn(db, 'app_state', 'sound_notifications_enabled', 'INTEGER NOT NULL DEFAULT 0')
   ensureColumn(db, 'app_state', 'toast_duration_seconds', 'INTEGER NOT NULL DEFAULT 5')
   ensureColumn(db, 'app_state', 'theme', 'TEXT NOT NULL DEFAULT \'grass\'')
+  seedDefaultGlobalMandates(db)
 }
 
 export function bumpAppState(db: AppDatabase): void {
@@ -292,4 +298,22 @@ function ensureColumn(db: AppDatabase, tableName: string, columnName: string, co
   }
 
   db.exec(`ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${columnSql}`)
+}
+
+function seedDefaultGlobalMandates(db: AppDatabase): void {
+  const now = new Date().toISOString()
+  const insert = db.prepare(`
+    INSERT OR IGNORE INTO mandates (work_surface, repo_id, source_type, body, file_path, updated_at)
+    VALUES (?, NULL, 'body', ?, NULL, ?)
+  `)
+
+  for (const mandate of DEFAULT_GLOBAL_MANDATES) {
+    insert.run(mandate.workSurface, mandate.body, now)
+  }
+
+  db.prepare(`
+    UPDATE mandates
+    SET short_ref = 'mandate-' || id
+    WHERE short_ref IS NULL
+  `).run()
 }

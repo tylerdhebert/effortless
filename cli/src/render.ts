@@ -104,6 +104,7 @@ export function printHelp(): void {
   console.log('efl task artifact --task task-1 --agent impl-1 --body "artifact summary"')
   console.log('efl task ready --task task-1')
   console.log('efl task wait --task task-1')
+  console.log('efl task merge --task task-1')
   console.log('efl task worktree --task task-1')
   console.log('efl review submit --task task-1 --agent rev-1 --verdict approve --body "message"')
   console.log('efl review list --task task-1')

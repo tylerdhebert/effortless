@@ -33,6 +33,16 @@ export function useTaskMutations(selectedEffortId: number | null) {
     },
   })
 
+  const mergeTask = useMutation({
+    mutationFn: (taskId: number) => window.effortless.mergeTask(taskId),
+    onSuccess: async (task) => {
+      if (selectedEffortId) {
+        await invalidateTask(task.id, selectedEffortId)
+        await queryClient.invalidateQueries({ queryKey: ['tasks', selectedEffortId] })
+      }
+    },
+  })
+
   const runBuild = useMutation({
     mutationFn: (taskId: number) => window.effortless.runTaskBuild(taskId),
     onSuccess: async (build) => {
@@ -63,5 +73,15 @@ export function useTaskMutations(selectedEffortId: number | null) {
     },
   })
 
-  return { readyTask, updateTaskDetails, ensureTaskWorktree, runBuild, updateTaskRequiresReview, updateTaskReviewRequiresReview }
+  const updateTaskAutoMerge = useMutation({
+    mutationFn: ({ taskId, autoMerge }: { taskId: number; autoMerge: boolean }) =>
+      window.effortless.updateTaskAutoMerge(taskId, autoMerge),
+    onSuccess: async (task) => {
+      if (selectedEffortId) {
+        await invalidateTask(task.id, selectedEffortId)
+      }
+    },
+  })
+
+  return { readyTask, updateTaskDetails, ensureTaskWorktree, mergeTask, runBuild, updateTaskRequiresReview, updateTaskReviewRequiresReview, updateTaskAutoMerge }
 }

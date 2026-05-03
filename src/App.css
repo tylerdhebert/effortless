@@ -17,8 +17,184 @@
     var(--main);
 }
 
+.app-shell--sidebar-collapsed {
+  grid-template-columns: 54px minmax(0, 1fr);
+}
+
 .app-shell > header:first-child {
   grid-column: 1 / -1;
+}
+
+.sidebar-frame {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+}
+
+.sidebar-frame > aside {
+  height: 100%;
+}
+
+.sidebar-collapse-button {
+  position: absolute;
+  top: 0;
+  right: -8px;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0;
+  opacity: 0;
+  box-shadow: none;
+  transition:
+    opacity 140ms ease,
+    color 140ms ease,
+    background 140ms ease;
+}
+
+.sidebar-collapse-button::before {
+  content: "";
+  width: 3px;
+  height: 56px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 30%, var(--line));
+  box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.sidebar-collapse-button svg {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  opacity: 0;
+}
+
+.sidebar-frame:hover .sidebar-collapse-button,
+.sidebar-collapse-button:focus-visible {
+  opacity: 1;
+}
+
+.sidebar-collapse-button:hover {
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--accent) 7%, transparent));
+  color: var(--text);
+}
+
+.collapsed-sidebar-button:hover {
+  border-color: color-mix(in srgb, var(--accent) 22%, transparent);
+  background: color-mix(in srgb, var(--accent) 8%, var(--panel));
+  color: var(--text);
+}
+
+.collapsed-sidebar {
+  position: relative;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  justify-items: center;
+  gap: 14px;
+  min-height: 0;
+  border-right: 1px solid var(--line);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.025), transparent 18%),
+    var(--sidebar);
+  padding: 16px 8px 12px;
+}
+
+.sidebar-expand-button {
+  position: absolute;
+  top: 0;
+  right: -8px;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0;
+  opacity: 0;
+  transition:
+    opacity 140ms ease,
+    color 140ms ease,
+    background 140ms ease;
+}
+
+.sidebar-expand-button::before {
+  content: "";
+  width: 3px;
+  height: 56px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 30%, var(--line));
+  box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.sidebar-expand-button svg {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  opacity: 0;
+}
+
+.collapsed-sidebar:hover .sidebar-expand-button,
+.sidebar-expand-button:focus-visible {
+  opacity: 1;
+}
+
+.sidebar-expand-button:hover {
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--accent) 7%, transparent));
+  color: var(--text);
+}
+
+.collapsed-sidebar-stack,
+.collapsed-sidebar-footer {
+  display: grid;
+  align-content: start;
+  justify-items: center;
+  gap: 10px;
+}
+
+.collapsed-sidebar-footer {
+  align-content: end;
+}
+
+.collapsed-sidebar-button {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0;
+  transition:
+    border-color 140ms ease,
+    color 140ms ease,
+    background 140ms ease;
+}
+
+.collapsed-sidebar-button.active {
+  border-color: color-mix(in srgb, var(--accent) 26%, transparent);
+  background: color-mix(in srgb, var(--accent) 9%, transparent);
+  color: var(--accent);
+}
+
+.collapsed-sidebar-button.attention {
+  border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+  color: var(--accent);
+}
+
+.collapsed-sidebar-button span {
+  font-size: 0.72rem;
+  font-weight: 800;
 }
 
 .effort-surface {
@@ -39,7 +215,7 @@
   justify-content: space-between;
   gap: 12px;
   min-height: 72px;
-  padding: 18px 30px 16px;
+  padding: 11px 30px 8px;
   border-bottom: 1px solid var(--line);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(0, 0, 0, 0.05)),
@@ -67,8 +243,8 @@
 
 .effort-header-meta {
   display: flex;
-  align-items: flex-end;
-  gap: 8px;
+  align-items: stretch;
+  gap: 6px;
   flex-wrap: wrap;
 }
 
@@ -88,11 +264,15 @@
   padding-left: .45em;
 }
 
-.effort-header-meta span {
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.055);
-  padding: 5px 8px;
+.effort-header-meta .chip-group span {
+  border: 1px solid color-mix(in srgb, var(--line) 82%, transparent);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.028);
+  color: var(--text);
+  font-size: 0.76rem;
+  font-weight: 650;
+  line-height: 1;
+  padding: 8px 10px;
 }
 
 .discussion-button {
@@ -455,10 +635,10 @@
 
 .task-workspace {
   display: grid;
-  grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
+  grid-template-columns: minmax(224px, 268px) minmax(0, 1fr);
   gap: 16px;
   align-items: stretch;
-  min-height: 0;
+  min-height: clamp(780px, 96vh, 1180px);
   height: 100%;
   overflow: hidden;
 }
@@ -469,8 +649,7 @@
 
 .task-section {
   grid-template-rows: auto auto minmax(0, 1fr);
-  min-height: clamp(640px, 76vh, 940px);
-  max-height: clamp(640px, 76vh, 940px);
+  min-height: clamp(900px, 112vh, 1320px);
 }
 
 .task-repo-filter {

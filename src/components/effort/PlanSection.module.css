@@ -2,6 +2,21 @@
   min-width: 0;
 }
 
+.plan-section :global(.section-title) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+}
+
+.plan-header-center {
+  justify-self: center;
+}
+
+.plan-header-side {
+  justify-self: end;
+  min-width: 16px;
+}
+
 .plan-pager {
   display: grid;
   gap: 12px;

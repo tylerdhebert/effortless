@@ -6,11 +6,11 @@
   align-self: start;
   width: fit-content;
   max-width: 100%;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.025);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.015);
-  padding: 4px;
+  border: 1px solid color-mix(in srgb, var(--line) 90%, transparent);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.018);
+  box-shadow: none;
+  padding: 2px;
 }
 
 .pill-switcher-indicator {
@@ -18,7 +18,7 @@
   top: 4px;
   bottom: 4px;
   overflow: hidden;
-  border-radius: 9px;
+  border-radius: 6px;
   pointer-events: none;
 }
 
@@ -29,10 +29,10 @@
 }
 
 .pill-switcher-indicator-fill {
-  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  background: color-mix(in srgb, var(--accent) 12%, rgba(255, 255, 255, 0.035));
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    0 0 0 1px color-mix(in srgb, var(--accent) 12%, transparent);
+    inset 0 1px 0 rgba(255, 255, 255, 0.055),
+    0 0 0 1px color-mix(in srgb, var(--accent) 16%, transparent);
 }
 
 .pill-switcher .pill-switcher-option {
@@ -41,19 +41,19 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 32px;
+  min-height: 28px;
   border: 0;
-  border-radius: 9px;
+  border-radius: 6px;
   background: transparent;
   box-shadow: none;
   color: var(--muted);
   cursor: pointer;
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 650;
-  letter-spacing: 0.04em;
+  letter-spacing: 0;
   line-height: 1;
   white-space: nowrap;
-  padding: 0 14px;
+  padding: 0 10px;
   transform: none;
   transition: color 140ms ease;
 }
@@ -71,5 +71,5 @@
 }
 
 .pill-switcher .pill-switcher-option.selected {
-  color: #e6efd8;
+  color: var(--text);
 }

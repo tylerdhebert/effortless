@@ -3,9 +3,14 @@ import { applyTheme } from './themes'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   CircleHelp,
+  ChevronsLeft,
+  ChevronsRight,
   Hammer,
+  Home,
   MessageSquare,
+  Plus,
   ScrollText,
+  Settings,
   Speech,
   X,
 } from 'lucide-react'
@@ -15,8 +20,8 @@ import { EffortSummarySection } from './components/effort/EffortSummarySection'
 import { EffortCreationForm } from './components/sidebar/EffortCreationForm'
 import { InputRequestList } from './components/effort/InputRequestList'
 import { ManageSurface } from './components/manage/ManageSurface'
+import { NotificationFooter } from './components/notifications/NotificationFooter'
 import { NotificationToast } from './components/notifications/NotificationToast'
-import { ToggleSwitch } from './components/ui/ToggleSwitch'
 import { TitleBar } from './components/ui/TitleBar'
 
 import { PlanSection } from './components/effort/PlanSection'
@@ -55,6 +60,7 @@ function App() {
   const [discussionOpen, setDiscussionOpen] = useState(false)
   const [discussionDraft, setDiscussionDraft] = useState('')
   const [createEffortOpen, setCreateEffortOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [observedAppVersion, setObservedAppVersion] = useState<number | null>(null)
   const effortScrollRef = useRef<HTMLDivElement | null>(null)
   const preserveSelectionOnEffortChangeRef = useRef(false)
@@ -395,26 +401,90 @@ function App() {
   }, [selectedTaskId, tasksQuery.data])
 
   return (
-    <main className="app-shell">
+    <main className={`app-shell ${sidebarCollapsed ? 'app-shell--sidebar-collapsed' : ''}`}>
       <TitleBar />
-      <Sidebar
-        efforts={effortsQuery.data ?? []}
-        tasks={allTasksQuery.data ?? []}
-        repos={reposQuery.data ?? []}
-        selectedEffortId={selectedEffort?.id ?? null}
-        reposCount={reposQuery.data?.length ?? 0}
-        mandatesCount={mandatesQuery.data?.length ?? 0}
-        surfaceMode={surfaceMode}
-        manageSection={manageSection}
-        onSelectEffort={(id) => setSelectedEffortId(id)}
-        onSetSurfaceMode={setSurfaceMode}
-        onSetManageSection={setManageSection}
-        onOpenCreateEffort={() => setCreateEffortOpen(true)}
-        effortPendingMap={effortPendingMap}
-        notificationCount={notificationCount}
-        notifications={notifications}
-        onNavigateNotification={handleNotificationNavigate}
-      />
+      {sidebarCollapsed ? (
+        <aside className="collapsed-sidebar" aria-label="collapsed sidebar">
+          <button
+            type="button"
+            className="sidebar-expand-button"
+            aria-label="expand sidebar"
+            title="expand sidebar"
+            onClick={() => setSidebarCollapsed(false)}
+          >
+            <ChevronsRight size={16} />
+          </button>
+          <div className="collapsed-sidebar-stack">
+            <button
+              type="button"
+              className={`collapsed-sidebar-button ${surfaceMode === 'effort' ? 'active' : ''}`}
+              aria-label="efforts"
+              title="efforts"
+              onClick={() => setSurfaceMode('effort')}
+            >
+              <Home size={16} />
+            </button>
+            <button
+              type="button"
+              className={`collapsed-sidebar-button ${surfaceMode === 'manage' ? 'active' : ''}`}
+              aria-label="manage"
+              title="manage"
+              onClick={() => {
+                setSurfaceMode('manage')
+                setManageSection(manageSection === 'repos' || manageSection === 'mandates' ? manageSection : 'repos')
+              }}
+            >
+              <Settings size={16} />
+            </button>
+            <button
+              type="button"
+              className="collapsed-sidebar-button"
+              aria-label="create effort"
+              title="create effort"
+              onClick={() => setCreateEffortOpen(true)}
+            >
+              <Plus size={16} />
+            </button>
+          </div>
+          <div className="collapsed-sidebar-footer">
+            <NotificationFooter
+              count={notificationCount}
+              notifications={notifications}
+              onNavigate={handleNotificationNavigate}
+            />
+          </div>
+        </aside>
+      ) : (
+        <div className="sidebar-frame">
+          <Sidebar
+            efforts={effortsQuery.data ?? []}
+            tasks={allTasksQuery.data ?? []}
+            repos={reposQuery.data ?? []}
+            selectedEffortId={selectedEffort?.id ?? null}
+            reposCount={reposQuery.data?.length ?? 0}
+            mandatesCount={mandatesQuery.data?.length ?? 0}
+            surfaceMode={surfaceMode}
+            manageSection={manageSection}
+            onSelectEffort={(id) => setSelectedEffortId(id)}
+            onSetSurfaceMode={setSurfaceMode}
+            onSetManageSection={setManageSection}
+            onOpenCreateEffort={() => setCreateEffortOpen(true)}
+            effortPendingMap={effortPendingMap}
+            notificationCount={notificationCount}
+            notifications={notifications}
+            onNavigateNotification={handleNotificationNavigate}
+          />
+          <button
+            type="button"
+            className="sidebar-collapse-button"
+            aria-label="collapse sidebar"
+            title="collapse sidebar"
+            onClick={() => setSidebarCollapsed(true)}
+          >
+            <ChevronsLeft size={14} />
+          </button>
+        </div>
+      )}
 
       <section className="effort-surface">
         <NotificationToast
@@ -484,19 +554,6 @@ function App() {
                         <small>status</small>
                         <span style={{ borderColor: effortStatusColor(selectedEffort.status), boxShadow: `0 0 8px ${effortStatusColor(selectedEffort.status)}` }}>{selectedEffort.status}</span>
                       </div>
-                      {supportsPlans ? (
-                        <ToggleSwitch
-                          label="plan review"
-                          checked={selectedEffort.planRequiresReview}
-                          onChange={(checked) =>
-                            updateEffortPlanRequiresReview.mutate({
-                              effortId: selectedEffort.id,
-                              planRequiresReview: checked,
-                            })
-                          }
-                          disabled={updateEffortPlanRequiresReview.isPending}
-                        />
-                      ) : null}
                     </div>
                   </div>
                 </div>
@@ -643,6 +700,13 @@ function App() {
                   isReadyingPlan={planMutations.readyPlan.isPending}
                   isRequestingPlanChanges={planMutations.requestPlanChanges.isPending}
                   hasPendingPlan={hasPendingPlan}
+                  humanApprovalRequired={selectedEffort.planRequiresReview}
+                  onUpdateHumanApprovalRequired={(checked) =>
+                    updateEffortPlanRequiresReview.mutate({
+                      effortId: selectedEffort.id,
+                      planRequiresReview: checked,
+                    })
+                  }
                 />
               ) : null}
 
@@ -685,6 +749,7 @@ function App() {
                       commitView={commitsQuery.data ?? null}
                       conflictView={conflictsQuery.data ?? null}
                       onRunBuild={(taskId) => taskMutations.runBuild.mutate(taskId)}
+                      onMergeTask={(taskId) => taskMutations.mergeTask.mutate(taskId)}
                       onApplyReview={(reviewId) => reviewMutations.applyReview.mutate({ reviewId })}
                       onRequestReviewChanges={(input) => reviewMutations.requestReviewChanges.mutate(input)}
                       onUpdateTaskRequiresReview={(taskId, requiresReview) =>
@@ -693,11 +758,13 @@ function App() {
                       onUpdateTaskReviewRequiresReview={(taskId, reviewRequiresReview) =>
                         taskMutations.updateTaskReviewRequiresReview.mutate({ taskId, reviewRequiresReview })
                       }
+                      onUpdateTaskAutoMerge={(taskId, autoMerge) =>
+                        taskMutations.updateTaskAutoMerge.mutate({ taskId, autoMerge })
+                      }
                       isRunningBuild={taskMutations.runBuild.isPending}
+                      isMergingTask={taskMutations.mergeTask.isPending}
                       isApplyingReview={reviewMutations.applyReview.isPending}
                       isRequestingReviewChanges={reviewMutations.requestReviewChanges.isPending}
-                      isUpdatingTaskRequiresReview={taskMutations.updateTaskRequiresReview.isPending}
-                      isUpdatingTaskReviewRequiresReview={taskMutations.updateTaskReviewRequiresReview.isPending}
                     />
                   </div>
                 </section>

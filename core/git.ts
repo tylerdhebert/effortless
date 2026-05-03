@@ -32,6 +32,20 @@ export async function worktreeCreate(
   return wtPath
 }
 
+export async function worktreeRemove(repoPath: string, branchName: string): Promise<void> {
+  const wtPath = worktreePath(repoPath, branchName)
+  try {
+    await git(repoPath, ['worktree', 'remove', '--force', wtPath])
+  } catch {
+    // The worktree may already be gone.
+  }
+  try {
+    await git(repoPath, ['branch', '-D', branchName])
+  } catch {
+    // The branch may already be gone.
+  }
+}
+
 export async function getHeadCommit(worktreeOrRepoPath: string): Promise<string> {
   return (await git(worktreeOrRepoPath, ['rev-parse', 'HEAD'])).trim()
 }
@@ -89,6 +103,15 @@ export async function checkConflicts(
   }
 
   return { hasConflicts: true, details: mergeTreeOutput, files: [...files] }
+}
+
+export async function mergeBranch(
+  repoPath: string,
+  branchName: string,
+  baseBranch: string,
+): Promise<void> {
+  await git(repoPath, ['checkout', baseBranch])
+  await git(repoPath, ['merge', '--no-ff', branchName, '-m', `Merge ${branchName} into ${baseBranch}`])
 }
 
 async function git(cwd: string, args: string[]): Promise<string> {

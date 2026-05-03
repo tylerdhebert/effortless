@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import styles from './ToggleSwitch.module.css'
 
 type ToggleSwitchProps = {
@@ -9,19 +10,36 @@ type ToggleSwitchProps = {
 }
 
 export function ToggleSwitch({ label, checked, onChange, disabled, ariaLabel }: ToggleSwitchProps) {
+  const [optimisticChecked, setOptimisticChecked] = useState(checked)
+
+  useEffect(() => {
+    setOptimisticChecked(checked)
+  }, [checked])
+
+  function handleToggle() {
+    if (disabled) return
+    const next = !optimisticChecked
+    setOptimisticChecked(next)
+    onChange(next)
+  }
+
   return (
-    <label className={styles['toggle-switch']} aria-label={ariaLabel ?? label}>
-      <span className={styles['toggle-label']}>{label}</span>
+    <div className={styles['toggle-switch']}>
+      <span className={styles['toggle-copy']}>
+        <span className={styles['toggle-label']}>{label}</span>
+        <span className={styles['toggle-value']}>{optimisticChecked ? 'on' : 'off'}</span>
+      </span>
       <button
         type="button"
         role="switch"
-        aria-checked={checked}
+        aria-label={ariaLabel ?? label}
+        aria-checked={optimisticChecked}
         disabled={disabled}
-        className={`${styles['toggle-track']} ${checked ? styles.checked : ''}`}
-        onClick={() => onChange(!checked)}
+        className={`${styles['toggle-track']} ${optimisticChecked ? styles.checked : ''}`}
+        onClick={handleToggle}
       >
         <span className={styles['toggle-thumb']} />
       </button>
-    </label>
+    </div>
   )
 }

@@ -6,8 +6,8 @@ import { openDatabase } from '../core/db'
 import { getAppPaths } from '../core/appPaths'
 import { createDiscussionMessage } from '../core/discussion'
 import { acceptPlan, createPlan, markPlanReady, requestPlanChanges } from '../core/plans'
-import { applyReview, submitReview } from '../core/reviews'
-import { checkpointTask, createTask, markTaskReady, updateTaskDetails } from '../core/tasks'
+import { submitReview } from '../core/reviews'
+import { checkpointTask, createTask, updateTaskDetails } from '../core/tasks'
 import { answerInputRequest, createInputRequest } from '../core/inputs'
 import { createMandate } from '../core/mandates'
 import { createReference } from '../core/references'
@@ -363,17 +363,14 @@ async function seedDeliveryEffort(
     inputRequestId: taskInput.id,
     answer: 'stay terse for now',
   })
-  markTaskReady(db, acceptedTask.id)
+  markSeedTaskReady(db, acceptedTask, 'impl-plan')
   const acceptedReview = await submitReview(db, {
     taskId: acceptedTask.id,
     verdict: 'approve',
     body: 'Plan review flow is coherent and the wait path returns human feedback correctly.',
     authorAgentId: 'review-plan',
   })
-  await applyReview(db, {
-    reviewId: acceptedReview.id,
-    commitHash: '6d6a2b19c2a94d1ca98755d4c99194bb8ef4fa19',
-  })
+  applySeedReview(db, acceptedTask.id, acceptedReview.id, 'accepted', '6d6a2b19c2a94d1ca98755d4c99194bb8ef4fa19')
   insertBuildResult(db, acceptedTask.id, 'passed', [
     '$ bun run build',
     'renderer build complete',
@@ -405,7 +402,7 @@ async function seedDeliveryEffort(
     agentId: 'impl-repo',
     body: 'Task overlay now shows repo metadata and latest build state.',
   })
-  markTaskReady(db, changesTask.id)
+  markSeedTaskReady(db, changesTask, 'impl-repo')
   const rejectedReview = await submitReview(db, {
     taskId: changesTask.id,
     verdict: 'request-changes',
@@ -422,7 +419,7 @@ async function seedDeliveryEffort(
     inputRequestId: reviewInput.id,
     answer: 'yes',
   })
-  await applyReview(db, { reviewId: rejectedReview.id })
+  applySeedReview(db, changesTask.id, rejectedReview.id, 'changes-requested')
   insertBuildResult(db, changesTask.id, 'failed', [
     '$ bun run --cwd client build',
     'Missing task detail tabs: diff, commit',
@@ -453,7 +450,7 @@ async function seedDeliveryEffort(
     agentId: 'impl-seed',
     body: 'Sketching a reset-and-seed flow that does not mutate real git worktrees.',
   })
-  markTaskReady(db, waitingTask.id)
+  markSeedTaskReady(db, waitingTask, 'impl-seed')
   createInputRequest(db, {
     effortId: effort.id,
     taskId: waitingTask.id,
@@ -565,6 +562,43 @@ function attachTaskWorkspace(
   ).run(task.id, ownerAgentId, `claimed by ${ownerAgentId}`, new Date().toISOString())
 }
 
+function markSeedTaskReady(db: AppDatabase, task: Task, agentId: string) {
+  db.prepare(`UPDATE tasks SET status = 'reviewing', updated_at = ? WHERE id = ?`).run(
+    new Date().toISOString(),
+    task.id,
+  )
+  db.prepare(
+    `
+    INSERT INTO task_comments (task_id, author, agent_id, kind, body, commit_hash, created_at)
+    VALUES (?, 'agent', ?, 'checkpoint', 'ready for human review', NULL, ?)
+  `,
+  ).run(task.id, agentId, new Date().toISOString())
+}
+
+function applySeedReview(
+  db: AppDatabase,
+  taskId: number,
+  reviewId: number,
+  status: 'accepted' | 'changes-requested',
+  commitHash: string | null = null,
+) {
+  const now = new Date().toISOString()
+  db.prepare(`UPDATE reviews SET applied_at = ? WHERE id = ?`).run(now, reviewId)
+  db.prepare(`UPDATE tasks SET status = ?, updated_at = ? WHERE id = ?`).run(status, now, taskId)
+  db.prepare(
+    `
+    INSERT INTO task_comments (task_id, author, agent_id, kind, body, commit_hash, created_at)
+    VALUES (?, 'user', NULL, ?, ?, ?, ?)
+  `,
+  ).run(
+    taskId,
+    status === 'accepted' ? 'approval' : 'comment',
+    status === 'accepted' ? 'lgtm' : 'The task detail card still needs diff and commit views before this is complete.',
+    commitHash,
+    now,
+  )
+}
+
 function insertBuildResult(
   db: AppDatabase,
   taskId: number,
@@ -592,36 +626,6 @@ function touchEffort(db: AppDatabase, effortId: number) {
 }
 
 function seedMandates(db: AppDatabase, repos: { effortlessRepo: Repo; agentsyncboardRepo: Repo | null }) {
-  createMandate(db, {
-    workSurface: 'task',
-    sourceType: 'body',
-    body: 'Always write tests for new features. Keep changes minimal and focused. Use conventional commit messages.',
-  })
-
-  createMandate(db, {
-    workSurface: 'plan',
-    sourceType: 'body',
-    body: 'Plans should be numbered step lists. Each step should be a single concrete action. Include rollback notes for any risky step.',
-  })
-
-  createMandate(db, {
-    workSurface: 'review',
-    sourceType: 'body',
-    body: 'Focus reviews on correctness and completeness. Note any missing edge cases. Approve only when the task criteria are fully met.',
-  })
-
-  createMandate(db, {
-    workSurface: 'effort',
-    sourceType: 'body',
-    body: 'Frame each effort with a clear scope and done criteria. Prefer narrow efforts that ship over broad ones that stall.',
-  })
-
-  createMandate(db, {
-    workSurface: 'discussion',
-    sourceType: 'body',
-    body: 'Keep discussion focused on aligning on direction before planning begins. Summarize conclusions clearly.',
-  })
-
   if (repos.agentsyncboardRepo) {
     createMandate(db, {
       workSurface: 'task',
