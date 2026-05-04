@@ -1,4 +1,4 @@
-import { applyTheme, THEME_IDS, THEME_LABELS } from '../../themes'
+import { applyTheme, THEME_IDS, THEME_LABELS, THEME_PALETTES } from '../../themes'
 import styles from './AppearanceSettingsPanel.module.css'
 
 type AppearanceSettingsPanelProps = {
@@ -13,49 +13,53 @@ export function AppearanceSettingsPanel({ currentTheme, onUpdateTheme }: Appeara
   }
 
   return (
-    <div className={styles.panel}>
-      <h3>theme</h3>
+    <section className={styles.panel}>
+      <div className={styles.panelHeader}>
+        <div>
+          <h3>appearance</h3>
+        </div>
+      </div>
+
       <div className={styles.grid}>
         {THEME_IDS.map((id) => {
           const active = currentTheme === id
+          const palette = THEME_PALETTES[id]
           return (
             <button
               key={id}
               type="button"
-              className={`${styles.chip} ${active ? styles.active : ''}`}
+              className={`${styles.card} ${active ? styles.active : ''}`}
               onClick={() => handleSelect(id)}
             >
-              <span className={styles.swatch} style={{ background: getSwatchColor(id) }} />
-              <span className={styles.label}>{THEME_LABELS[id]}</span>
+              <div className={styles.preview} aria-hidden="true">
+                <div className={styles.previewFrame} style={{ background: palette['--body-bg'] }}>
+                  <div className={styles.previewSidebar} style={{ background: palette['--sidebar'] }} />
+                  <div className={styles.previewMain}>
+                    <div className={styles.previewHeader}>
+                      <span className={styles.previewAccent} style={{ background: palette['--accent'] }} />
+                      <span className={styles.previewLine} style={{ background: palette['--line-strong'] }} />
+                    </div>
+                    <div className={styles.previewSurface} style={{ background: palette['--surface'] }}>
+                      <span className={styles.previewSwatch} style={{ background: palette['--panel'] }} />
+                      <span className={styles.previewSwatch} style={{ background: palette['--button'] }} />
+                      <span className={styles.previewSwatch} style={{ background: palette['--field'] }} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className={styles.cardFooter}>
+                <span className={styles.label}>{THEME_LABELS[id]}</span>
+                <div className={styles.paletteRow} aria-hidden="true">
+                  <span className={styles.swatch} style={{ background: palette['--accent'] }} />
+                  <span className={styles.swatch} style={{ background: palette['--panel'] }} />
+                  <span className={styles.swatch} style={{ background: palette['--line-strong'] }} />
+                </div>
+              </div>
             </button>
           )
         })}
       </div>
-    </div>
+    </section>
   )
-}
-
-function getSwatchColor(themeId: string): string {
-  const colors: Record<string, string> = {
-    grass: '#8ccf62',
-    dark: '#a0a0a0',
-    light: '#6366f1',
-    gruvbox: '#fabd2f',
-    dracula: '#bd93f9',
-    vice: '#ff7edb',
-    nord: '#88c0d0',
-    'tokyo-night': '#7aa2f7',
-    'catppuccin-mocha': '#89b4fa',
-    monokai: '#a6e22e',
-    'rose-pine': '#c4a7e7',
-    'one-dark-pro': '#61afef',
-    'github-dark': '#58a6ff',
-    default: '#4f78f1',
-    night: '#77a7ff',
-    summer: '#db7a24',
-    winter: '#d97b3f',
-    wildflower: '#efc31f',
-    wa: '#d67a57',
-  }
-  return colors[themeId] ?? '#888888'
 }

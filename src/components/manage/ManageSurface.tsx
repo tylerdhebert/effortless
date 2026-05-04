@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Pencil, Trash2 } from 'lucide-react'
+import { type FormEvent, useEffect, useMemo, useState } from 'react'
+import { Plus, Trash2 } from 'lucide-react'
 import type {
   EffortTemplate,
   Mandate,
@@ -83,30 +83,95 @@ export function ManageSurface({
   currentTheme,
   onUpdateTheme,
 }: ManageSurfaceProps) {
+  const [selectedRepoKey, setSelectedRepoKey] = useState<string>('new')
   const [repoName, setRepoName] = useState('')
   const [repoPath, setRepoPath] = useState('')
   const [repoBaseBranch, setRepoBaseBranch] = useState('main')
   const [repoBuildCommand, setRepoBuildCommand] = useState('')
-  const [editingRepoId, setEditingRepoId] = useState<number | null>(null)
-  const [editingRepoName, setEditingRepoName] = useState('')
-  const [editingRepoPath, setEditingRepoPath] = useState('')
-  const [editingRepoBaseBranch, setEditingRepoBaseBranch] = useState('main')
-  const [editingRepoBuildCommand, setEditingRepoBuildCommand] = useState('')
+
+  const selectedRepo = useMemo(
+    () => repos.find((repo) => String(repo.id) === selectedRepoKey) ?? null,
+    [repos, selectedRepoKey],
+  )
+
+  useEffect(() => {
+    if (selectedRepoKey === 'new') {
+      setRepoName('')
+      setRepoPath('')
+      setRepoBaseBranch('main')
+      setRepoBuildCommand('')
+      return
+    }
+
+    if (!selectedRepo) {
+      return
+    }
+
+    setRepoName(selectedRepo.name)
+    setRepoPath(selectedRepo.path)
+    setRepoBaseBranch(selectedRepo.baseBranch)
+    setRepoBuildCommand(selectedRepo.buildCommand ?? '')
+  }, [repos, selectedRepo, selectedRepoKey])
+
+  const repoBaseline = selectedRepo
+    ? {
+        name: selectedRepo.name,
+        path: selectedRepo.path,
+        baseBranch: selectedRepo.baseBranch,
+        buildCommand: selectedRepo.buildCommand ?? '',
+      }
+    : {
+        name: '',
+        path: '',
+        baseBranch: 'main',
+        buildCommand: '',
+      }
+
+  const repoDirty =
+    repoName !== repoBaseline.name ||
+    repoPath !== repoBaseline.path ||
+    repoBaseBranch !== repoBaseline.baseBranch ||
+    repoBuildCommand !== repoBaseline.buildCommand
+
+  const repoReady = repoName.trim().length > 0 && repoPath.trim().length > 0 && repoBaseBranch.trim().length > 0
 
   function resetRepoEditor() {
-    setEditingRepoId(null)
-    setEditingRepoName('')
-    setEditingRepoPath('')
-    setEditingRepoBaseBranch('main')
-    setEditingRepoBuildCommand('')
+    setRepoName(repoBaseline.name)
+    setRepoPath(repoBaseline.path)
+    setRepoBaseBranch(repoBaseline.baseBranch)
+    setRepoBuildCommand(repoBaseline.buildCommand)
   }
 
-  function beginRepoEdit(repo: Repo) {
-    setEditingRepoId(repo.id)
-    setEditingRepoName(repo.name)
-    setEditingRepoPath(repo.path)
-    setEditingRepoBaseBranch(repo.baseBranch)
-    setEditingRepoBuildCommand(repo.buildCommand ?? '')
+  async function handleRepoSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!repoReady) return
+
+    if (selectedRepo) {
+      await updateRepo({
+        repoId: selectedRepo.id,
+        name: repoName,
+        path: repoPath,
+        baseBranch: repoBaseBranch,
+        buildCommand: repoBuildCommand || null,
+      })
+      return
+    }
+
+    const created = await createRepo({
+      name: repoName,
+      path: repoPath,
+      baseBranch: repoBaseBranch,
+      buildCommand: repoBuildCommand || null,
+    })
+    setSelectedRepoKey(String(created.id))
+  }
+
+  async function handleDeleteRepo() {
+    if (!selectedRepo) return
+    const deletedId = selectedRepo.id
+    await deleteRepo(deletedId)
+    const nextRepo = repos.find((repo) => repo.id !== deletedId)
+    setSelectedRepoKey(nextRepo ? String(nextRepo.id) : 'new')
   }
 
   return (
@@ -114,107 +179,112 @@ export function ManageSurface({
       <div className={`effort-scroll ${styles['manage-scroll']}`}>
         {section === 'repos' ? (
           <section className={`${styles['manage-surface']} ${styles['manage-surface-repos']}`}>
-            <section className={styles['manage-panel']}>
-              <div className={styles['manage-panel-header']}>
-                <div>
-                  <h3>{editingRepoId ? 'edit repo' : 'add repo'}</h3>
-                </div>
-              </div>
-
-              <form
-                className={`${styles['repo-form']} ${styles['manage-form']}`}
-                onSubmit={(event) => {
-                  event.preventDefault()
-                  if (editingRepoId) {
-                    if (!editingRepoName.trim() || !editingRepoPath.trim() || !editingRepoBaseBranch.trim()) return
-                    updateRepo({
-                      repoId: editingRepoId,
-                      name: editingRepoName,
-                      path: editingRepoPath,
-                      baseBranch: editingRepoBaseBranch,
-                      buildCommand: editingRepoBuildCommand || null,
-                    })
-                  } else {
-                    if (!repoName.trim() || !repoPath.trim() || !repoBaseBranch.trim()) return
-                    createRepo({ name: repoName, path: repoPath, baseBranch: repoBaseBranch, buildCommand: repoBuildCommand || null })
-                  }
-                }}
-              >
-                <input
-                  aria-label="repo name"
-                  placeholder="name"
-                  value={editingRepoId ? editingRepoName : repoName}
-                  onChange={(event) =>
-                    editingRepoId ? setEditingRepoName(event.target.value) : setRepoName(event.target.value)
-                  }
-                />
-                <PathPicker
-                  ariaLabel="repo path"
-                  placeholder="repo path"
-                  value={editingRepoId ? editingRepoPath : repoPath}
-                  onChange={(path) =>
-                    editingRepoId ? setEditingRepoPath(path) : setRepoPath(path)
-                  }
-                />
-                <div className={styles['repo-form-row']}>
-                  <input
-                    aria-label="repo base branch"
-                    placeholder="base branch"
-                    value={editingRepoId ? editingRepoBaseBranch : repoBaseBranch}
-                    onChange={(event) =>
-                      editingRepoId ? setEditingRepoBaseBranch(event.target.value) : setRepoBaseBranch(event.target.value)
-                    }
-                  />
-                  <input
-                    aria-label="repo build command"
-                    placeholder="build command"
-                    value={editingRepoId ? editingRepoBuildCommand : repoBuildCommand}
-                    onChange={(event) =>
-                      editingRepoId ? setEditingRepoBuildCommand(event.target.value) : setRepoBuildCommand(event.target.value)
-                    }
-                  />
-                </div>
-                <div className={styles['manage-repo-actions']}>
-                  <button type="submit" disabled={editingRepoId ? isUpdatingRepo : isCreatingRepo}>
-                    {editingRepoId ? (isUpdatingRepo ? 'saving' : 'save repo') : isCreatingRepo ? 'creating' : 'add repo'}
-                  </button>
-                  {editingRepoId ? (
-                    <button type="button" onClick={resetRepoEditor} disabled={isUpdatingRepo}>
-                      cancel
-                    </button>
-                  ) : null}
-                </div>
-              </form>
-            </section>
-
-            <section className={styles['manage-panel']}>
+            <section className={`${styles['manage-panel']} ${styles['manage-panel-wide']}`}>
               <div className={styles['manage-panel-header']}>
                 <div>
                   <h3>repos</h3>
                 </div>
               </div>
+              <div className={styles['repo-workspace']}>
+                <div className={styles['repo-rail']}>
+                  <button
+                    type="button"
+                    className={`${styles['repo-select-button']} ${selectedRepoKey === 'new' ? styles.selected : ''}`}
+                    onClick={() => setSelectedRepoKey('new')}
+                  >
+                    <span className={styles['repo-select-heading']}>
+                      <strong>new repo</strong>
+                      <Plus size={14} />
+                    </span>
+                  </button>
 
-              <div className={`${styles['repo-list']} ${styles['manage-repo-list']}`}>
-                {repos.map((repo) => (
-                  <article className={`${styles['repo-row']} ${styles['manage-repo-row']}`} key={repo.id}>
-                    <div>
-                      <strong>{repo.name}</strong>
-                      <span>{repo.shortRef}</span>
+                  <div className={styles['repo-list']}>
+                    {repos.map((repo) => (
+                      <button
+                        key={repo.id}
+                        type="button"
+                        className={`${styles['repo-select-button']} ${selectedRepo?.id === repo.id ? styles.selected : ''}`}
+                        onClick={() => setSelectedRepoKey(String(repo.id))}
+                        title={repo.path}
+                      >
+                        <span className={styles['repo-select-heading']}>
+                          <strong>{repo.name}</strong>
+                          <span>{repo.shortRef}</span>
+                        </span>
+                        <small>{repo.baseBranch}</small>
+                        <p>{repo.path}</p>
+                      </button>
+                    ))}
+
+                    {repos.length === 0 ? <p className="empty-state">no repos</p> : null}
+                  </div>
+                </div>
+
+                <form className={`${styles['repo-form']} ${styles['manage-form']}`} onSubmit={(event) => void handleRepoSubmit(event)}>
+                  <div className={styles['repo-editor-header']}>
+                    <div className={styles['repo-editor-title']}>
+                      <span className={styles['repo-editor-label']}>{selectedRepo ? `${selectedRepo.name} repo` : 'new repo'}</span>
+                      {selectedRepo ? <small>{selectedRepo.shortRef}</small> : null}
                     </div>
-                    <p>{repo.path}</p>
-                    <small>{repo.baseBranch}</small>
                     <div className={styles['manage-repo-actions']}>
-                      <button type="button" className="icon-btn" onClick={() => beginRepoEdit(repo)} aria-label="edit">
-                        <Pencil size={12} />
-                      </button>
-                      <button type="button" className="icon-btn" onClick={() => deleteRepo(repo.id)} disabled={isDeletingRepo} aria-label="remove">
-                        <Trash2 size={12} />
+                      {selectedRepo ? (
+                        <button type="button" onClick={resetRepoEditor} disabled={!repoDirty || isUpdatingRepo}>
+                          reset
+                        </button>
+                      ) : null}
+                      {selectedRepo ? (
+                        <button type="button" className={styles['repo-delete-button']} onClick={() => void handleDeleteRepo()} disabled={isDeletingRepo}>
+                          <Trash2 size={14} />
+                          <span>{isDeletingRepo ? 'deleting' : 'delete'}</span>
+                        </button>
+                      ) : null}
+                      <button type="submit" disabled={!repoReady || !repoDirty || (selectedRepo ? isUpdatingRepo : isCreatingRepo)}>
+                        {selectedRepo ? (isUpdatingRepo ? 'saving' : 'save repo') : isCreatingRepo ? 'creating' : 'add repo'}
                       </button>
                     </div>
-                  </article>
-                ))}
+                  </div>
 
-                {repos.length === 0 ? <p className="empty-state">no repos</p> : null}
+                  <div className={styles['repo-field-group']}>
+                    <span className={styles['repo-field-label']}>identity</span>
+                    <input
+                      aria-label="repo name"
+                      placeholder="repo name"
+                      value={repoName}
+                      onChange={(event) => setRepoName(event.target.value)}
+                    />
+                  </div>
+
+                  <div className={styles['repo-field-group']}>
+                    <span className={styles['repo-field-label']}>location</span>
+                    <PathPicker
+                      ariaLabel="repo path"
+                      placeholder="repo path"
+                      value={repoPath}
+                      onChange={setRepoPath}
+                    />
+                  </div>
+
+                  <div className={styles['repo-form-row']}>
+                    <label className={styles['repo-field-group']}>
+                      <span className={styles['repo-field-label']}>base branch</span>
+                      <input
+                        aria-label="repo base branch"
+                        placeholder="base branch"
+                        value={repoBaseBranch}
+                        onChange={(event) => setRepoBaseBranch(event.target.value)}
+                      />
+                    </label>
+                    <label className={styles['repo-field-group']}>
+                      <span className={styles['repo-field-label']}>build command</span>
+                      <input
+                        aria-label="repo build command"
+                        placeholder="build command"
+                        value={repoBuildCommand}
+                        onChange={(event) => setRepoBuildCommand(event.target.value)}
+                      />
+                    </label>
+                  </div>
+                </form>
               </div>
             </section>
           </section>

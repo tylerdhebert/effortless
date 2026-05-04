@@ -116,6 +116,44 @@ export function updateEffortPlanRequiresReview(db: AppDatabase, effortId: number
   return getEffort(db, effortId)
 }
 
+export function deleteEffort(db: AppDatabase, effortId: number): void {
+  const existing = db.prepare<{ id: number }>(`SELECT id FROM efforts WHERE id = ?`).get(effortId)
+  if (!existing) {
+    throw new Error(`Effort ${effortId} was not found`)
+  }
+
+  const taskIds = db.prepare<{ id: number }>(`SELECT id FROM tasks WHERE effort_id = ?`).all(effortId).map((row) => row.id)
+  const planIds = db.prepare<{ id: number }>(`SELECT id FROM plans WHERE effort_id = ?`).all(effortId).map((row) => row.id)
+  const reviewIds =
+    taskIds.length > 0
+      ? db
+          .prepare<{ id: number }>(
+            `SELECT id FROM reviews WHERE task_id IN (${taskIds.map(() => '?').join(', ')})`,
+          )
+          .all(...taskIds)
+          .map((row) => row.id)
+      : []
+
+  const deleteReferencesByIds = (surface: 'effort' | 'plan' | 'task' | 'review', ids: number[]) => {
+    if (ids.length === 0) return
+    const placeholders = ids.map(() => '?').join(', ')
+    db.prepare(
+      `DELETE FROM "references" WHERE owner_type = ? AND owner_id IN (${placeholders})`,
+    ).run(surface, ...ids)
+    db.prepare(
+      `DELETE FROM "references" WHERE target_type = ? AND target_id IN (${placeholders})`,
+    ).run(surface, ...ids)
+  }
+
+  deleteReferencesByIds('review', reviewIds)
+  deleteReferencesByIds('task', taskIds)
+  deleteReferencesByIds('plan', planIds)
+  deleteReferencesByIds('effort', [effortId])
+
+  db.prepare(`DELETE FROM efforts WHERE id = ?`).run(effortId)
+  bumpAppState(db)
+}
+
 function mapEffort(row: EffortRow): Effort {
   return {
     id: row.id,

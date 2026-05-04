@@ -7,7 +7,7 @@ import { getLatestTaskBuild, runTaskBuild } from '../core/builds'
 import { getAppState, openDatabase, updateNotificationSettings } from '../core/db'
 import type { NotificationSettings } from '../core/db'
 import { createDiscussionMessage, listDiscussionMessages } from '../core/discussion'
-import { listEfforts, createEffort, updateEffortSummary, updateEffortPlanRequiresReview } from '../core/efforts'
+import { listEfforts, createEffort, deleteEffort, updateEffortSummary, updateEffortPlanRequiresReview } from '../core/efforts'
 import { browsePath } from '../core/filesystem'
 import {
   answerInputRequest,
@@ -145,6 +145,9 @@ ipcMain.handle('notifications:updateSettings', (_event, settings: NotificationSe
 
 ipcMain.handle('efforts:create', (_event, input: { title: string; description: string; template: 'bugfix' | 'delivery' | 'investigation' | 'discussion' }) =>
   createEffort(db, input),
+)
+ipcMain.handle('efforts:delete', (_event, effortId: number) =>
+  deleteEffort(db, effortId),
 )
 ipcMain.handle('efforts:updateSummary', (_event, effortId: number, summary: string) =>
   updateEffortSummary(db, effortId, summary),

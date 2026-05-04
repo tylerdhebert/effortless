@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react'
 import type { Effort, Task } from '../../../core/types'
 import type { PendingNotification } from '../../../core/notifications'
-import { Home, Plus, Settings, Bell, Filter, BookCopy } from 'lucide-react'
+import { Home, Plus, Settings, Filter } from 'lucide-react'
 import { formatTemplate, effortStatusColor } from '../../lib/helpers'
+import { MANAGE_SECTIONS, type ManageSection } from '../../lib/manageSections'
 import { WarningIndicator } from '../notifications/WarningIndicator'
 import { NotificationFooter } from '../notifications/NotificationFooter'
 import styles from './Sidebar.module.css'
@@ -12,14 +13,11 @@ type SidebarProps = {
   tasks: Task[]
   repos: { id: number; name: string }[]
   selectedEffortId: number | null
-  reposCount: number
-  mandatesCount: number
-  playbooksCount: number
   surfaceMode: 'effort' | 'manage'
-  manageSection: 'repos' | 'mandates' | 'playbooks' | 'notifications' | 'appearance'
+  manageSection: ManageSection
   onSelectEffort: (effortId: number) => void
   onSetSurfaceMode: (mode: 'effort' | 'manage') => void
-  onSetManageSection: (section: 'repos' | 'mandates' | 'playbooks' | 'notifications' | 'appearance') => void
+  onSetManageSection: (section: ManageSection) => void
   onOpenCreateEffort: () => void
   effortPendingMap: Map<number, boolean>
   notificationCount: number
@@ -32,9 +30,6 @@ export function Sidebar({
   tasks,
   repos,
   selectedEffortId,
-  reposCount,
-  mandatesCount,
-  playbooksCount,
   surfaceMode,
   manageSection,
   onSelectEffort,
@@ -117,7 +112,7 @@ export function Sidebar({
         <div className={styles['sidebar-actions']} aria-label="effort actions">
           <button
             type="button"
-            className="icon-btn"
+            className={`icon-btn ${surfaceMode === 'effort' ? styles.active : ''}`}
             aria-label="home"
             onClick={() => {
               onSetSurfaceMode('effort')
@@ -127,15 +122,11 @@ export function Sidebar({
           </button>
           <button
             type="button"
-            className="icon-btn"
+            className={`icon-btn ${surfaceMode === 'manage' ? styles.active : ''}`}
             aria-label="open manage"
             onClick={() => {
               onSetSurfaceMode('manage')
-              onSetManageSection(
-                manageSection === 'repos' || manageSection === 'mandates' || manageSection === 'playbooks'
-                  ? manageSection
-                  : 'repos',
-              )
+              onSetManageSection(manageSection)
             }}
           >
             <Settings size={16} />
@@ -224,56 +215,21 @@ export function Sidebar({
       <div className={styles['sidebar-scroll']}>
         {surfaceMode === 'manage' ? (
           <div className={styles['manage-nav']}>
-            <button
-              className={`${styles['manage-card']} ${manageSection === 'repos' ? styles.selected : ''}`}
-              type="button"
-              onClick={() => onSetManageSection('repos')}
-            >
-              <div className={styles['manage-card-heading']}>
-                <strong>repos</strong>
-                <span>{reposCount}</span>
-              </div>
-            </button>
-            <button
-              className={`${styles['manage-card']} ${manageSection === 'mandates' ? styles.selected : ''}`}
-              type="button"
-              onClick={() => onSetManageSection('mandates')}
-            >
-              <div className={styles['manage-card-heading']}>
-                <strong>mandates</strong>
-                <span>{mandatesCount}</span>
-              </div>
-            </button>
-            <button
-              className={`${styles['manage-card']} ${manageSection === 'playbooks' ? styles.selected : ''}`}
-              type="button"
-              onClick={() => onSetManageSection('playbooks')}
-            >
-              <div className={styles['manage-card-heading']}>
-                <strong>playbooks</strong>
-                <span>{playbooksCount > 0 ? playbooksCount : <BookCopy size={14} />}</span>
-              </div>
-            </button>
-            <button
-              className={`${styles['manage-card']} ${manageSection === 'notifications' ? styles.selected : ''}`}
-              type="button"
-              onClick={() => onSetManageSection('notifications')}
-            >
-              <div className={styles['manage-card-heading']}>
-                <strong>notifications</strong>
-                <Bell size={14} />
-              </div>
-            </button>
-            <button
-              className={`${styles['manage-card']} ${manageSection === 'appearance' ? styles.selected : ''}`}
-              type="button"
-              onClick={() => onSetManageSection('appearance')}
-            >
-              <div className={styles['manage-card-heading']}>
-                <strong>appearance</strong>
-                <span>theme</span>
-              </div>
-            </button>
+            {MANAGE_SECTIONS.map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                className={`${styles['manage-card']} ${manageSection === id ? styles.selected : ''}`}
+                type="button"
+                onClick={() => onSetManageSection(id)}
+              >
+                <div className={styles['manage-card-heading']}>
+                  <strong>{label}</strong>
+                  <span className={styles['manage-card-icon']} aria-hidden="true">
+                    <Icon size={14} />
+                  </span>
+                </div>
+              </button>
+            ))}
           </div>
         ) : (
           <div className={styles['effort-list']}>

@@ -12,6 +12,7 @@ import {
   ScrollText,
   Settings,
   Speech,
+  Trash2,
   X,
 } from 'lucide-react'
 import { DiscussionPanel } from './components/effort/DiscussionPanel'
@@ -35,6 +36,7 @@ import {
   effortSupportsPlans,
   effortSupportsTasks,
 } from './lib/helpers'
+import { MANAGE_SECTIONS, type ManageSection } from './lib/manageSections'
 import { useDiscussionMutations } from './hooks/useDiscussionMutations'
 import { useEffortMutations } from './hooks/useEffortMutations'
 import { useInputMutations } from './hooks/useInputMutations'
@@ -52,7 +54,7 @@ import './App.css'
 function App() {
   const queryClient = useQueryClient()
   const [surfaceMode, setSurfaceMode] = useState<'effort' | 'manage'>('effort')
-  const [manageSection, setManageSection] = useState<'repos' | 'mandates' | 'playbooks' | 'notifications' | 'appearance'>('repos')
+  const [manageSection, setManageSection] = useState<ManageSection>('repos')
   const [selectedEffortId, setSelectedEffortId] = useState<number | null>(null)
   const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null)
   const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null)
@@ -60,6 +62,7 @@ function App() {
   const [discussionOpen, setDiscussionOpen] = useState(false)
   const [discussionDraft, setDiscussionDraft] = useState('')
   const [createEffortOpen, setCreateEffortOpen] = useState(false)
+  const [deleteEffortOpen, setDeleteEffortOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [observedAppVersion, setObservedAppVersion] = useState<number | null>(null)
   const effortScrollRef = useRef<HTMLDivElement | null>(null)
@@ -217,7 +220,7 @@ function App() {
     enabled: Boolean(selectedTask),
   })
 
-  const { createEffort, updateEffortPlanRequiresReview } = useEffortMutations()
+  const { createEffort, deleteEffort, updateEffortPlanRequiresReview } = useEffortMutations(selectedEffort?.id ?? null)
   const repoMutations = useRepoMutations(selectedEffort?.id ?? null)
   const mandateMutations = useMandateMutations()
   const { createDiscussionMessage } = useDiscussionMutations(selectedEffort?.id ?? null)
@@ -458,15 +461,30 @@ function App() {
               title="manage"
               onClick={() => {
                 setSurfaceMode('manage')
-                setManageSection(
-                  manageSection === 'repos' || manageSection === 'mandates' || manageSection === 'playbooks'
-                    ? manageSection
-                    : 'repos',
-                )
+                setManageSection(manageSection)
               }}
             >
               <Settings size={16} />
             </button>
+            {surfaceMode === 'manage' ? (
+              <div className="collapsed-sidebar-manage-nav" aria-label="manage sections">
+                {MANAGE_SECTIONS.map(({ id, label, icon: Icon }) => (
+                  <button
+                    key={id}
+                    type="button"
+                    className={`collapsed-sidebar-button collapsed-sidebar-button--subnav ${manageSection === id ? 'active' : ''}`}
+                    aria-label={label}
+                    title={label}
+                    onClick={() => {
+                      setSurfaceMode('manage')
+                      setManageSection(id)
+                    }}
+                  >
+                    <Icon size={15} />
+                  </button>
+                ))}
+              </div>
+            ) : null}
             <button
               type="button"
               className="collapsed-sidebar-button"
@@ -492,9 +510,6 @@ function App() {
             tasks={allTasksQuery.data ?? []}
             repos={reposQuery.data ?? []}
             selectedEffortId={selectedEffort?.id ?? null}
-            reposCount={reposQuery.data?.length ?? 0}
-            mandatesCount={mandatesQuery.data?.length ?? 0}
-            playbooksCount={templatePlaybooksQuery.data?.length ?? 0}
             surfaceMode={surfaceMode}
             manageSection={manageSection}
             onSelectEffort={(id) => setSelectedEffortId(id)}
@@ -595,19 +610,33 @@ function App() {
                   </div>
                 </div>
               </div>
-              <button
-                className={`discussion-button ${discussionOpen ? 'active' : ''}`}
-                onClick={() => {
-                  if (supportsDiscussion) {
-                    setDiscussionOpen((open) => !open)
-                  }
-                }}
-                type="button"
-                aria-label="open discussion"
-                title={supportsDiscussion ? 'open discussion' : 'discussion is not part of this effort type'}
-                disabled={!supportsDiscussion}
+              <div
+                className="effort-header-actions"
               >
-                <MessageSquare size={18} />
+                <button
+                  className={`discussion-button ${discussionOpen ? 'active' : ''}`}
+                  onClick={() => {
+                    if (supportsDiscussion) {
+                      setDiscussionOpen((open) => !open)
+                    }
+                  }}
+                  type="button"
+                  aria-label="open discussion"
+                  title={supportsDiscussion ? 'open discussion' : 'discussion is not part of this effort type'}
+                  disabled={!supportsDiscussion}
+                >
+                  <MessageSquare size={18} />
+                </button>
+              </div>
+              <button
+                className="effort-delete-button"
+                onClick={() => setDeleteEffortOpen(true)}
+                type="button"
+                aria-label="delete effort"
+                title="delete effort"
+                disabled={deleteEffort.isPending}
+              >
+                <Trash2 size={13} />
               </button>
             </header>
 
@@ -841,6 +870,69 @@ function App() {
                 })
               }}
             />
+          </div>
+        </div>
+      ) : null}
+
+      {deleteEffortOpen && selectedEffort ? (
+        <div className="modal-overlay">
+          <div className="modal-card delete-effort-modal">
+            <header className="modal-header delete-effort-modal-header">
+              <div>
+                <h4>delete effort</h4>
+                <p>
+                  Remove <strong>{selectedEffort.shortRef}</strong> and all of its plans, tasks,
+                  reviews, discussion, inputs, and references.
+                </p>
+              </div>
+              <button
+                type="button"
+                className="icon-btn"
+                onClick={() => setDeleteEffortOpen(false)}
+                aria-label="close effort deletion"
+              >
+                <X size={14} />
+              </button>
+            </header>
+            <div className="delete-effort-modal-body">
+              <p className="delete-effort-modal-title">{selectedEffort.title}</p>
+              <p className="delete-effort-modal-copy">
+                This removes the effort from Effortless immediately.
+              </p>
+            </div>
+            <div className="delete-effort-modal-actions">
+              <button
+                type="button"
+                className="delete-effort-cancel-button"
+                onClick={() => setDeleteEffortOpen(false)}
+                disabled={deleteEffort.isPending}
+              >
+                cancel
+              </button>
+              <button
+                type="button"
+                className="delete-effort-confirm-button"
+                disabled={deleteEffort.isPending}
+                onClick={() => {
+                  const efforts = effortsQuery.data ?? []
+                  const selectedIndex = efforts.findIndex((effort) => effort.id === selectedEffort.id)
+                  const fallbackEffort = efforts[selectedIndex + 1] ?? efforts[selectedIndex - 1] ?? null
+
+                  deleteEffort.mutate(selectedEffort.id, {
+                    onSuccess: () => {
+                      setSelectedPlanId(null)
+                      setSelectedTaskId(null)
+                      setDiscussionOpen(false)
+                      setDiscussionDraft('')
+                      setDeleteEffortOpen(false)
+                      setSelectedEffortId(fallbackEffort?.id ?? null)
+                    },
+                  })
+                }}
+              >
+                {deleteEffort.isPending ? 'deleting' : 'delete effort'}
+              </button>
+            </div>
           </div>
         </div>
       ) : null}

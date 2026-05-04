@@ -11,7 +11,7 @@
 }
 
 .manage-surface-repos {
-  /* no extra styles, marker class */
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .manage-surface-mandates {
@@ -84,7 +84,7 @@
 
 .repo-form {
   display: grid;
-  gap: 8px;
+  gap: 16px;
 }
 
 .repo-form button {
@@ -122,12 +122,82 @@
 .repo-form-row {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  gap: 12px;
 }
 
 .repo-list {
   display: grid;
   gap: 8px;
+}
+
+.repo-workspace {
+  display: grid;
+  grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.repo-rail {
+  display: grid;
+  gap: 12px;
+}
+
+.repo-select-button {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: transparent;
+  cursor: pointer;
+  padding: 12px 12px 12px 14px;
+  text-align: left;
+  transition:
+    border-color 140ms ease,
+    background 140ms ease,
+    transform 140ms ease;
+}
+
+.repo-select-button:hover {
+  border-color: color-mix(in srgb, var(--accent) 14%, transparent);
+  background: rgba(255, 255, 255, 0.02);
+  transform: translateY(-1px);
+}
+
+.repo-select-button.selected {
+  border-color: color-mix(in srgb, var(--accent) 18%, transparent);
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--accent) 11%, transparent), rgba(255, 255, 255, 0.025) 24%),
+    rgba(255, 255, 255, 0.02);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.repo-select-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.repo-select-button strong {
+  color: var(--text-strong);
+  font-size: 0.92rem;
+  font-weight: 620;
+}
+
+.repo-select-button span,
+.repo-select-button small {
+  color: var(--muted);
+  font-size: 0.69rem;
+  letter-spacing: 0.04em;
+}
+
+.repo-select-button p {
+  margin-bottom: 0;
+  color: var(--text);
+  font-size: 0.8rem;
+  line-height: 1.4;
+  word-break: break-all;
 }
 
 .repo-row {
@@ -195,6 +265,49 @@
   transform: none;
 }
 
+.repo-editor-header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.repo-editor-title {
+  display: grid;
+  gap: 4px;
+}
+
+.repo-editor-title small {
+  color: var(--muted);
+  font-size: 0.69rem;
+  letter-spacing: 0.04em;
+}
+
+.repo-editor-label {
+  color: var(--text-strong);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.repo-field-group {
+  display: grid;
+  gap: 8px;
+}
+
+.repo-field-label {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: lowercase;
+}
+
+.repo-delete-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
 .mandate-body-preview {
   white-space: pre-wrap;
   word-break: break-word;
@@ -207,5 +320,13 @@
 @media (max-width: 960px) {
   .manage-surface {
     grid-template-columns: 1fr;
+  }
+
+  .repo-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .repo-editor-header {
+    flex-direction: column;
   }
 }

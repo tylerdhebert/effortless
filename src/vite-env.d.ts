@@ -79,6 +79,7 @@ interface Window {
       getInputRequest: (inputRef: string) => Promise<InputRequest>
       listEfforts: () => Promise<Effort[]>
       createEffort: (input: CreateEffortInput) => Promise<Effort>
+      deleteEffort: (effortId: number) => Promise<void>
       updateEffortSummary: (effortId: number, summary: string) => Promise<Effort>
       updateEffortPlanRequiresReview: (effortId: number, planRequiresReview: boolean) => Promise<Effort>
       listTasks: (effortId: number) => Promise<Task[]>

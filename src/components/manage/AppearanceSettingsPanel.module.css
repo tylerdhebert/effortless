@@ -1,56 +1,149 @@
 .panel {
   display: grid;
   gap: 18px;
-  padding: 6px 4px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--panel);
+  padding: 18px;
+  width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
 }
 
-.panel h3 {
-  margin-bottom: 0;
-  font-size: 0.86rem;
-  font-weight: 620;
-  letter-spacing: 0.02em;
+.panelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 14px;
   color: var(--text);
+}
+
+.panelHeader h3 {
+  margin: 0;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: lowercase;
 }
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+  padding: 0 14px 14px;
 }
 
-.chip {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
+.card {
+  display: grid;
+  gap: 10px;
+  padding: 10px;
   border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--button);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.02);
   color: var(--text);
   cursor: pointer;
   transition: all 140ms ease;
   text-align: left;
 }
 
-.chip:hover {
-  border-color: var(--line-strong);
-  background: var(--surface);
+.card:hover {
+  border-color: color-mix(in srgb, var(--accent) 14%, transparent);
+  background: rgba(255, 255, 255, 0.035);
+  transform: translateY(-1px);
 }
 
-.chip.active {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 1px var(--focus-shadow);
+.card.active {
+  border-color: color-mix(in srgb, var(--accent) 18%, transparent);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--accent) 7%, transparent), rgba(255, 255, 255, 0.025)),
+    rgba(255, 255, 255, 0.03);
+  box-shadow:
+    inset 0 0 0 1px var(--focus-shadow),
+    0 0 0 1px color-mix(in srgb, var(--accent) 10%, transparent);
 }
 
-.swatch {
-  width: 14px;
-  height: 14px;
+.preview {
+  aspect-ratio: 1.45;
+}
+
+.previewFrame {
+  display: grid;
+  grid-template-columns: 28% 1fr;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 7px;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.previewSidebar {
+  border-radius: 9px;
+}
+
+.previewMain {
+  display: grid;
+  gap: 7px;
+  padding-left: 7px;
+}
+
+.previewHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.previewAccent {
+  width: 16px;
+  height: 16px;
   border-radius: 999px;
-  flex-shrink: 0;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.previewLine {
+  height: 8px;
+  border-radius: 999px;
+  flex: 1;
+  opacity: 0.85;
+}
+
+.previewSurface {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  padding: 8px;
+  border-radius: 10px;
+}
+
+.previewSwatch {
+  height: 14px;
+  border-radius: 7px;
+}
+
+.cardFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
 }
 
 .label {
-  font-size: 0.76rem;
+  font-size: 0.78rem;
+  font-weight: 650;
   letter-spacing: 0.02em;
+  color: var(--text-strong);
+}
+
+.paletteRow {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.15);
 }
