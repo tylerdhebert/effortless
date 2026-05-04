@@ -15,6 +15,7 @@ import type {
   CreateRepoInput,
   DiscussionMessage,
   Effort,
+  EffortTemplate,
   InputRequest,
   Mandate,
   Plan,
@@ -33,9 +34,11 @@ import type {
   TaskComment,
   TaskConflictView,
   TaskDiffView,
+  TemplatePlaybook,
   UpdateMandateInput,
   UpdateRepoInput,
   UpdateTaskDetailsInput,
+  UpdateTemplatePlaybookInput,
   WorkSurface,
 } from '../core/types'
 import type { PendingNotification } from '../core/notifications'
@@ -152,6 +155,12 @@ contextBridge.exposeInMainWorld('effortless', {
   deleteMandate: (mandateId: number) => ipcRenderer.invoke('mandates:delete', mandateId) as Promise<void>,
   resolveMandateText: (workSurface: WorkSurface, repoId: number | null) =>
     ipcRenderer.invoke('mandates:resolve', workSurface, repoId) as Promise<string | null>,
+  listTemplatePlaybooks: () =>
+    ipcRenderer.invoke('playbooks:list') as Promise<TemplatePlaybook[]>,
+  updateTemplatePlaybook: (input: UpdateTemplatePlaybookInput) =>
+    ipcRenderer.invoke('playbooks:update', input) as Promise<TemplatePlaybook>,
+  resetTemplatePlaybook: (template: EffortTemplate) =>
+    ipcRenderer.invoke('playbooks:reset', template) as Promise<TemplatePlaybook>,
   listReferences: (ownerType: ReferenceOwnerType, ownerId: number) =>
     ipcRenderer.invoke('references:list', ownerType, ownerId) as Promise<Reference[]>,
   createReference: (input: CreateReferenceInput) =>

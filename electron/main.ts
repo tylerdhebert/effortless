@@ -28,6 +28,11 @@ import {
   resolveMandateText,
   updateMandate,
 } from '../core/mandates'
+import {
+  listTemplatePlaybooks,
+  resetTemplatePlaybook,
+  updateTemplatePlaybook,
+} from '../core/templatePlaybooks'
 import { acceptPlan, createPlan, getPlanByRef, listPlanComments, listPlans, markPlanReady, requestPlanChanges } from '../core/plans'
 import {
   createReference,
@@ -72,8 +77,10 @@ import type {
   RequestTaskChangesInput,
   SubmitReviewInput,
   UpdateMandateInput,
+  UpdateTemplatePlaybookInput,
   UpdateRepoInput,
   UpdateTaskDetailsInput,
+  EffortTemplate,
   WorkSurface,
   ReferenceOwnerType,
   DiffType,
@@ -215,6 +222,13 @@ ipcMain.handle('mandates:update', (_event, input: UpdateMandateInput) => updateM
 ipcMain.handle('mandates:delete', (_event, mandateId: number) => deleteMandate(db, mandateId))
 ipcMain.handle('mandates:resolve', (_event, workSurface: WorkSurface, repoId: number | null) =>
   resolveMandateText(db, workSurface, repoId),
+)
+ipcMain.handle('playbooks:list', () => listTemplatePlaybooks(db))
+ipcMain.handle('playbooks:update', (_event, input: UpdateTemplatePlaybookInput) =>
+  updateTemplatePlaybook(db, input),
+)
+ipcMain.handle('playbooks:reset', (_event, template: EffortTemplate) =>
+  resetTemplatePlaybook(db, template),
 )
 
 ipcMain.handle('references:list', (_event, ownerType: ReferenceOwnerType, ownerId: number) =>

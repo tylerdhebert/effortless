@@ -52,7 +52,7 @@ import './App.css'
 function App() {
   const queryClient = useQueryClient()
   const [surfaceMode, setSurfaceMode] = useState<'effort' | 'manage'>('effort')
-  const [manageSection, setManageSection] = useState<'repos' | 'mandates' | 'notifications' | 'appearance'>('repos')
+  const [manageSection, setManageSection] = useState<'repos' | 'mandates' | 'playbooks' | 'notifications' | 'appearance'>('repos')
   const [selectedEffortId, setSelectedEffortId] = useState<number | null>(null)
   const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null)
   const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null)
@@ -78,6 +78,11 @@ function App() {
   const mandatesQuery = useQuery({
     queryKey: ['mandates'],
     queryFn: () => window.effortless.listMandates(),
+  })
+
+  const templatePlaybooksQuery = useQuery({
+    queryKey: ['template-playbooks'],
+    queryFn: () => window.effortless.listTemplatePlaybooks(),
   })
 
   const appStateQuery = useQuery({
@@ -236,6 +241,28 @@ function App() {
     }) => window.effortless.updateNotificationSettings(settings),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['app-state'] })
+    },
+  })
+
+  const updateTemplatePlaybook = useMutation({
+    mutationFn: (input: { template: 'bugfix' | 'delivery' | 'investigation' | 'discussion'; body: string }) =>
+      window.effortless.updateTemplatePlaybook(input),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['template-playbooks'] }),
+        queryClient.invalidateQueries({ queryKey: ['app-state'] }),
+      ])
+    },
+  })
+
+  const resetTemplatePlaybook = useMutation({
+    mutationFn: (template: 'bugfix' | 'delivery' | 'investigation' | 'discussion') =>
+      window.effortless.resetTemplatePlaybook(template),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['template-playbooks'] }),
+        queryClient.invalidateQueries({ queryKey: ['app-state'] }),
+      ])
     },
   })
 
@@ -431,7 +458,11 @@ function App() {
               title="manage"
               onClick={() => {
                 setSurfaceMode('manage')
-                setManageSection(manageSection === 'repos' || manageSection === 'mandates' ? manageSection : 'repos')
+                setManageSection(
+                  manageSection === 'repos' || manageSection === 'mandates' || manageSection === 'playbooks'
+                    ? manageSection
+                    : 'repos',
+                )
               }}
             >
               <Settings size={16} />
@@ -463,6 +494,7 @@ function App() {
             selectedEffortId={selectedEffort?.id ?? null}
             reposCount={reposQuery.data?.length ?? 0}
             mandatesCount={mandatesQuery.data?.length ?? 0}
+            playbooksCount={templatePlaybooksQuery.data?.length ?? 0}
             surfaceMode={surfaceMode}
             manageSection={manageSection}
             onSelectEffort={(id) => setSelectedEffortId(id)}
@@ -501,18 +533,23 @@ function App() {
           <ManageSurface
             repos={reposQuery.data ?? []}
             mandates={mandatesQuery.data ?? []}
+            playbooks={templatePlaybooksQuery.data ?? []}
             createRepo={repoMutations.createRepo.mutateAsync}
             updateRepo={repoMutations.updateRepo.mutateAsync}
             deleteRepo={repoMutations.deleteRepo.mutateAsync}
             createMandate={mandateMutations.createMandate.mutateAsync}
             updateMandate={mandateMutations.updateMandate.mutateAsync}
             deleteMandate={mandateMutations.deleteMandate.mutateAsync}
+            updateTemplatePlaybook={updateTemplatePlaybook.mutateAsync}
+            resetTemplatePlaybook={resetTemplatePlaybook.mutateAsync}
             isCreatingRepo={repoMutations.createRepo.isPending}
             isUpdatingRepo={repoMutations.updateRepo.isPending}
             isDeletingRepo={repoMutations.deleteRepo.isPending}
             isCreatingMandate={mandateMutations.createMandate.isPending}
             isUpdatingMandate={mandateMutations.updateMandate.isPending}
             isDeletingMandate={mandateMutations.deleteMandate.isPending}
+            isUpdatingPlaybook={updateTemplatePlaybook.isPending}
+            isResettingPlaybook={resetTemplatePlaybook.isPending}
             section={manageSection}
             notificationSettings={
               appStateQuery.data

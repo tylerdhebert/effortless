@@ -1,28 +1,42 @@
 import { useState } from 'react'
 import { Pencil, Trash2 } from 'lucide-react'
-import type { Mandate, Repo, WorkSurface, MandateSourceType } from '../../../core/types'
+import type {
+  EffortTemplate,
+  Mandate,
+  Repo,
+  TemplatePlaybook,
+  UpdateTemplatePlaybookInput,
+  WorkSurface,
+  MandateSourceType,
+} from '../../../core/types'
 import { PathPicker } from '../ui/PathPicker'
 import { NotificationSettingsPanel } from '../notifications/NotificationSettingsPanel'
 import { AppearanceSettingsPanel } from './AppearanceSettingsPanel'
 import { MandateTab } from './MandateTab'
+import { TemplatePlaybookTab } from './TemplatePlaybookTab'
 import styles from './ManageSurface.module.css'
 
 type ManageSurfaceProps = {
   repos: Repo[]
   mandates: Mandate[]
+  playbooks: TemplatePlaybook[]
   createRepo: (input: { name: string; path: string; baseBranch: string; buildCommand: string | null }) => Promise<Repo>
   updateRepo: (input: { repoId: number; name: string; path: string; baseBranch: string; buildCommand: string | null }) => Promise<Repo>
   deleteRepo: (repoId: number) => Promise<void>
   createMandate: (input: { workSurface: WorkSurface; repoId: number | null; sourceType: MandateSourceType; body: string | null; filePath: string | null }) => Promise<Mandate>
   updateMandate: (input: { mandateId: number; workSurface: WorkSurface; repoId: number | null; sourceType: MandateSourceType; body: string | null; filePath: string | null }) => Promise<Mandate>
   deleteMandate: (mandateId: number) => Promise<void>
+  updateTemplatePlaybook: (input: UpdateTemplatePlaybookInput) => Promise<TemplatePlaybook>
+  resetTemplatePlaybook: (template: EffortTemplate) => Promise<TemplatePlaybook>
   isCreatingRepo: boolean
   isUpdatingRepo: boolean
   isDeletingRepo: boolean
   isCreatingMandate: boolean
   isUpdatingMandate: boolean
   isDeletingMandate: boolean
-  section: 'repos' | 'mandates' | 'notifications' | 'appearance'
+  isUpdatingPlaybook: boolean
+  isResettingPlaybook: boolean
+  section: 'repos' | 'mandates' | 'playbooks' | 'notifications' | 'appearance'
   notificationSettings?: {
     osNotificationsEnabled: boolean
     bannerNotificationsEnabled: boolean
@@ -45,18 +59,23 @@ type ManageSurfaceProps = {
 export function ManageSurface({
   repos,
   mandates,
+  playbooks,
   createRepo,
   updateRepo,
   deleteRepo,
   createMandate,
   updateMandate,
   deleteMandate,
+  updateTemplatePlaybook,
+  resetTemplatePlaybook,
   isCreatingRepo,
   isUpdatingRepo,
   isDeletingRepo,
   isCreatingMandate,
   isUpdatingMandate,
   isDeletingMandate,
+  isUpdatingPlaybook,
+  isResettingPlaybook,
   section,
   notificationSettings,
   onUpdateNotificationSettings,
@@ -201,7 +220,7 @@ export function ManageSurface({
           </section>
         ) : section === 'mandates' ? (
           <section className={`${styles['manage-surface']} ${styles['manage-surface-mandates']}`}>
-            <section className={styles['manage-panel']}>
+            <section className={`${styles['manage-panel']} ${styles['manage-panel-wide']}`}>
               <div className={styles['manage-panel-header']}>
                 <div>
                   <h3>mandates</h3>
@@ -216,6 +235,23 @@ export function ManageSurface({
                 isCreating={isCreatingMandate}
                 isUpdating={isUpdatingMandate}
                 isDeleting={isDeletingMandate}
+              />
+            </section>
+          </section>
+        ) : section === 'playbooks' ? (
+          <section className={`${styles['manage-surface']} ${styles['manage-surface-playbooks']}`}>
+            <section className={`${styles['manage-panel']} ${styles['manage-panel-wide']}`}>
+              <div className={styles['manage-panel-header']}>
+                <div>
+                  <h3>template playbooks</h3>
+                </div>
+              </div>
+              <TemplatePlaybookTab
+                playbooks={playbooks}
+                onSave={updateTemplatePlaybook}
+                onReset={resetTemplatePlaybook}
+                isSaving={isUpdatingPlaybook}
+                isResetting={isResettingPlaybook}
               />
             </section>
           </section>

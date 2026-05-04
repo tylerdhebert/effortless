@@ -13,6 +13,7 @@ import {
   printLatestUpdate,
   printRelatedMandates,
   printSurfaceMandate,
+  printTemplatePlaybook,
   printTemplateWorkflow,
 } from '../contextSections'
 import { planState } from '../render'
@@ -70,6 +71,7 @@ export async function handleEffort(surface: string, command: string): Promise<bo
 
     console.log(`${effort.shortRef} ${effort.template} ${effort.status}`)
     console.log(effort.title)
+    printTemplatePlaybook(db, effort.template)
     printSurfaceMandate(db, 'effort')
     printTemplateWorkflow(effort, {
       plans: plans.length,

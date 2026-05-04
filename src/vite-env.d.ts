@@ -16,6 +16,7 @@ import type {
   CreateRepoInput,
   DiscussionMessage,
   Effort,
+  EffortTemplate,
   InputRequest,
   Mandate,
   Plan,
@@ -34,9 +35,11 @@ import type {
   TaskComment,
   TaskConflictView,
   TaskDiffView,
+  TemplatePlaybook,
   UpdateMandateInput,
   UpdateRepoInput,
   UpdateTaskDetailsInput,
+  UpdateTemplatePlaybookInput,
   WorkSurface,
 } from '../core/types'
 
@@ -117,6 +120,9 @@ interface Window {
       updateMandate: (input: UpdateMandateInput) => Promise<Mandate>
       deleteMandate: (mandateId: number) => Promise<void>
       resolveMandateText: (workSurface: WorkSurface, repoId: number | null) => Promise<string | null>
+      listTemplatePlaybooks: () => Promise<TemplatePlaybook[]>
+      updateTemplatePlaybook: (input: UpdateTemplatePlaybookInput) => Promise<TemplatePlaybook>
+      resetTemplatePlaybook: (template: EffortTemplate) => Promise<TemplatePlaybook>
       listReferences: (ownerType: ReferenceOwnerType, ownerId: number) => Promise<Reference[]>
       createReference: (input: CreateReferenceInput) => Promise<Reference>
       deleteReference: (refId: number) => Promise<void>

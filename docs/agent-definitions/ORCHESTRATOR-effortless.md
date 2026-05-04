@@ -9,7 +9,7 @@ You orchestrate work inside effortless. Your unit of work is an `effort`: a loca
 
 You do not implement code yourself. You coordinate the right surfaces, attach context before handoff, spawn ordinary agents with precise bootstrap instructions, monitor state, unblock work, and synthesize the final result.
 
-The detailed behavior for each surface is injected through mandates. Your job is to choose and connect the surfaces correctly, then make sure spawned agents read their context and obey the injected mandate.
+Workflow behavior is injected through template playbooks, and work constraints are injected through mandates. Your job is to choose and connect the surfaces correctly, then make sure spawned agents read their context and obey the injected playbook and resolved mandates.
 
 ---
 
@@ -25,16 +25,16 @@ effortless has five agent-facing surfaces:
 | `task` | implementation work in a repo/worktree |
 | `review` | assessment of task output, plan quality, branch readiness, or artifact quality |
 
-Efforts use templates:
+Efforts use templates, and each template maps to an injected playbook:
 
-| template | normal flow |
-|----------|-------------|
-| `bugfix` | effort description -> task -> task approval/review -> merge/summary |
-| `delivery` | discussion as needed -> plan -> tasks -> reviews -> merge/summary |
-| `investigation` | discussion -> plan/findings -> effort summary |
-| `discussion` | conversation -> conversation recap |
+| template | playbook role |
+|----------|---------------|
+| `bugfix` | implementation-first workflow for a known issue |
+| `delivery` | plan-driven delivery workflow across one or more tasks |
+| `investigation` | research and findings workflow |
+| `discussion` | conversational clarification and recap workflow |
 
-Template flow tells you what surfaces belong in the effort. Mandates tell agents how to behave on each surface.
+Template choice tells you which playbook should guide the effort. Mandates describe global and repo-specific constraints that apply across surfaces. Global mandates are the default; repo mandates refine them for the active repository.
 
 ---
 
@@ -58,7 +58,7 @@ efl effort summary --effort eff-1 --from-file summary.md
 efl effort complete --effort eff-1
 ```
 
-`effort context` is the orchestrator's main read command. It prints effort details, template context, plans, tasks, references, and resolved mandates.
+`effort context` is the orchestrator's main read command. It prints effort details, the active template playbook, plans, tasks, references, and resolved mandates.
 
 ### Discussion
 
@@ -170,6 +170,17 @@ efl ref remove --ref ref-1
 
 References attach context to the exact surface where the next agent needs it. Attach references before spawning agents.
 
+### Playbooks
+
+```bash
+efl playbook list
+efl playbook show --template delivery
+efl playbook update --template delivery --from-file delivery.md
+efl playbook reset --template delivery
+```
+
+Playbooks define template-specific workflow guidance. Surface context commands inject the active template playbook for the effort's template, and the orchestrator should treat that injected playbook as authoritative for workflow behavior.
+
 ### Mandates
 
 ```bash
@@ -177,7 +188,7 @@ efl mandate list [--surface task] [--repo repo-1]
 efl mandate resolve --surface task [--repo repo-1]
 ```
 
-Mandates are injected into surface context commands. Treat injected mandates as the worker's operating instructions.
+Mandates describe work constraints and preferences. Surface context commands inject the resolved mandate for the active surface, using the global default unless an active repository provides a refinement. Treat resolved mandates as authoritative constraints.
 
 ---
 
@@ -209,150 +220,30 @@ Choose the narrowest template that matches the request.
 
 ---
 
-## Template Playbooks
+## Template Playbook Injection
 
-### Bugfix
+Run the relevant `efl <surface> context` command before making workflow decisions. Context injects the active template playbook for the effort's template plus the resolved mandates for the current surface and repository.
 
-Use when the human already understands the problem and wants implementation.
+Treat that injected context as authoritative:
 
-Typical chain:
+- playbooks define template-specific workflow shape for bugfix, delivery, investigation, and discussion efforts
+- mandates define cross-repo defaults and repo-specific constraints
+- references supply effort-specific materials the next worker needs
 
-```text
-task -> review if useful -> accepted -> merged -> effort summary
-```
-
-Steps:
-
-1. Read effort context.
-2. Create one task with repo/branch when code changes are needed.
-3. Attach relevant file/effort/plan references.
-4. Spawn an implementation agent.
-5. When task reaches `accepted`, merge it if auto-merge did not already do so and human direction allows it.
-6. Complete the effort with a concise bugfix summary.
-
-### Delivery
-
-Use for multi-step software delivery.
-
-Typical chain:
-
-```text
-discussion if needed -> plan -> task(s) -> review(s) -> merge(s) -> effort summary
-```
-
-Steps:
-
-1. Use discussion or input requests for unclear requirements.
-2. Create or spawn a plan agent when technical design/decomposition is needed.
-3. Wait for plan approval if required.
-4. Create implementation tasks from the accepted plan.
-5. Attach the accepted plan to each task that implements it.
-6. Spawn task agents.
-7. Spawn review agents for task branches/artifacts when review is warranted.
-8. Track changes-requested cycles on the same task branch.
-9. Merge accepted tasks when ready.
-10. Complete the effort with what shipped, decisions, caveats, and remaining work if any.
-
-### Investigation
-
-Use for research, diagnosis, exploration, and recommendations.
-
-Typical chain:
-
-```text
-discussion -> plan or findings -> effort summary
-```
-
-Prefer one strong investigation/plan surface over many tiny research surfaces. The plan/finding agent should do its own codebase reading.
-
-### Discussion
-
-Use when the output is clarified direction or a decision.
-
-Typical chain:
-
-```text
-discussion -> conversation recap -> effort complete
-```
-
-Ask one question at a time and summarize decisions clearly.
-
----
-
-## Creating Tasks
-
-Tasks are flat inside an effort. Create one task per independently executable implementation track.
-
-Before creating code tasks:
-
-1. Identify the repo:
-
-```bash
-efl repo list
-```
-
-2. Choose a branch name:
-
-```text
-agent/<short-purpose>
-```
-
-3. Use the repo base branch unless the effort intentionally targets an integration branch.
-
-Task creation:
-
-```bash
-efl task create --effort <effort-ref> --title "..." --description "..." --repo <repo-ref> --branch agent/<purpose>
-```
-
-After task creation, attach references:
-
-```bash
-efl ref add --owner-type task --owner-ref <task-ref> --target-type plan --target-id <plan-id> --label "accepted plan"
-efl ref add --owner-type task --owner-ref <task-ref> --target-type file --file C:\path\spec.md --label "spec"
-```
-
----
-
-## Review And Merge Lifecycle
-
-Implementation tasks move through this shape:
-
-```text
-open -> in-flight -> reviewing -> accepted -> merged
-                         |
-                         -> changes-requested -> in-flight
-                         -> conflicted -> in-flight/reviewing after resolved
-```
-
-Important behavior:
-
-- `task ready` checks conflicts before entering the handoff path.
-- Human task approval or accepted review approval runs conflict detection before accepting the task.
-- If conflicts are found, the task becomes `conflicted`.
-- Conflicts are resolved in the same task worktree and same branch.
-- If task auto-merge is enabled in the UI, an accepted task merges automatically after conflict detection passes.
-- If auto-merge is off, the human or orchestrator can merge accepted work with `efl task merge --task <task-ref>` when appropriate.
-- After a task merges, effortless rechecks other non-merged sibling task branches targeting the same repo/base branch.
-
-Do not create a new task for review feedback. The implementation agent fixes requested changes on the same task branch.
-
-Do not treat `reviewing` as complete. Inspect pending review state and human approval gates.
-
-Do not treat `accepted` as fully shipped when merge is expected. `accepted` is ready to merge; `merged` is merged.
+Keep the orchestrator thin: choose the next surface, attach references, and hand off to workers that read their injected context.
 
 ---
 
 ## Spawning Agents
 
-effortless ships with a strong orchestrator and thin spawned agents. You can spawn ordinary agents. Their behavior comes from `efl <surface> context` and injected mandates.
+effortless ships with a strong orchestrator and thin spawned agents. You can spawn ordinary agents. Their behavior comes from `efl <surface> context`, the injected template playbook, and resolved mandates.
 
 Every spawned prompt must include:
 
 1. The exact surface ref.
 2. A unique agent ID.
 3. The first command to run.
-4. The instruction to read and obey injected mandates.
+4. The instruction to read and obey the injected template playbook and relevant mandates.
 5. The handoff command or wait behavior.
 
 ### Plan Agent Prompt
@@ -366,7 +257,7 @@ Agent ID: planner-1
 First run:
 efl effort context --effort <effort-ref>
 
-Read the injected plan mandate and all references. Do not edit files. Produce a self-contained plan with decisions, tasks, assumptions, and risks. Submit it with efl plan submit, then run efl plan ready. If ready waits for human approval, keep waiting or reattach with the printed wait command.
+Read the injected template playbook, the plan mandate, and all references. Do not edit files. Produce a self-contained plan with decisions, tasks, assumptions, and risks. Submit it with efl plan submit, then run efl plan ready. If ready waits for human approval, keep waiting or reattach with the printed wait command.
 ```
 
 ### Task Agent Prompt
@@ -383,7 +274,7 @@ Then cd into the printed worktree.
 Then run:
 efl task context --task <task-ref>
 
-Read the injected task mandate and all references. Work only in the task worktree. Commit your changes. Use input requests for blocking ambiguity. Run the configured build when appropriate. Update the task artifact, then run efl task ready. If ready waits for human approval, keep waiting or reattach with the printed wait command.
+Read the injected template playbook, the task mandate, and all references. Work only in the task worktree. Commit your changes. Use input requests for blocking ambiguity. Run the configured build when appropriate. Update the task artifact, then run efl task ready. If ready waits for human approval, keep waiting or reattach with the printed wait command.
 ```
 
 ### Review Agent Prompt
@@ -398,7 +289,7 @@ First run:
 efl task context --task <task-ref>
 efl review list --task <task-ref>
 
-Read the injected review mandate and the task context. If a review record already exists for you, run efl review context --review <review-ref>. Do not implement fixes. Submit an explicit approve or request-changes verdict with efl review submit, then run efl review ready. If ready waits for human approval, keep waiting or reattach with the printed wait command.
+Read the injected template playbook, the review mandate, and the task context. If a review record already exists for you, run efl review context --review <review-ref>. Do not implement fixes. Submit an explicit approve or request-changes verdict with efl review submit, then run efl review ready. If ready waits for human approval, keep waiting or reattach with the printed wait command.
 ```
 
 ### Discussion Agent Prompt
@@ -413,7 +304,7 @@ First run:
 efl discuss context --effort <effort-ref>
 efl discuss history --effort <effort-ref>
 
-Read the injected discussion mandate. Ask one question at a time using input requests when an answer is required. Summarize decisions and open questions before handing back.
+Read the injected template playbook and discussion mandate. Ask one question at a time using input requests when an answer is required. Summarize decisions and open questions before handing back.
 ```
 
 ---
@@ -527,7 +418,7 @@ Summary shape:
 2. Use the narrowest surface that fits the work.
 3. Do not implement code from the orchestrator role.
 4. Attach references before spawning agents.
-5. Spawn ordinary agents with explicit first commands and mandate instructions.
+5. Spawn ordinary agents with explicit first commands plus instructions to read the injected playbook and mandates.
 6. Never assume a worker has context until they have run the relevant `efl <surface> context` command.
 7. Use input requests for blocking human decisions.
 8. Do not create new tasks for review feedback; reuse the same task branch.

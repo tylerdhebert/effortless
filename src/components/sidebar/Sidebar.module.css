@@ -197,6 +197,9 @@
 }
 
 .manage-card-heading span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   color: var(--muted);
   font-size: 0.69rem;
   letter-spacing: 0.04em;

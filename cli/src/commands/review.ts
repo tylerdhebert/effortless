@@ -15,6 +15,7 @@ import {
   printSection,
   endSection,
   printSurfaceMandate,
+  printTemplatePlaybook,
 } from '../contextSections'
 import { printReview } from '../render'
 import type { Review } from '../../../core/types'
@@ -74,6 +75,7 @@ export async function handleReview(surface: string, command: string): Promise<bo
     const task = getTask(db, review.taskId)
     const effort = getEffort(db, task.effortId)
     printReview(review)
+    printTemplatePlaybook(db, effort.template)
     printSurfaceMandate(db, 'review', task.repoId)
     printRelatedMandates(db, ['effort', 'task'], task.repoId)
     printHandoffSummary(review.summary)

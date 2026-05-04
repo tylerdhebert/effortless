@@ -321,6 +321,17 @@ export type UpdateMandateInput = {
   filePath?: string | null
 }
 
+export type TemplatePlaybook = {
+  template: EffortTemplate
+  body: string
+  updatedAt: string
+}
+
+export type UpdateTemplatePlaybookInput = {
+  template: EffortTemplate
+  body: string
+}
+
 export type ReferenceOwnerType = 'effort' | 'plan' | 'task' | 'review'
 export type ReferenceTargetType = 'effort' | 'plan' | 'task' | 'review' | 'file'
 

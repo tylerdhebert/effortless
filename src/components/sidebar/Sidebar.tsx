@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import type { Effort, Task } from '../../../core/types'
 import type { PendingNotification } from '../../../core/notifications'
-import { Home, Plus, Settings, Bell, Filter } from 'lucide-react'
+import { Home, Plus, Settings, Bell, Filter, BookCopy } from 'lucide-react'
 import { formatTemplate, effortStatusColor } from '../../lib/helpers'
 import { WarningIndicator } from '../notifications/WarningIndicator'
 import { NotificationFooter } from '../notifications/NotificationFooter'
@@ -14,11 +14,12 @@ type SidebarProps = {
   selectedEffortId: number | null
   reposCount: number
   mandatesCount: number
+  playbooksCount: number
   surfaceMode: 'effort' | 'manage'
-  manageSection: 'repos' | 'mandates' | 'notifications' | 'appearance'
+  manageSection: 'repos' | 'mandates' | 'playbooks' | 'notifications' | 'appearance'
   onSelectEffort: (effortId: number) => void
   onSetSurfaceMode: (mode: 'effort' | 'manage') => void
-  onSetManageSection: (section: 'repos' | 'mandates' | 'notifications' | 'appearance') => void
+  onSetManageSection: (section: 'repos' | 'mandates' | 'playbooks' | 'notifications' | 'appearance') => void
   onOpenCreateEffort: () => void
   effortPendingMap: Map<number, boolean>
   notificationCount: number
@@ -33,6 +34,7 @@ export function Sidebar({
   selectedEffortId,
   reposCount,
   mandatesCount,
+  playbooksCount,
   surfaceMode,
   manageSection,
   onSelectEffort,
@@ -129,7 +131,11 @@ export function Sidebar({
             aria-label="open manage"
             onClick={() => {
               onSetSurfaceMode('manage')
-              onSetManageSection(manageSection === 'repos' || manageSection === 'mandates' ? manageSection : 'repos')
+              onSetManageSection(
+                manageSection === 'repos' || manageSection === 'mandates' || manageSection === 'playbooks'
+                  ? manageSection
+                  : 'repos',
+              )
             }}
           >
             <Settings size={16} />
@@ -236,6 +242,16 @@ export function Sidebar({
               <div className={styles['manage-card-heading']}>
                 <strong>mandates</strong>
                 <span>{mandatesCount}</span>
+              </div>
+            </button>
+            <button
+              className={`${styles['manage-card']} ${manageSection === 'playbooks' ? styles.selected : ''}`}
+              type="button"
+              onClick={() => onSetManageSection('playbooks')}
+            >
+              <div className={styles['manage-card-heading']}>
+                <strong>playbooks</strong>
+                <span>{playbooksCount > 0 ? playbooksCount : <BookCopy size={14} />}</span>
               </div>
             </button>
             <button

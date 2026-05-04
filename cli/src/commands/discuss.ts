@@ -10,6 +10,7 @@ import {
   printLatestUpdate,
   printRelatedMandates,
   printSurfaceMandate,
+  printTemplatePlaybook,
 } from '../contextSections'
 
 export async function handleDiscuss(surface: string, command: string): Promise<boolean> {
@@ -57,6 +58,7 @@ export async function handleDiscuss(surface: string, command: string): Promise<b
     const effort = getEffortByRef(db, requiredOption('--effort'))
     console.log(`${effort.shortRef} ${effort.template} ${effort.status}`)
     console.log(effort.title)
+    printTemplatePlaybook(db, effort.template)
     printSurfaceMandate(db, 'discussion')
     printRelatedMandates(db, ['effort', 'plan', 'task', 'review'])
     console.log('')

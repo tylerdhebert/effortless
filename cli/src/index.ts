@@ -6,6 +6,7 @@ import { handleEffort } from './commands/effort'
 import { handleInput } from './commands/input'
 import { handleMandate } from './commands/mandate'
 import { handlePlan } from './commands/plan'
+import { handlePlaybook } from './commands/playbook'
 import { handleRef } from './commands/ref'
 import { handleRepo } from './commands/repo'
 import { handleReview } from './commands/review'
@@ -29,6 +30,7 @@ async function main() {
     handleMandate,
     handleRef,
     handleEffort,
+    handlePlaybook,
     handleDiscuss,
   ]
 

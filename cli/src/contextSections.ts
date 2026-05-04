@@ -2,6 +2,7 @@ import type { AppDatabase } from '../../core/db'
 import { getEffort } from '../../core/efforts'
 import { resolveMandate } from '../../core/mandates'
 import { getPlanByRef } from '../../core/plans'
+import { getTemplatePlaybook } from '../../core/templatePlaybooks'
 import { getReviewByRef } from '../../core/reviews'
 import { getTask } from '../../core/tasks'
 import { planState } from './render'
@@ -47,6 +48,14 @@ export function printRelatedMandates(
   }
 }
 
+export function printTemplatePlaybook(db: AppDatabase, template: EffortTemplate): void {
+  const playbook = getTemplatePlaybook(db, template)
+
+  console.log('')
+  console.log(`template playbook (${playbook.template})`)
+  console.log(playbook.body)
+}
+
 export function printTemplateWorkflow(
   effort: Pick<Effort, 'template' | 'planRequiresReview' | 'needsTasks'>,
   counts: {
@@ -58,14 +67,6 @@ export function printTemplateWorkflow(
     discussionMessages?: number
   } = {},
 ): void {
-  const workflow = templateWorkflow(effort.template)
-
-  console.log('')
-  console.log('template workflow')
-  for (const line of workflow) {
-    console.log(line)
-  }
-
   console.log('')
   console.log('required pieces')
   console.log(`plan: ${pieceState(requiresPlan(effort.template), counts.acceptedPlans ?? 0, counts.plans ?? 0)}`)
@@ -151,40 +152,6 @@ export function printSection(title: string): void {
 
 export function endSection(title: string): void {
   console.log(`--- END ${title.toUpperCase()} ---`)
-}
-
-function templateWorkflow(template: EffortTemplate): string[] {
-  switch (template) {
-    case 'delivery':
-      return [
-        '1. align through discussion when needed',
-        '2. produce and accept one plan',
-        '3. create implementation tasks from the accepted plan',
-        '4. complete task work, reviews, conflict checks, and merges',
-        '5. write the effort summary and complete the effort',
-      ]
-    case 'bugfix':
-      return [
-        '1. identify the defect and expected behavior',
-        '2. complete the implementation task',
-        '3. run the repo build when configured',
-        '4. complete review, conflict check, and merge',
-        '5. summarize the fix and complete the effort',
-      ]
-    case 'investigation':
-      return [
-        '1. gather context and references',
-        '2. discuss unclear findings or decisions',
-        '3. capture the investigation result in the plan/summary surfaces',
-        '4. complete the effort when the answer is clear',
-      ]
-    case 'discussion':
-      return [
-        '1. use discussion as the primary working surface',
-        '2. capture decisions, open questions, and follow-ups',
-        '3. summarize the outcome and complete the effort',
-      ]
-  }
 }
 
 function requiresPlan(template: EffortTemplate): boolean {

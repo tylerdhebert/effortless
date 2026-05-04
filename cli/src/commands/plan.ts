@@ -12,6 +12,7 @@ import {
   printLatestUpdate,
   printRelatedMandates,
   printSurfaceMandate,
+  printTemplatePlaybook,
   printTemplateWorkflow,
 } from '../contextSections'
 import { printPlan } from '../render'
@@ -67,6 +68,7 @@ export async function handlePlan(surface: string, command: string): Promise<bool
     printPlan(plan)
     console.log(`effort ${effort.shortRef} ${effort.template} ${effort.status}`)
     console.log(effort.title)
+    printTemplatePlaybook(db, effort.template)
     printSurfaceMandate(db, 'plan')
     printTemplateWorkflow(effort, {
       plans: plans.length,

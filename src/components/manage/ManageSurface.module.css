@@ -15,7 +15,11 @@
 }
 
 .manage-surface-mandates {
-  /* no extra styles, marker class */
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.manage-surface-playbooks {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .manage-panel {
@@ -29,6 +33,10 @@
   max-width: 720px;
   box-sizing: border-box;
   min-width: 0;
+}
+
+.manage-panel-wide {
+  max-width: none;
 }
 
 .manage-panel-header {

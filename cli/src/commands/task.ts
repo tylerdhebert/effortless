@@ -27,6 +27,7 @@ import {
   printRelatedMandates,
   printSection,
   printSurfaceMandate,
+  printTemplatePlaybook,
   printTemplateWorkflow,
 } from '../contextSections'
 import { printTask } from '../render'
@@ -98,6 +99,7 @@ export async function handleTask(surface: string, command: string): Promise<bool
     const effortTasks = listTasks(db, effort.id)
     printTask(task)
     console.log(task.title)
+    printTemplatePlaybook(db, effort.template)
     printSurfaceMandate(db, 'task', task.repoId)
     printTemplateWorkflow(effort, {
       plans: plans.length,

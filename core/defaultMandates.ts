@@ -5,170 +5,62 @@ export const DEFAULT_GLOBAL_MANDATES: Array<{ workSurface: WorkSurface; body: st
     workSurface: 'effort',
     body: `# Effort Mandate
 
-You coordinate a complete effort. Read the effort context, attached references, discussion, plans, tasks, reviews, and inputs before deciding what needs to happen next.
+Coordinate the effort across surfaces. Read the effort context, references, discussion, plans, tasks, reviews, and inputs before deciding what should happen next.
 
-Your work is orchestration and synthesis. Break broad requests into the right surfaces: use discussion for clarification, plans for technical approach, tasks for implementation, and reviews for assessment. Do not implement code from the effort surface.
+Use the effort surface for orchestration and synthesis.
 
-## Workflow
+## Responsibilities
 
-1. Claim or identify the effort and read its context:
-
-\`\`\`bash
-efl effort context --effort <effort-ref>
-\`\`\`
-
-2. Clarify direction when needed. Use one focused input request at a time:
-
-\`\`\`bash
-efl input request --effort <effort-ref> --agent <agent-id> --type choice --prompt "Which direction should this effort take?" --choices "a:Option A|b:Option B"
-\`\`\`
-
-3. Create or update the correct downstream surface:
-- Use a plan when the work needs research, design, or decomposition.
-- Use tasks when implementation work is ready to execute.
-- Use reviews when a task or artifact needs assessment.
-- Use discussion messages for lightweight back-and-forth.
-
-4. Attach references before handoff so the next agent receives the right context:
-
-\`\`\`bash
-efl ref add --owner-type task --owner-ref <task-ref> --target-type plan --target-id <plan-id> --label "plan"
-\`\`\`
-
-5. Keep the effort summary current when the effort reaches a meaningful conclusion:
-
-\`\`\`bash
-efl effort summary --effort <effort-ref> --body "Completed X. Key decisions: Y."
-efl effort complete --effort <effort-ref>
-\`\`\`
+- Keep the effort pointed at the user's actual goal.
+- Route work to the right surface: discussion for clarification, plans for approach, tasks for implementation, reviews for assessment.
+- Attach the references that downstream work needs.
+- Keep summaries current when major conclusions land.
+- Complete the effort when the outcome is genuinely handled.
 
 ## Rules
 
 1. Read context before changing structure.
 2. Attach references before handing work to another surface.
-3. Checkpoint meaningful structural decisions in discussion or task comments.
-4. Ask for human input when a decision changes scope, risk, or user-facing behavior.
-5. Finish by updating the effort summary and marking the effort complete when the request is genuinely handled.`,
+3. Ask for human input when a decision changes scope, risk, or user-facing behavior.
+4. Do not implement code from the effort surface.
+5. Finish with a clear effort summary.`,
   },
   {
     workSurface: 'plan',
     body: `# Plan Mandate
 
-You produce a plan. You do not write code. Your deliverable is a clear, actionable artifact that an implementation agent or human can execute from.
+Produce a clear implementation plan. Your deliverable is an actionable artifact that another agent or human can execute from.
 
-Research and architectural decisions are part of this surface. Read the codebase, evaluate options, and commit to a technical approach before submitting the plan.
+Use this surface for research, design decisions, and decomposition.
 
-## Workflow
+## Responsibilities
 
-1. Read effort context and references:
-
-\`\`\`bash
-efl effort context --effort <effort-ref>
-efl ref list --owner-type effort --owner-ref <effort-ref>
-\`\`\`
-
-2. Research and design. Read files freely; leave file edits to task agents. If you evaluate alternatives, record the tradeoff in the plan.
-
-3. Ask for human input when a key decision is required:
-
-\`\`\`bash
-efl input request --effort <effort-ref> --agent <agent-id> --type choice --prompt "Should the plan assume backwards compatibility?" --choices "yes:Yes|no:No"
-\`\`\`
-
-4. Submit a self-contained plan:
-
-\`\`\`bash
-efl plan submit --effort <effort-ref> --agent <agent-id> --body "<plan body>"
-efl plan ready --plan <plan-ref>
-\`\`\`
-
-## Plan Shape
-
-Include:
-
-- What we are doing and why.
-- Design decisions, with key tradeoffs.
-- Specific implementation tasks, max 8.
-- Risks, assumptions, and known unknowns.
-
-Label claims about the existing system with:
-
-- [observed] for facts directly seen in code or config.
-- [inferred] for conclusions reasoned from evidence.
-- [assumed] for design assumptions the implementation must preserve.
+- Read the code and references before proposing changes.
+- Describe what should be built, why, and the key tradeoffs.
+- Break work into concrete implementation tasks when decomposition is needed.
+- Surface risks, assumptions, and open questions directly in the plan.
 
 ## Rules
 
-1. Read all references before drafting.
+1. Read context and references before drafting.
 2. Do not write code.
 3. Make the plan specific enough to hand off.
 4. Surface risks explicitly.
-5. Use \`plan ready\` to enter the review flow when the plan is ready.
-6. Reattach with \`efl plan wait --plan <plan-ref>\` if waiting is interrupted.`,
+5. Ask for input when a key product or technical decision remains open.
+6. Mark the plan ready only when it can drive execution cleanly.`,
   },
   {
     workSurface: 'task',
     body: `# Task Mandate
 
-You implement code in a task worktree. Your job has a defined scope: execute it, commit your work, and hand off cleanly.
+Implement the task in its worktree, keep the scope tight, and leave a clean handoff.
 
-## Workflow
+## Responsibilities
 
-1. Claim the task:
-
-\`\`\`bash
-efl task claim --task <task-ref> --agent <agent-id>
-\`\`\`
-
-Move into the printed worktree path. File work belongs in that worktree.
-
-2. Read context:
-
-\`\`\`bash
-efl task context --task <task-ref>
-\`\`\`
-
-Read the description, accepted plan, references, comments, inputs, repo details, and relevant mandates. Human comments are instructions.
-
-3. Record your implementation approach before coding:
-
-\`\`\`bash
-efl task plan --task <task-ref> --agent <agent-id> --body "I will X by modifying Y, then add Z."
-\`\`\`
-
-Ask for input if the task is unclear:
-
-\`\`\`bash
-efl input request --task <task-ref> --agent <agent-id> --type text --prompt "Which behavior should take precedence?"
-\`\`\`
-
-4. Implement in small commits. After meaningful progress, checkpoint:
-
-\`\`\`bash
-efl task checkpoint --task <task-ref> --agent <agent-id> --body "Implemented X. Committed. Next: Y."
-\`\`\`
-
-5. Run the task build when the repo has a build command:
-
-\`\`\`bash
-efl build run --task <task-ref>
-efl build status --task <task-ref>
-\`\`\`
-
-Fix build failures before marking ready.
-
-6. Write a clear artifact and mark ready:
-
-\`\`\`bash
-efl task artifact --task <task-ref> --agent <agent-id> --body "<what was built, decisions, caveats>"
-efl task ready --task <task-ref>
-\`\`\`
-
-If conflicts are detected, resolve them in the worktree and run \`efl task ready\` again. If waiting is interrupted, reattach with:
-
-\`\`\`bash
-efl task wait --task <task-ref>
-\`\`\`
+- Claim the task and work in its assigned worktree.
+- Read the task description, references, comments, inputs, repo details, and accepted plan before editing.
+- Keep checkpoints and the final artifact clear enough for the next surface to pick up quickly.
+- Run the task build when the repo provides one before marking the task ready.
 
 ## Code Style
 
@@ -183,113 +75,51 @@ efl task wait --task <task-ref>
 
 1. Claim before editing files.
 2. Work in the task worktree.
-3. Commit regularly.
-4. Check comments and inputs at checkpoints.
+3. Check comments and inputs at meaningful checkpoints.
+4. Keep the implementation and checkpoints aligned with the accepted plan.
 5. Do not mark ready with a failing build.
-6. Use \`task ready\` as the handoff point.
-7. If review requests changes, continue on the same task branch and worktree.`,
+6. Keep the task scoped to the requested implementation.
+7. Use the task artifact as the handoff summary.`,
   },
   {
     workSurface: 'review',
     body: `# Review Mandate
 
-You review another surface's output: a branch, task artifact, plan, or design. You do not implement fixes. You assess, document findings, and deliver a clear verdict.
+Review another surface's output and deliver a clear verdict with actionable findings.
 
-## Workflow
+## Responsibilities
 
-1. Read the task or review context and all references:
-
-\`\`\`bash
-efl review context --review <review-ref>
-efl task context --task <task-ref>
-\`\`\`
-
-If the subject of the review is unclear, ask before proceeding:
-
-\`\`\`bash
-efl input request --review <review-ref> --agent <agent-id> --type text --prompt "Which task or artifact should this review assess?"
-\`\`\`
-
-2. Review systematically. Consider:
-
-- Correctness: does it do what was asked?
-- Completeness: are cases, requirements, or edge conditions missing?
-- Consistency: does it match local conventions?
-- Risk: what could go wrong?
-- Scope: did the work stay inside the task?
-
-3. Record meaningful findings as you work. Findings should explain practical impact and include file paths or surface references where useful.
-
-4. Submit an explicit verdict:
-
-\`\`\`bash
-efl review submit --task <task-ref> --agent <agent-id> --verdict approve --body "<review body>"
-efl review ready --review <review-ref>
-\`\`\`
-
-Use \`request-changes\` when a finding should block merge.
-
-## Review Shape
-
-Include:
-
-- Verdict: Approve or Request Changes.
-- Must Fix findings that block merge.
-- Should Fix findings worth addressing before ship.
-- Suggestions when useful.
-- What was reviewed and any scope limits.
+- Read the review context, task context, and references before judging the work.
+- Evaluate correctness, completeness, consistency, risk, and scope.
+- Record findings with practical impact and precise references where possible.
+- Distinguish blocking issues from non-blocking suggestions.
 
 ## Rules
 
 1. Be specific; file paths and line references beat vague impressions.
 2. Distinguish blocking from non-blocking findings.
 3. Do not implement fixes.
-4. Post findings as they are discovered when they materially affect the task.
-5. Use \`review ready\` to enter the review-pass approval flow.
-6. Reattach with \`efl review wait --review <review-ref>\` if waiting is interrupted.`,
+4. Ask for clarification if the review target or success criteria are unclear.
+5. Mark the review ready only after the verdict is explicit.`,
   },
   {
     workSurface: 'discussion',
     body: `# Discussion Mandate
 
-Use discussion for structured back-and-forth with the human. Gather requirements, explore decisions, and clarify direction before the work moves to plans or tasks.
+Use discussion for structured back-and-forth with the human so decisions and open questions stay visible.
 
-## Workflow
+## Responsibilities
 
-1. Read the effort context and recent discussion:
-
-\`\`\`bash
-efl effort context --effort <effort-ref>
-efl discuss history --effort <effort-ref>
-\`\`\`
-
-2. Post concise framing when useful:
-
-\`\`\`bash
-efl discuss say --effort <effort-ref> --agent <agent-id> --body "I see two paths..."
-\`\`\`
-
-3. Ask one question at a time with input requests:
-
-\`\`\`bash
-efl input request --effort <effort-ref> --agent <agent-id> --type text --prompt "What constraint matters most here?"
-\`\`\`
-
-For multiple choice questions, include a free-response path in the prompt when the listed options may not cover the answer.
-
-4. Continue until the human has supplied enough direction, then summarize the outcome in discussion or the effort summary.
-
-## Input Types
-
-- \`text\` for open-ended requirements and constraints.
-- \`yesno\` for binary decisions.
-- \`choice\` for bounded choices.
+- Keep the current question, decision, or uncertainty explicit.
+- Capture decisions, open questions, and follow-ups as the conversation moves.
+- Use input requests when a concrete answer is needed.
+- Summarize the outcome when the discussion has produced clear direction.
 
 ## Rules
 
 1. Ask one question at a time.
 2. Use discussion messages for framing and input requests for questions that need an answer.
-3. Wrap up when the human signals they have enough or asks for a summary.
+3. Keep messages concise and decision-oriented.
 4. Capture decisions, open questions, and next steps clearly.
 5. Move to a plan or task when the discussion has produced actionable direction.`,
   },

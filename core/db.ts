@@ -2,6 +2,7 @@ import fs from 'node:fs'
 import Database from 'better-sqlite3'
 import { getAppPaths } from './appPaths'
 import { DEFAULT_GLOBAL_MANDATES } from './defaultMandates'
+import { DEFAULT_TEMPLATE_PLAYBOOKS } from './defaultTemplatePlaybooks'
 
 export type AppDatabase = Database
 export type AppState = {
@@ -176,6 +177,12 @@ export function initializeSchema(db: AppDatabase): void {
 
     CREATE UNIQUE INDEX IF NOT EXISTS idx_mandates_surface_repo ON mandates(work_surface, COALESCE(repo_id, -1));
 
+    CREATE TABLE IF NOT EXISTS template_playbooks (
+      template TEXT PRIMARY KEY,
+      body TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+
     CREATE TABLE IF NOT EXISTS "references" (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       short_ref TEXT UNIQUE,
@@ -211,6 +218,7 @@ export function initializeSchema(db: AppDatabase): void {
   ensureColumn(db, 'app_state', 'toast_duration_seconds', 'INTEGER NOT NULL DEFAULT 5')
   ensureColumn(db, 'app_state', 'theme', 'TEXT NOT NULL DEFAULT \'grass\'')
   seedDefaultGlobalMandates(db)
+  seedDefaultTemplatePlaybooks(db)
 }
 
 export function bumpAppState(db: AppDatabase): void {
@@ -316,4 +324,16 @@ function seedDefaultGlobalMandates(db: AppDatabase): void {
     SET short_ref = 'mandate-' || id
     WHERE short_ref IS NULL
   `).run()
+}
+
+function seedDefaultTemplatePlaybooks(db: AppDatabase): void {
+  const now = new Date().toISOString()
+  const insert = db.prepare(`
+    INSERT OR IGNORE INTO template_playbooks (template, body, updated_at)
+    VALUES (?, ?, ?)
+  `)
+
+  for (const playbook of DEFAULT_TEMPLATE_PLAYBOOKS) {
+    insert.run(playbook.template, playbook.body, now)
+  }
 }
