@@ -6,6 +6,7 @@ import path from 'node:path'
 import { getLatestTaskBuild, runTaskBuild } from '../core/builds'
 import { getAppState, openDatabase, updateNotificationSettings } from '../core/db'
 import type { NotificationSettings } from '../core/db'
+import { getCustomThemeState, updateCustomThemeState } from '../core/themeConfig'
 import { createDiscussionMessage, listDiscussionMessages } from '../core/discussion'
 import { listEfforts, createEffort, deleteEffort, updateEffortSummary, updateEffortPlanRequiresReview } from '../core/efforts'
 import { browsePath } from '../core/filesystem'
@@ -113,7 +114,16 @@ process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL
 let win: BrowserWindow | null
 const db = openDatabase()
 
-ipcMain.handle('app-state:get', () => getAppState(db))
+async function getRendererAppState() {
+  const appState = getAppState(db)
+  const customThemeState = await getCustomThemeState()
+  return {
+    ...appState,
+    ...customThemeState,
+  }
+}
+
+ipcMain.handle('app-state:get', () => getRendererAppState())
 ipcMain.handle('filesystem:browse', (_event, targetPath?: string | null, includeFiles = false) =>
   browsePath(targetPath, includeFiles),
 )
@@ -139,9 +149,14 @@ ipcMain.handle('notifications:show-os', (_event, title: string, body: string) =>
   if (!Notification.isSupported()) return
   new Notification({ title, body }).show()
 })
-ipcMain.handle('notifications:updateSettings', (_event, settings: NotificationSettings) =>
-  updateNotificationSettings(db, settings),
-)
+ipcMain.handle('notifications:updateSettings', async (_event, settings: NotificationSettings) => {
+  updateNotificationSettings(db, settings)
+  return getRendererAppState()
+})
+ipcMain.handle('theme:custom:update', async (_event, state: { customThemeActive: boolean; customThemePalette: Record<string, string> | null }) => {
+  await updateCustomThemeState(state)
+  return getRendererAppState()
+})
 
 ipcMain.handle('efforts:create', (_event, input: { title: string; description: string; template: 'bugfix' | 'delivery' | 'investigation' | 'discussion' }) =>
   createEffort(db, input),

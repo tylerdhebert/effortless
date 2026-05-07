@@ -60,6 +60,8 @@ interface Window {
         soundNotificationsEnabled: boolean
         toastDurationSeconds: number
         theme: string
+        customThemeActive: boolean
+        customThemePalette: Record<string, string> | null
       }>
       browsePath: (targetPath?: string | null, includeFiles?: boolean) => Promise<{
         path: string
@@ -158,6 +160,23 @@ interface Window {
         soundNotificationsEnabled: boolean
         toastDurationSeconds: number
         theme: string
+        customThemeActive: boolean
+        customThemePalette: Record<string, string> | null
+      }>
+      updateCustomThemeState: (state: {
+        customThemeActive: boolean
+        customThemePalette: Record<string, string> | null
+      }) => Promise<{
+        version: number
+        updatedAt: string
+        osNotificationsEnabled: boolean
+        bannerNotificationsEnabled: boolean
+        badgeNotificationsEnabled: boolean
+        soundNotificationsEnabled: boolean
+        toastDurationSeconds: number
+        theme: string
+        customThemeActive: boolean
+        customThemePalette: Record<string, string> | null
       }>
     }
   }

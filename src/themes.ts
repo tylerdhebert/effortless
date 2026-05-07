@@ -712,10 +712,20 @@ export const THEME_LABELS: Record<ThemeId, string> = {
 
 export const THEME_IDS = Object.keys(THEME_PALETTES) as ThemeId[]
 
-export function applyTheme(id: string): void {
-  const palette = THEME_PALETTES[id as ThemeId] ?? THEME_PALETTES.grass
+export const THEME_VARIABLES = Object.keys(THEME_PALETTES.grass)
+
+export function cloneThemePalette(palette: ThemePalette): ThemePalette {
+  return Object.fromEntries(Object.entries(palette))
+}
+
+export function applyThemePalette(palette: ThemePalette): void {
   const root = document.documentElement
   for (const [key, value] of Object.entries(palette)) {
     root.style.setProperty(key, value)
   }
+}
+
+export function applyTheme(id: string): void {
+  const palette = THEME_PALETTES[id as ThemeId] ?? THEME_PALETTES.grass
+  applyThemePalette(palette)
 }

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { applyTheme } from './themes'
+import { applyTheme, applyThemePalette, cloneThemePalette, THEME_PALETTES, type ThemePalette } from './themes'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   CircleHelp,
@@ -65,6 +65,8 @@ function App() {
   const [deleteEffortOpen, setDeleteEffortOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [observedAppVersion, setObservedAppVersion] = useState<number | null>(null)
+  const [customThemePalette, setCustomThemePalette] = useState<ThemePalette | null>(null)
+  const [customThemeActive, setCustomThemeActive] = useState(false)
   const effortScrollRef = useRef<HTMLDivElement | null>(null)
   const preserveSelectionOnEffortChangeRef = useRef(false)
 
@@ -95,10 +97,30 @@ function App() {
   })
 
   useEffect(() => {
-    if (appStateQuery.data?.theme) {
+    if (!customThemeActive && appStateQuery.data?.theme) {
       applyTheme(appStateQuery.data.theme)
     }
-  }, [appStateQuery.data?.theme])
+  }, [appStateQuery.data?.theme, customThemeActive])
+
+  useEffect(() => {
+    if (!appStateQuery.data) return
+
+    if (appStateQuery.data.customThemePalette) {
+      setCustomThemePalette((current) => current ?? cloneThemePalette(appStateQuery.data.customThemePalette!))
+    } else if (!customThemePalette && appStateQuery.data.theme) {
+      const basePalette =
+        THEME_PALETTES[appStateQuery.data.theme as keyof typeof THEME_PALETTES] ?? THEME_PALETTES.grass
+      setCustomThemePalette(cloneThemePalette(basePalette))
+    }
+
+    setCustomThemeActive(appStateQuery.data.customThemeActive)
+  }, [appStateQuery.data, customThemePalette])
+
+  useEffect(() => {
+    if (customThemeActive && customThemePalette) {
+      applyThemePalette(customThemePalette)
+    }
+  }, [customThemeActive, customThemePalette])
 
   const { notifications, count: notificationCount, isLoading: notificationsLoading } = useNotifications()
 
@@ -247,6 +269,16 @@ function App() {
     },
   })
 
+  const updateCustomThemeState = useMutation({
+    mutationFn: (state: {
+      customThemeActive: boolean
+      customThemePalette: Record<string, string> | null
+    }) => window.effortless.updateCustomThemeState(state),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['app-state'] })
+    },
+  })
+
   const updateTemplatePlaybook = useMutation({
     mutationFn: (input: { template: 'bugfix' | 'delivery' | 'investigation' | 'discussion'; body: string }) =>
       window.effortless.updateTemplatePlaybook(input),
@@ -304,6 +336,41 @@ function App() {
       effortScrollRef.current.scrollTop = 0
     }
   }, [selectedEffort?.id])
+
+  function resolveBaseCustomPalette(): ThemePalette {
+    const themeId = appStateQuery.data?.theme
+    const basePalette =
+      themeId && themeId in THEME_PALETTES
+        ? THEME_PALETTES[themeId as keyof typeof THEME_PALETTES]
+        : THEME_PALETTES.grass
+    return cloneThemePalette(basePalette)
+  }
+
+  function ensureCustomPalette(): ThemePalette {
+    return customThemePalette ?? resolveBaseCustomPalette()
+  }
+
+  function handleActivateCustomTheme() {
+    const palette = ensureCustomPalette()
+    if (!customThemePalette) {
+      setCustomThemePalette(palette)
+    }
+    applyThemePalette(palette)
+    setCustomThemeActive(true)
+    updateCustomThemeState.mutate({
+      customThemeActive: true,
+      customThemePalette: palette,
+    })
+  }
+
+  function handleUpdateCustomTheme(palette: ThemePalette) {
+    setCustomThemePalette(palette)
+    setCustomThemeActive(true)
+    updateCustomThemeState.mutate({
+      customThemeActive: true,
+      customThemePalette: palette,
+    })
+  }
 
   async function openReference(reference: Reference) {
     if (reference.targetType === 'file') {
@@ -582,9 +649,18 @@ function App() {
             }
             isUpdatingNotificationSettings={updateNotificationSettings.isPending}
             currentTheme={appStateQuery.data?.theme ?? 'grass'}
-            onUpdateTheme={(theme) =>
+            customTheme={ensureCustomPalette()}
+            customThemeActive={customThemeActive}
+            onUpdateTheme={(theme) => {
+              setCustomThemeActive(false)
+              updateCustomThemeState.mutate({
+                customThemeActive: false,
+                customThemePalette: ensureCustomPalette(),
+              })
               updateNotificationSettings.mutate({ theme })
-            }
+            }}
+            onActivateCustomTheme={handleActivateCustomTheme}
+            onUpdateCustomTheme={handleUpdateCustomTheme}
           />
         ) : selectedEffort ? (
           <>

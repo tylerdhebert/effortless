@@ -60,6 +60,8 @@ contextBridge.exposeInMainWorld('effortless', {
       soundNotificationsEnabled: boolean
       toastDurationSeconds: number
       theme: string
+      customThemeActive: boolean
+      customThemePalette: Record<string, string> | null
     }>,
   browsePath: (targetPath?: string | null, includeFiles = false) =>
     ipcRenderer.invoke('filesystem:browse', targetPath, includeFiles) as Promise<{
@@ -186,5 +188,23 @@ contextBridge.exposeInMainWorld('effortless', {
       soundNotificationsEnabled: boolean
       toastDurationSeconds: number
       theme: string
+      customThemeActive: boolean
+      customThemePalette: Record<string, string> | null
+    }>,
+  updateCustomThemeState: (state: {
+    customThemeActive: boolean
+    customThemePalette: Record<string, string> | null
+  }) =>
+    ipcRenderer.invoke('theme:custom:update', state) as Promise<{
+      version: number
+      updatedAt: string
+      osNotificationsEnabled: boolean
+      bannerNotificationsEnabled: boolean
+      badgeNotificationsEnabled: boolean
+      soundNotificationsEnabled: boolean
+      toastDurationSeconds: number
+      theme: string
+      customThemeActive: boolean
+      customThemePalette: Record<string, string> | null
     }>,
 })
