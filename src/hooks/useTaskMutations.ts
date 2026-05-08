@@ -83,5 +83,18 @@ export function useTaskMutations(selectedEffortId: number | null) {
     },
   })
 
-  return { readyTask, updateTaskDetails, ensureTaskWorktree, mergeTask, runBuild, updateTaskRequiresReview, updateTaskReviewRequiresReview, updateTaskAutoMerge }
+  const prepareTaskRun = useMutation({
+    mutationFn: (input: { taskId: number; profileId?: number | null; label?: string }) =>
+      window.effortless.prepareTaskRun(input),
+    onSuccess: async (prepared) => {
+      await queryClient.invalidateQueries({ queryKey: ['task-runs', prepared.task.id] })
+      await queryClient.invalidateQueries({ queryKey: ['agent-runs'] })
+      await queryClient.invalidateQueries({ queryKey: ['app-state'] })
+      if (selectedEffortId) {
+        await invalidateTask(prepared.task.id, selectedEffortId)
+      }
+    },
+  })
+
+  return { readyTask, updateTaskDetails, ensureTaskWorktree, mergeTask, runBuild, updateTaskRequiresReview, updateTaskReviewRequiresReview, updateTaskAutoMerge, prepareTaskRun }
 }

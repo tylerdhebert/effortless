@@ -4,8 +4,10 @@ import { Diff, Hunk, parseDiff, tokenize } from 'react-diff-view'
 import type { FileData, ViewType } from 'react-diff-view'
 import 'react-diff-view/style/index.css'
 import { refractor as rawRefractor } from 'refractor'
-import { Play } from 'lucide-react'
+import { Play, SquareTerminal } from 'lucide-react'
 import type {
+  AgentProfile,
+  AgentRun,
   Task,
   Repo,
   Review,
@@ -29,9 +31,12 @@ type TaskDetailPaneProps = {
   reviews: Review[]
   comments: TaskComment[]
   latestBuild: TaskBuildResult | null
+  runs: AgentRun[]
+  agentProfiles: AgentProfile[]
   commitView: TaskCommitView | null
   conflictView: TaskConflictView | null
   onRunBuild: (taskId: number) => void
+  onPrepareTaskRun: (taskId: number) => void
   onMergeTask: (taskId: number) => void
   onApplyReview: (reviewId: number) => void
   onRequestReviewChanges: (input: { reviewId: number; body: string }) => void
@@ -39,6 +44,7 @@ type TaskDetailPaneProps = {
   onUpdateTaskReviewRequiresReview: (taskId: number, reviewRequiresReview: boolean) => void
   onUpdateTaskAutoMerge: (taskId: number, autoMerge: boolean) => void
   isRunningBuild: boolean
+  isPreparingRun: boolean
   isMergingTask: boolean
   isApplyingReview: boolean
   isRequestingReviewChanges: boolean
@@ -50,9 +56,12 @@ export function TaskDetailPane({
   reviews,
   comments,
   latestBuild,
+  runs,
+  agentProfiles,
   commitView,
   conflictView,
   onRunBuild,
+  onPrepareTaskRun,
   onMergeTask,
   onApplyReview,
   onRequestReviewChanges,
@@ -60,6 +69,7 @@ export function TaskDetailPane({
   onUpdateTaskReviewRequiresReview,
   onUpdateTaskAutoMerge,
   isRunningBuild,
+  isPreparingRun,
   isMergingTask,
   isApplyingReview,
   isRequestingReviewChanges,
@@ -75,6 +85,7 @@ export function TaskDetailPane({
   }, [task?.id])
 
   const taskRepo = repos.find((repo) => repo.id === (task?.repoId ?? null)) ?? null
+  const defaultProfile = agentProfiles[0] ?? null
   const latestReview = reviews[0] ?? null
   const pendingReview = reviews.find((review) => !review.appliedAt) ?? null
   const persistedConflict = parsePersistedConflict(task?.conflictDetails ?? null)
@@ -205,7 +216,17 @@ export function TaskDetailPane({
               value={surfaceMode}
               onChange={setSurfaceMode}
             />
-              <button
+            <button
+              type="button"
+              className={styles['task-header-action']}
+              title={taskRepo ? 'prepare agent run' : 'task needs a repo before preparing a run'}
+              onClick={() => onPrepareTaskRun(task.id)}
+              disabled={isPreparingRun || !taskRepo}
+            >
+              <SquareTerminal size={14} aria-hidden="true" />
+              <span>prepare run</span>
+            </button>
+            <button
               type="button"
               className={styles['task-header-action']}
               title="run build"
@@ -240,6 +261,35 @@ export function TaskDetailPane({
           <section className={styles['task-detail-section']}>
             <h4>comments</h4>
             <CommentStream comments={comments} />
+          </section>
+
+          <section className={styles['task-detail-section']}>
+            <div className={styles['run-section-header']}>
+              <h4>runs</h4>
+              <span>{runs.length} prepared</span>
+            </div>
+            <div className={styles['run-profile-summary']}>
+              <span>default profile</span>
+              <strong>{defaultProfile ? `${defaultProfile.shortRef} ${defaultProfile.name}` : 'none'}</strong>
+            </div>
+            {runs.length > 0 ? (
+              <div className={styles['run-list']}>
+                {runs.map((run) => (
+                  <article key={run.id} className={styles['run-row']}>
+                    <div className={styles['run-row-main']}>
+                      <strong>{run.shortRef}</strong>
+                      <span>{run.status} · {run.purpose} · {run.label}</span>
+                    </div>
+                    <div className={styles['run-row-paths']}>
+                      <span title={run.cwd}>cwd {run.cwd}</span>
+                      <span title={run.contextPath}>context {run.contextPath}</span>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <p className="empty-state">no runs prepared</p>
+            )}
           </section>
 
           <div className={styles['task-detail-supporting-grid']}>

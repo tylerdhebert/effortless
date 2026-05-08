@@ -72,6 +72,11 @@ function App() {
     queryFn: () => window.effortless.listRepos(),
   })
 
+  const agentProfilesQuery = useQuery({
+    queryKey: ['agent-profiles'],
+    queryFn: () => window.effortless.listAgentProfiles(),
+  })
+
   const mandatesQuery = useQuery({
     queryKey: ['mandates'],
     queryFn: () => window.effortless.listMandates(),
@@ -212,6 +217,12 @@ function App() {
   const buildQuery = useQuery({
     queryKey: ['task-build', selectedTask?.id],
     queryFn: () => window.effortless.getLatestTaskBuild(selectedTask!.id),
+    enabled: Boolean(selectedTask),
+  })
+
+  const taskRunsQuery = useQuery({
+    queryKey: ['task-runs', selectedTask?.id],
+    queryFn: () => window.effortless.listTaskRuns(selectedTask!.id),
     enabled: Boolean(selectedTask),
   })
 
@@ -803,9 +814,12 @@ function App() {
                       reviews={reviewsQuery.data ?? []}
                       comments={commentsQuery.data ?? []}
                       latestBuild={buildQuery.data ?? null}
+                      runs={taskRunsQuery.data ?? []}
+                      agentProfiles={agentProfilesQuery.data ?? []}
                       commitView={commitsQuery.data ?? null}
                       conflictView={conflictsQuery.data ?? null}
                       onRunBuild={(taskId) => taskMutations.runBuild.mutate(taskId)}
+                      onPrepareTaskRun={(taskId) => taskMutations.prepareTaskRun.mutate({ taskId })}
                       onMergeTask={(taskId) => taskMutations.mergeTask.mutate(taskId)}
                       onApplyReview={(reviewId) => reviewMutations.applyReview.mutate({ reviewId })}
                       onRequestReviewChanges={(input) => reviewMutations.requestReviewChanges.mutate(input)}
@@ -819,6 +833,7 @@ function App() {
                         taskMutations.updateTaskAutoMerge.mutate({ taskId, autoMerge })
                       }
                       isRunningBuild={taskMutations.runBuild.isPending}
+                      isPreparingRun={taskMutations.prepareTaskRun.isPending}
                       isMergingTask={taskMutations.mergeTask.isPending}
                       isApplyingReview={reviewMutations.applyReview.isPending}
                       isRequestingReviewChanges={reviewMutations.requestReviewChanges.isPending}
