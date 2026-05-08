@@ -4,8 +4,11 @@ import type {
   AnswerInputRequestInput,
   ApplyReviewInput,
   ApproveTaskInput,
+  AgentProfile,
+  AgentRun,
   CheckpointTaskInput,
   ClaimTaskInput,
+  CreateAgentProfileInput,
   CreateEffortInput,
   DiffType,
   CreateInputRequestInput,
@@ -34,6 +37,8 @@ import type {
   TaskConflictView,
   TaskDiffView,
   TemplatePlaybook,
+  PrepareTaskRunInput,
+  UpdateAgentProfileInput,
   UpdateMandateInput,
   UpdateRepoInput,
   UpdateTaskDetailsInput,
@@ -111,6 +116,20 @@ interface Window {
       updateTaskRequiresReview: (taskId: number, requiresReview: boolean) => Promise<Task>
       updateTaskReviewRequiresReview: (taskId: number, reviewRequiresReview: boolean) => Promise<Task>
       updateTaskAutoMerge: (taskId: number, autoMerge: boolean) => Promise<Task>
+      listAgentProfiles: () => Promise<AgentProfile[]>
+      createAgentProfile: (input: CreateAgentProfileInput) => Promise<AgentProfile>
+      updateAgentProfile: (input: UpdateAgentProfileInput) => Promise<AgentProfile>
+      listAgentRuns: (effortId?: number | null) => Promise<AgentRun[]>
+      listTaskRuns: (taskId: number) => Promise<AgentRun[]>
+      prepareTaskRun: (input: PrepareTaskRunInput) => Promise<{
+        run: AgentRun
+        task: Task
+        profile: AgentProfile
+        env: Record<string, string>
+      }>
+      markAgentRunStarted: (runId: number) => Promise<AgentRun>
+      markAgentRunExited: (runId: number, exitCode: number) => Promise<AgentRun>
+      markAgentRunFailed: (runId: number, error: string) => Promise<AgentRun>
       approveTask: (input: ApproveTaskInput) => Promise<Task>
       requestTaskChanges: (input: RequestTaskChangesInput) => Promise<Task>
       listMandates: () => Promise<Mandate[]>

@@ -9,6 +9,7 @@ import { handlePlaybook } from './commands/playbook'
 import { handleRef } from './commands/ref'
 import { handleRepo } from './commands/repo'
 import { handleReview } from './commands/review'
+import { handleRun } from './commands/run'
 import { handleTask } from './commands/task'
 
 async function main() {
@@ -23,6 +24,7 @@ async function main() {
     handleTask,
     handlePlan,
     handleReview,
+    handleRun,
     handleBuild,
     handleRepo,
     handleInput,

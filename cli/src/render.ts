@@ -1,4 +1,4 @@
-import type { InputRequest, Mandate, Plan, Reference, Repo, Review, Task } from '../../core/types'
+import type { AgentProfile, AgentRun, InputRequest, Mandate, Plan, Reference, Repo, Review, Task } from '../../core/types'
 import type { runTaskBuild } from '../../core/builds'
 
 export function printTask(task: Task): void {
@@ -80,6 +80,28 @@ export function printReference(reference: Reference): void {
   }
 }
 
+export function printAgentProfile(profile: AgentProfile): void {
+  console.log(`${profile.shortRef}  ${profile.name}`)
+  console.log('')
+  console.log(`  environment  ${profile.environment}${profile.wslDistro ? `/${profile.wslDistro}` : ''}`)
+  console.log(`  cwd          ${profile.defaultCwdKind}${profile.customCwd ? ` ${profile.customCwd}` : ''}`)
+  console.log(`  command      ${profile.commandTemplate}`)
+  if (Object.keys(profile.env).length > 0) {
+    console.log('  env')
+    for (const [name, value] of Object.entries(profile.env)) {
+      console.log(`    ${name}=${value}`)
+    }
+  }
+  console.log('')
+}
+
+export function printAgentRun(run: AgentRun): void {
+  console.log(`${run.shortRef} ${run.status} ${run.purpose} ${run.label}`)
+  console.log(`task ${run.taskId ?? 'none'}`)
+  console.log(`cwd ${run.cwd}`)
+  console.log(`command ${run.command || '(not expanded)'}`)
+}
+
 export function printHelp(): void {
   console.log('efl effort create --title "title" --description "description" [--template bugfix|delivery|investigation]')
   console.log('efl effort list')
@@ -111,6 +133,9 @@ export function printHelp(): void {
   console.log('efl task wait --task task-1')
   console.log('efl task merge --task task-1')
   console.log('efl task worktree --task task-1')
+  console.log('efl run profiles')
+  console.log('efl run prepare --task task-1 [--profile 1] [--label main]')
+  console.log('efl run list [--task task-1]')
   console.log('efl review submit --task task-1 --agent rev-1 --verdict approve --body "message" [--from-file review.md]')
   console.log('efl review list --task task-1')
   console.log('efl review show --review rev-1')

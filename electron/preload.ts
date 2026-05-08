@@ -3,8 +3,11 @@ import type {
   AnswerInputRequestInput,
   ApplyReviewInput,
   ApproveTaskInput,
+  AgentProfile,
+  AgentRun,
   CheckpointTaskInput,
   ClaimTaskInput,
+  CreateAgentProfileInput,
   CreateEffortInput,
   DiffType,
   CreateInputRequestInput,
@@ -33,6 +36,8 @@ import type {
   TaskConflictView,
   TaskDiffView,
   TemplatePlaybook,
+  PrepareTaskRunInput,
+  UpdateAgentProfileInput,
   UpdateMandateInput,
   UpdateRepoInput,
   UpdateTaskDetailsInput,
@@ -139,6 +144,29 @@ contextBridge.exposeInMainWorld('effortless', {
     ipcRenderer.invoke('tasks:updateReviewRequiresReview', taskId, reviewRequiresReview) as Promise<Task>,
   updateTaskAutoMerge: (taskId: number, autoMerge: boolean) =>
     ipcRenderer.invoke('tasks:updateAutoMerge', taskId, autoMerge) as Promise<Task>,
+  listAgentProfiles: () =>
+    ipcRenderer.invoke('agentProfiles:list') as Promise<AgentProfile[]>,
+  createAgentProfile: (input: CreateAgentProfileInput) =>
+    ipcRenderer.invoke('agentProfiles:create', input) as Promise<AgentProfile>,
+  updateAgentProfile: (input: UpdateAgentProfileInput) =>
+    ipcRenderer.invoke('agentProfiles:update', input) as Promise<AgentProfile>,
+  listAgentRuns: (effortId?: number | null) =>
+    ipcRenderer.invoke('agentRuns:list', effortId ?? null) as Promise<AgentRun[]>,
+  listTaskRuns: (taskId: number) =>
+    ipcRenderer.invoke('agentRuns:listTask', taskId) as Promise<AgentRun[]>,
+  prepareTaskRun: (input: PrepareTaskRunInput) =>
+    ipcRenderer.invoke('agentRuns:prepareTask', input) as Promise<{
+      run: AgentRun
+      task: Task
+      profile: AgentProfile
+      env: Record<string, string>
+    }>,
+  markAgentRunStarted: (runId: number) =>
+    ipcRenderer.invoke('agentRuns:markStarted', runId) as Promise<AgentRun>,
+  markAgentRunExited: (runId: number, exitCode: number) =>
+    ipcRenderer.invoke('agentRuns:markExited', runId, exitCode) as Promise<AgentRun>,
+  markAgentRunFailed: (runId: number, error: string) =>
+    ipcRenderer.invoke('agentRuns:markFailed', runId, error) as Promise<AgentRun>,
   approveTask: (input: ApproveTaskInput) =>
     ipcRenderer.invoke('tasks:approve', input) as Promise<Task>,
   requestTaskChanges: (input: RequestTaskChangesInput) =>

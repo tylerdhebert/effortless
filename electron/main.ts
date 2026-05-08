@@ -3,6 +3,8 @@ import { fileURLToPath } from 'node:url'
 import { createHash } from 'node:crypto'
 import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
+import { createAgentProfile, listAgentProfiles, updateAgentProfile } from '../core/agentProfiles'
+import { listAgentRuns, listTaskRuns, markAgentRunExited, markAgentRunFailed, markAgentRunStarted, prepareTaskRun } from '../core/agentRuns'
 import { getLatestTaskBuild, runTaskBuild } from '../core/builds'
 import { getAppState, openDatabase, updateNotificationSettings } from '../core/db'
 import type { NotificationSettings } from '../core/db'
@@ -67,6 +69,7 @@ import type {
   CheckpointTaskInput,
   ClaimTaskInput,
   CreateInputRequestInput,
+  CreateAgentProfileInput,
   CreateMandateInput,
   CreatePlanInput,
   CreateReferenceInput,
@@ -75,6 +78,7 @@ import type {
   RequestReviewChangesInput,
   RequestTaskChangesInput,
   SubmitReviewInput,
+  UpdateAgentProfileInput,
   UpdateMandateInput,
   UpdateTemplatePlaybookInput,
   UpdateRepoInput,
@@ -215,6 +219,17 @@ ipcMain.handle('tasks:updateReviewRequiresReview', (_event, taskId: number, revi
 ipcMain.handle('tasks:updateAutoMerge', (_event, taskId: number, autoMerge: boolean) =>
   updateTaskAutoMerge(db, taskId, autoMerge),
 )
+ipcMain.handle('agentProfiles:list', () => listAgentProfiles(db))
+ipcMain.handle('agentProfiles:create', (_event, input: CreateAgentProfileInput) => createAgentProfile(db, input))
+ipcMain.handle('agentProfiles:update', (_event, input: UpdateAgentProfileInput) => updateAgentProfile(db, input))
+ipcMain.handle('agentRuns:list', (_event, effortId?: number | null) => listAgentRuns(db, effortId ?? null))
+ipcMain.handle('agentRuns:listTask', (_event, taskId: number) => listTaskRuns(db, taskId))
+ipcMain.handle('agentRuns:prepareTask', (_event, input: { taskId: number; profileId?: number | null; purpose?: 'main' | 'side-investigation' | 'implementation' | 'review'; label?: string }) =>
+  prepareTaskRun(db, input),
+)
+ipcMain.handle('agentRuns:markStarted', (_event, runId: number) => markAgentRunStarted(db, runId))
+ipcMain.handle('agentRuns:markExited', (_event, runId: number, exitCode: number) => markAgentRunExited(db, runId, exitCode))
+ipcMain.handle('agentRuns:markFailed', (_event, runId: number, error: string) => markAgentRunFailed(db, runId, error))
 ipcMain.handle('builds:latest', (_event, taskId: number) => getLatestTaskBuild(db, taskId))
 ipcMain.handle('builds:run', (_event, taskId: number) => runTaskBuild(db, taskId))
 

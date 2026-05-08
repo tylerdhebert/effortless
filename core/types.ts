@@ -275,6 +275,9 @@ export type UpdateRepoInput = {
 
 export type WorkSurface = 'effort' | 'plan' | 'task' | 'review' | 'run'
 export type MandateSourceType = 'body' | 'file'
+export type RunEnvironment = 'windows' | 'wsl'
+export type AgentRunPurpose = 'main' | 'side-investigation' | 'implementation' | 'review'
+export type AgentRunStatus = 'prepared' | 'running' | 'exited' | 'failed' | 'cancelled'
 
 export type Mandate = {
   id: number
@@ -313,6 +316,66 @@ export type TemplatePlaybook = {
 export type UpdateTemplatePlaybookInput = {
   template: EffortTemplate
   body: string
+}
+
+export type AgentProfile = {
+  id: number
+  shortRef: string
+  name: string
+  commandTemplate: string
+  environment: RunEnvironment
+  wslDistro: string | null
+  defaultCwdKind: 'task_worktree' | 'repo_root' | 'custom'
+  customCwd: string | null
+  env: Record<string, string>
+  createdAt: string
+  updatedAt: string
+}
+
+export type CreateAgentProfileInput = {
+  name: string
+  commandTemplate: string
+  environment?: RunEnvironment
+  wslDistro?: string | null
+  defaultCwdKind?: AgentProfile['defaultCwdKind']
+  customCwd?: string | null
+  env?: Record<string, string>
+}
+
+export type UpdateAgentProfileInput = CreateAgentProfileInput & {
+  profileId: number
+}
+
+export type AgentRun = {
+  id: number
+  shortRef: string
+  effortId: number
+  taskId: number | null
+  planId: number | null
+  reviewId: number | null
+  profileId: number
+  purpose: AgentRunPurpose
+  label: string
+  status: AgentRunStatus
+  environment: RunEnvironment
+  cwd: string
+  command: string
+  contextPath: string
+  bootstrapPath: string
+  transcriptPath: string
+  exitCode: number | null
+  error: string | null
+  startedAt: string | null
+  completedAt: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export type PrepareTaskRunInput = {
+  taskId: number
+  profileId?: number | null
+  purpose?: AgentRunPurpose
+  label?: string
 }
 
 export type ReferenceOwnerType = 'effort' | 'plan' | 'task' | 'review'

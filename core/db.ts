@@ -174,6 +174,45 @@ export function initializeSchema(db: AppDatabase): void {
       updated_at TEXT NOT NULL
     );
 
+    CREATE TABLE IF NOT EXISTS agent_profiles (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      short_ref TEXT UNIQUE,
+      name TEXT NOT NULL,
+      command_template TEXT NOT NULL,
+      environment TEXT NOT NULL,
+      wsl_distro TEXT,
+      default_cwd_kind TEXT NOT NULL,
+      custom_cwd TEXT,
+      env_json TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS agent_runs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      short_ref TEXT UNIQUE,
+      effort_id INTEGER NOT NULL REFERENCES efforts(id) ON DELETE CASCADE,
+      task_id INTEGER REFERENCES tasks(id) ON DELETE CASCADE,
+      plan_id INTEGER REFERENCES plans(id) ON DELETE CASCADE,
+      review_id INTEGER REFERENCES reviews(id) ON DELETE CASCADE,
+      profile_id INTEGER NOT NULL REFERENCES agent_profiles(id),
+      purpose TEXT NOT NULL,
+      label TEXT NOT NULL,
+      status TEXT NOT NULL,
+      environment TEXT NOT NULL,
+      cwd TEXT NOT NULL,
+      command TEXT NOT NULL,
+      context_path TEXT NOT NULL,
+      bootstrap_path TEXT NOT NULL,
+      transcript_path TEXT NOT NULL,
+      exit_code INTEGER,
+      error TEXT,
+      started_at TEXT,
+      completed_at TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+
     CREATE TABLE IF NOT EXISTS "references" (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       short_ref TEXT UNIQUE,

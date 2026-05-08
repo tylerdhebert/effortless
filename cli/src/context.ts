@@ -70,7 +70,7 @@ export function resolveInputTarget(database: AppDatabase): {
 } {
   const effortRef = option('--effort')
   const planRef = option('--plan')
-  const taskRef = option('--task')
+  const taskRef = option('--task') ?? process.env.EFFORTLESS_TASK ?? null
   const reviewRef = option('--review')
 
   if (reviewRef) {

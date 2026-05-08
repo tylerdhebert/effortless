@@ -10,7 +10,7 @@ export async function handleInput(surface: string, command: string): Promise<boo
   if (command === 'request') {
     const inputRequest = createInputRequest(db, {
       ...resolveInputTarget(db),
-      agentId: requiredOption('--agent'),
+      agentId: option('--agent') ?? process.env.EFFORTLESS_RUN_LABEL ?? process.env.EFFORTLESS_AGENT_ID ?? 'main',
       type: requiredOption('--type') as 'yesno' | 'choice' | 'text',
       prompt: requiredOption('--prompt'),
       choices: parseChoices(option('--choices')),

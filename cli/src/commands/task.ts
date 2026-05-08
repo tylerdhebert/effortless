@@ -73,7 +73,7 @@ export async function handleTask(surface: string, command: string): Promise<bool
   }
 
   if (command === 'show') {
-    const task = resolveTask(db, requiredOption('--task'))
+    const task = resolveTask(db, resolveTaskRef())
     printTask(task)
     console.log(task.title)
     console.log(task.description)
@@ -93,7 +93,7 @@ export async function handleTask(surface: string, command: string): Promise<bool
   }
 
   if (command === 'context') {
-    const task = resolveTask(db, requiredOption('--task'))
+    const task = resolveTask(db, resolveTaskRef())
     const effort = getEffort(db, task.effortId)
     const plans = listPlans(db, effort.id)
     const effortTasks = listTasks(db, effort.id)
@@ -172,16 +172,16 @@ export async function handleTask(surface: string, command: string): Promise<bool
   }
 
   if (command === 'claim') {
-    const task = resolveTask(db, requiredOption('--task'))
-    const agentId = requiredOption('--agent')
+    const task = resolveTask(db, resolveTaskRef())
+    const agentId = resolveAgentId()
     const updated = await claimTask(db, { taskId: task.id, agentId })
     printTask(updated)
     return true
   }
 
   if (command === 'plan') {
-    const task = resolveTask(db, requiredOption('--task'))
-    const agentId = requiredOption('--agent')
+    const task = resolveTask(db, resolveTaskRef())
+    const agentId = resolveAgentId()
     const updated = updateTaskDetails(db, {
       taskId: task.id,
       handoffSummary: bodyArg(),
@@ -196,8 +196,8 @@ export async function handleTask(surface: string, command: string): Promise<bool
   }
 
   if (command === 'checkpoint') {
-    const task = resolveTask(db, requiredOption('--task'))
-    const agentId = requiredOption('--agent')
+    const task = resolveTask(db, resolveTaskRef())
+    const agentId = resolveAgentId()
     const body = bodyArg()
     const comment = checkpointTask(db, { taskId: task.id, agentId, body })
     console.log(`${task.shortRef} checkpoint ${comment.id}`)
@@ -205,8 +205,8 @@ export async function handleTask(surface: string, command: string): Promise<bool
   }
 
   if (command === 'artifact') {
-    const task = resolveTask(db, requiredOption('--task'))
-    const agentId = requiredOption('--agent')
+    const task = resolveTask(db, resolveTaskRef())
+    const agentId = resolveAgentId()
     const updated = updateTaskDetails(db, {
       taskId: task.id,
       artifact: bodyArg(),
@@ -221,7 +221,7 @@ export async function handleTask(surface: string, command: string): Promise<bool
   }
 
   if (command === 'ready') {
-    const task = resolveTask(db, requiredOption('--task'))
+    const task = resolveTask(db, resolveTaskRef())
     const updated = await markTaskReady(db, task.id)
     printTask(updated)
 
@@ -233,20 +233,20 @@ export async function handleTask(surface: string, command: string): Promise<bool
   }
 
   if (command === 'merge') {
-    const task = resolveTask(db, requiredOption('--task'))
+    const task = resolveTask(db, resolveTaskRef())
     const updated = await mergeTask(db, task.id)
     printTask(updated)
     return true
   }
 
   if (command === 'wait') {
-    const task = resolveTask(db, requiredOption('--task'))
+    const task = resolveTask(db, resolveTaskRef())
     await waitForTask(task)
     return true
   }
 
   if (command === 'worktree') {
-    const task = resolveTask(db, requiredOption('--task'))
+    const task = resolveTask(db, resolveTaskRef())
     const updated = await ensureTaskWorktree(db, task.id)
     printTask(updated)
     if (updated.worktreePath) {
@@ -256,6 +256,14 @@ export async function handleTask(surface: string, command: string): Promise<bool
   }
 
   return false
+}
+
+function resolveTaskRef(): string {
+  return option('--task') ?? process.env.EFFORTLESS_TASK ?? requiredOption('--task')
+}
+
+function resolveAgentId(): string {
+  return option('--agent') ?? process.env.EFFORTLESS_RUN_LABEL ?? process.env.EFFORTLESS_AGENT_ID ?? 'main'
 }
 
 async function waitForTask(task: Task): Promise<void> {
