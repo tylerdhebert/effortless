@@ -37,6 +37,7 @@ type TaskDetailPaneProps = {
   conflictView: TaskConflictView | null
   onRunBuild: (taskId: number) => void
   onPrepareTaskRun: (taskId: number) => void
+  onOpenRunFile: (filePath: string) => void
   onMergeTask: (taskId: number) => void
   onApplyReview: (reviewId: number) => void
   onRequestReviewChanges: (input: { reviewId: number; body: string }) => void
@@ -62,6 +63,7 @@ export function TaskDetailPane({
   conflictView,
   onRunBuild,
   onPrepareTaskRun,
+  onOpenRunFile,
   onMergeTask,
   onApplyReview,
   onRequestReviewChanges,
@@ -283,6 +285,17 @@ export function TaskDetailPane({
                     <div className={styles['run-row-paths']}>
                       <span title={run.cwd}>cwd {run.cwd}</span>
                       <span title={run.contextPath}>context {run.contextPath}</span>
+                    </div>
+                    <div className={styles['run-row-actions']}>
+                      <button type="button" onClick={() => onOpenRunFile(run.contextPath)}>
+                        context
+                      </button>
+                      <button type="button" onClick={() => onOpenRunFile(run.bootstrapPath)}>
+                        bootstrap
+                      </button>
+                      <button type="button" onClick={() => onOpenRunFile(run.transcriptPath)}>
+                        transcript
+                      </button>
                     </div>
                   </article>
                 ))}

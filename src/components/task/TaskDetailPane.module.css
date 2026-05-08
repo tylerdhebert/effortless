@@ -248,6 +248,36 @@
   white-space: nowrap;
 }
 
+.run-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.run-row-actions button {
+  min-height: 28px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: var(--button);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.7rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: lowercase;
+  padding: 5px 8px;
+  transition:
+    border-color 140ms ease,
+    color 140ms ease,
+    transform 140ms ease;
+}
+
+.run-row-actions button:hover {
+  border-color: var(--accent);
+  color: var(--text-strong);
+  transform: translateY(-1px);
+}
+
 .expanded-meta {
   display: flex;
   align-items: stretch;

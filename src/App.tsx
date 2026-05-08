@@ -820,6 +820,7 @@ function App() {
                       conflictView={conflictsQuery.data ?? null}
                       onRunBuild={(taskId) => taskMutations.runBuild.mutate(taskId)}
                       onPrepareTaskRun={(taskId) => taskMutations.prepareTaskRun.mutate({ taskId })}
+                      onOpenRunFile={(filePath) => void window.effortless.openPath(filePath)}
                       onMergeTask={(taskId) => taskMutations.mergeTask.mutate(taskId)}
                       onApplyReview={(reviewId) => reviewMutations.applyReview.mutate({ reviewId })}
                       onRequestReviewChanges={(input) => reviewMutations.requestReviewChanges.mutate(input)}
