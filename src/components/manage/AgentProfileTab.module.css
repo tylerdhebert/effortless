@@ -1,0 +1,201 @@
+.workspace {
+  display: grid;
+  grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.rail,
+.profileList,
+.form {
+  display: grid;
+  gap: 12px;
+}
+
+.profileButton {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  padding: 12px 12px 12px 14px;
+  text-align: left;
+  transition:
+    border-color 140ms ease,
+    background 140ms ease,
+    transform 140ms ease;
+}
+
+.profileButton:hover {
+  border-color: color-mix(in srgb, var(--accent) 14%, transparent);
+  background: rgba(255, 255, 255, 0.02);
+  transform: translateY(-1px);
+}
+
+.profileButton.selected {
+  border-color: color-mix(in srgb, var(--accent) 18%, transparent);
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--accent) 11%, transparent), rgba(255, 255, 255, 0.025) 24%),
+    rgba(255, 255, 255, 0.02);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.profileButton span {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.profileButton strong {
+  color: var(--text-strong);
+  font-size: 0.92rem;
+  font-weight: 620;
+}
+
+.profileButton small {
+  color: var(--muted);
+  font-size: 0.69rem;
+  letter-spacing: 0.04em;
+}
+
+.profileButton p {
+  overflow: hidden;
+  margin-bottom: 0;
+  color: var(--text);
+  font-family: "Cascadia Code", Consolas, "Courier New", monospace;
+  font-size: 0.76rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.form {
+  min-width: 0;
+}
+
+.header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.header > div:first-child {
+  display: grid;
+  gap: 4px;
+}
+
+.header small {
+  color: var(--muted);
+  font-size: 0.69rem;
+  letter-spacing: 0.04em;
+}
+
+.label {
+  color: var(--text-strong);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.field {
+  display: grid;
+  gap: 8px;
+}
+
+.field span,
+.variables span {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: lowercase;
+}
+
+.error {
+  color: #ffb0a5;
+  font-size: 0.72rem;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.header button,
+.form button {
+  justify-self: start;
+  min-height: 32px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: var(--button);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.76rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: lowercase;
+  padding: 7px 10px;
+  transition:
+    border-color 140ms ease,
+    color 140ms ease,
+    transform 140ms ease,
+    background 140ms ease;
+}
+
+.header button:hover,
+.form button:hover {
+  border-color: var(--accent);
+  color: var(--text-strong);
+  transform: translateY(-1px);
+}
+
+.header button:disabled,
+.form button:disabled {
+  cursor: wait;
+  opacity: 0.55;
+  transform: none;
+}
+
+.variables {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.variables code {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.025);
+  color: var(--text);
+  font-size: 0.72rem;
+  padding: 5px 7px;
+}
+
+.validation {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+@media (max-width: 960px) {
+  .workspace,
+  .row {
+    grid-template-columns: 1fr;
+  }
+
+  .header {
+    flex-direction: column;
+  }
+}

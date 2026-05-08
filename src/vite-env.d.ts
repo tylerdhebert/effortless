@@ -130,6 +130,17 @@ interface Window {
       markAgentRunStarted: (runId: number) => Promise<AgentRun>
       markAgentRunExited: (runId: number, exitCode: number) => Promise<AgentRun>
       markAgentRunFailed: (runId: number, error: string) => Promise<AgentRun>
+      getPtyRuntimeStatus: () => Promise<{ available: boolean; platform: NodeJS.Platform }>
+      startAgentRun: (runId: number, size: { cols: number; rows: number }) => Promise<void>
+      writeAgentRun: (runId: number, data: string) => Promise<void>
+      resizeAgentRun: (runId: number, size: { cols: number; rows: number }) => Promise<void>
+      stopAgentRun: (runId: number) => Promise<void>
+      onAgentRunTerminalEvent: (handler: (event: {
+        kind: 'data' | 'exit' | 'error'
+        runId: number
+        body?: string
+        exitCode?: number
+      }) => void) => () => void
       approveTask: (input: ApproveTaskInput) => Promise<Task>
       requestTaskChanges: (input: RequestTaskChangesInput) => Promise<Task>
       listMandates: () => Promise<Mandate[]>

@@ -167,6 +167,31 @@ contextBridge.exposeInMainWorld('effortless', {
     ipcRenderer.invoke('agentRuns:markExited', runId, exitCode) as Promise<AgentRun>,
   markAgentRunFailed: (runId: number, error: string) =>
     ipcRenderer.invoke('agentRuns:markFailed', runId, error) as Promise<AgentRun>,
+  getPtyRuntimeStatus: () =>
+    ipcRenderer.invoke('agentRuns:ptyStatus') as Promise<{ available: boolean; platform: NodeJS.Platform }>,
+  startAgentRun: (runId: number, size: { cols: number; rows: number }) =>
+    ipcRenderer.invoke('agentRuns:start', runId, size) as Promise<void>,
+  writeAgentRun: (runId: number, data: string) =>
+    ipcRenderer.invoke('agentRuns:write', runId, data) as Promise<void>,
+  resizeAgentRun: (runId: number, size: { cols: number; rows: number }) =>
+    ipcRenderer.invoke('agentRuns:resize', runId, size) as Promise<void>,
+  stopAgentRun: (runId: number) =>
+    ipcRenderer.invoke('agentRuns:stop', runId) as Promise<void>,
+  onAgentRunTerminalEvent: (handler: (event: {
+    kind: 'data' | 'exit' | 'error'
+    runId: number
+    body?: string
+    exitCode?: number
+  }) => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, payload: {
+      kind: 'data' | 'exit' | 'error'
+      runId: number
+      body?: string
+      exitCode?: number
+    }) => handler(payload)
+    ipcRenderer.on('agentRuns:terminalEvent', listener)
+    return () => ipcRenderer.off('agentRuns:terminalEvent', listener)
+  },
   approveTask: (input: ApproveTaskInput) =>
     ipcRenderer.invoke('tasks:approve', input) as Promise<Task>,
   requestTaskChanges: (input: RequestTaskChangesInput) =>

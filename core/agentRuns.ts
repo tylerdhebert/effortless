@@ -192,6 +192,36 @@ export function markAgentRunFailed(db: AppDatabase, runId: number, error: string
   return getAgentRun(db, runId)
 }
 
+export function markAgentRunCancelled(db: AppDatabase, runId: number): AgentRun {
+  const now = new Date().toISOString()
+  db.prepare(`
+    UPDATE agent_runs
+    SET status = 'cancelled',
+        completed_at = ?,
+        updated_at = ?
+    WHERE id = ?
+  `).run(now, now, runId)
+  bumpAppState(db)
+  return getAgentRun(db, runId)
+}
+
+export function buildAgentRunEnvironment(db: AppDatabase, runId: number): Record<string, string> {
+  const run = getAgentRun(db, runId)
+  const profile = getAgentProfile(db, run.profileId)
+  const effort = getEffort(db, run.effortId)
+  const task = run.taskId ? getTask(db, run.taskId) : null
+
+  return {
+    ...profile.env,
+    EFFORTLESS_RUN_ID: run.shortRef,
+    EFFORTLESS_RUN_LABEL: run.label,
+    EFFORTLESS_EFFORT: effort.shortRef,
+    ...(task ? { EFFORTLESS_TASK: task.shortRef } : {}),
+    EFFORTLESS_CONTEXT: run.contextPath,
+    EFFORTLESS_BOOTSTRAP: run.bootstrapPath,
+  }
+}
+
 function resolveTaskRunCwd(db: AppDatabase, task: Task, profile: AgentProfile): string {
   if (profile.defaultCwdKind === 'custom') {
     if (!profile.customCwd) throw new Error('Agent profile custom cwd is empty')

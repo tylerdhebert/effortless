@@ -1,10 +1,13 @@
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
 import { Plus, Trash2 } from 'lucide-react'
 import type {
+  AgentProfile,
+  CreateAgentProfileInput,
   EffortTemplate,
   Mandate,
   Repo,
   TemplatePlaybook,
+  UpdateAgentProfileInput,
   UpdateTemplatePlaybookInput,
   WorkSurface,
   MandateSourceType,
@@ -13,17 +16,21 @@ import type { ThemePalette } from '../../themes'
 import { PathPicker } from '../ui/PathPicker'
 import { NotificationSettingsPanel } from '../notifications/NotificationSettingsPanel'
 import { AppearanceSettingsPanel } from './AppearanceSettingsPanel'
+import { AgentProfileTab } from './AgentProfileTab'
 import { MandateTab } from './MandateTab'
 import { TemplatePlaybookTab } from './TemplatePlaybookTab'
 import styles from './ManageSurface.module.css'
 
 type ManageSurfaceProps = {
   repos: Repo[]
+  agentProfiles: AgentProfile[]
   mandates: Mandate[]
   playbooks: TemplatePlaybook[]
   createRepo: (input: { name: string; path: string; baseBranch: string; buildCommand: string | null }) => Promise<Repo>
   updateRepo: (input: { repoId: number; name: string; path: string; baseBranch: string; buildCommand: string | null }) => Promise<Repo>
   deleteRepo: (repoId: number) => Promise<void>
+  createAgentProfile: (input: CreateAgentProfileInput) => Promise<AgentProfile>
+  updateAgentProfile: (input: UpdateAgentProfileInput) => Promise<AgentProfile>
   createMandate: (input: { workSurface: WorkSurface; repoId: number | null; sourceType: MandateSourceType; body: string | null; filePath: string | null }) => Promise<Mandate>
   updateMandate: (input: { mandateId: number; workSurface: WorkSurface; repoId: number | null; sourceType: MandateSourceType; body: string | null; filePath: string | null }) => Promise<Mandate>
   deleteMandate: (mandateId: number) => Promise<void>
@@ -32,12 +39,14 @@ type ManageSurfaceProps = {
   isCreatingRepo: boolean
   isUpdatingRepo: boolean
   isDeletingRepo: boolean
+  isCreatingAgentProfile: boolean
+  isUpdatingAgentProfile: boolean
   isCreatingMandate: boolean
   isUpdatingMandate: boolean
   isDeletingMandate: boolean
   isUpdatingPlaybook: boolean
   isResettingPlaybook: boolean
-  section: 'repos' | 'mandates' | 'playbooks' | 'notifications' | 'appearance'
+  section: 'repos' | 'profiles' | 'mandates' | 'playbooks' | 'notifications' | 'appearance'
   notificationSettings?: {
     osNotificationsEnabled: boolean
     bannerNotificationsEnabled: boolean
@@ -63,11 +72,14 @@ type ManageSurfaceProps = {
 
 export function ManageSurface({
   repos,
+  agentProfiles,
   mandates,
   playbooks,
   createRepo,
   updateRepo,
   deleteRepo,
+  createAgentProfile,
+  updateAgentProfile,
   createMandate,
   updateMandate,
   deleteMandate,
@@ -76,6 +88,8 @@ export function ManageSurface({
   isCreatingRepo,
   isUpdatingRepo,
   isDeletingRepo,
+  isCreatingAgentProfile,
+  isUpdatingAgentProfile,
   isCreatingMandate,
   isUpdatingMandate,
   isDeletingMandate,
@@ -295,6 +309,23 @@ export function ManageSurface({
                   </div>
                 </form>
               </div>
+            </section>
+          </section>
+        ) : section === 'profiles' ? (
+          <section className={`${styles['manage-surface']} ${styles['manage-surface-profiles']}`}>
+            <section className={`${styles['manage-panel']} ${styles['manage-panel-wide']}`}>
+              <div className={styles['manage-panel-header']}>
+                <div>
+                  <h3>agent profiles</h3>
+                </div>
+              </div>
+              <AgentProfileTab
+                profiles={agentProfiles}
+                createProfile={createAgentProfile}
+                updateProfile={updateAgentProfile}
+                isCreating={isCreatingAgentProfile}
+                isUpdating={isUpdatingAgentProfile}
+              />
             </section>
           </section>
         ) : section === 'mandates' ? (

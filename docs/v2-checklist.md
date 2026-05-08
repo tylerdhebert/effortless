@@ -84,64 +84,66 @@ The core loop is:
 
 ## Phase 2C: Agent Profile Management UI
 
-- [ ] Add an Agent Profiles section to Manage.
-- [ ] List profiles with name, command template, environment, cwd mode, and env count.
-- [ ] Create profile form.
-- [ ] Edit profile form.
+- [x] Add an Agent Profiles section to Manage.
+- [x] List profiles with name, command template, environment, cwd mode, and env count.
+- [x] Create profile form.
+- [x] Edit profile form.
 - [ ] Delete profile support only after handling runs that reference the profile.
-- [ ] Choose environment: `windows` or `wsl`.
-- [ ] Configure WSL distro.
-- [ ] Configure cwd mode: task worktree, repo root, custom.
-- [ ] Configure custom cwd with path picker.
-- [ ] Configure command template.
-- [ ] Configure environment variables.
-- [ ] Show supported command-template variables.
-- [ ] Validate command templates before saving.
-- [ ] Add profile validation action.
-- [ ] Build verification: `bun run build`.
+- [x] Choose environment: `windows` or `wsl`.
+- [x] Configure WSL distro.
+- [x] Configure cwd mode: task worktree, repo root, custom.
+- [x] Configure custom cwd with path picker.
+- [x] Configure command template.
+- [x] Configure environment variables.
+- [x] Show supported command-template variables.
+- [x] Validate command templates before saving.
+- [x] Add profile validation action.
+- [x] Build verification: `bun run build`.
 
 ## Phase 2D: Embedded Terminal Dependencies
 
-- [ ] Add `node-pty`.
-- [ ] Add `xterm`.
-- [ ] Add `xterm-addon-fit`.
-- [ ] Confirm whether extra typings are needed.
-- [ ] Verify Vite/Electron build compiles with native dependency imports.
-- [ ] Verify `electron-builder` rebuilds `node-pty` for Electron.
+- [x] Add `node-pty`.
+- [x] Add `@xterm/xterm`.
+- [x] Add `@xterm/addon-fit`.
+- [x] Confirm whether extra typings are needed.
+- [x] Verify Vite/Electron build compiles with native dependency imports.
+- [x] Verify packaged app includes `node-pty` Win x64 prebuilds.
+- [x] Configure Electron Builder to skip Bun-driven native rebuilds.
+- [x] Configure ASAR unpack rules for `better-sqlite3` and `node-pty` native files.
 - [ ] Document native rebuild notes in repo docs.
 - [ ] Keep the runner UI guarded when PTY initialization fails.
-- [ ] Build verification: `bun run build`.
+- [x] Build verification: `bun run build`.
 
 ## Phase 2E: Electron Run Manager
 
-- [ ] Add `electron/runManager.ts`.
-- [ ] Start a prepared run in a PTY.
-- [ ] Mark run `running` when the process starts.
-- [ ] Stream PTY output to renderer.
-- [ ] Append PTY output to transcript file.
-- [ ] Accept terminal input from renderer.
-- [ ] Resize PTY from renderer.
-- [ ] Stop a running process.
-- [ ] Mark run `exited` with exit code.
-- [ ] Mark run `failed` with error message.
-- [ ] Mark run `cancelled` when stopped by user.
-- [ ] Clean up PTY processes on window close/app quit.
-- [ ] Prevent two active PTY processes for the same run.
+- [x] Add `electron/runManager.ts`.
+- [x] Start a prepared run in a PTY.
+- [x] Mark run `running` when the process starts.
+- [x] Stream PTY output to renderer.
+- [x] Append PTY output to transcript file.
+- [x] Accept terminal input from renderer.
+- [x] Resize PTY from renderer.
+- [x] Stop a running process.
+- [x] Mark run `exited` with exit code.
+- [x] Mark run `failed` with error message.
+- [x] Mark run `cancelled` when stopped by user.
+- [x] Clean up PTY processes on window close/app quit.
+- [x] Prevent two active PTY processes for the same run.
 - [ ] Decide whether multiple simultaneous task runs are allowed in the first implementation.
-- [ ] Build verification: `bun run build`.
+- [x] Build verification: `bun run build`.
 
 ## Phase 2F: Terminal IPC And Preload
 
-- [ ] Add `agentRuns:start`.
-- [ ] Add `agentRuns:write`.
-- [ ] Add `agentRuns:resize`.
-- [ ] Add `agentRuns:stop`.
+- [x] Add `agentRuns:start`.
+- [x] Add `agentRuns:write`.
+- [x] Add `agentRuns:resize`.
+- [x] Add `agentRuns:stop`.
 - [ ] Add `agentRuns:openExternal`.
-- [ ] Add terminal-output event subscription in preload.
-- [ ] Add terminal-status event subscription in preload.
-- [ ] Add unsubscribe handling for renderer event listeners.
-- [ ] Type all run IPC payloads in `src/vite-env.d.ts`.
-- [ ] Build verification: `bun run build`.
+- [x] Add terminal-output event subscription in preload.
+- [x] Add terminal-status event subscription in preload.
+- [x] Add unsubscribe handling for renderer event listeners.
+- [x] Type all run IPC payloads in `src/vite-env.d.ts`.
+- [x] Build verification: `bun run build`.
 
 ## Phase 2G: Task Run Terminal UI
 
@@ -306,7 +308,7 @@ The core loop is:
 ## Current Open Work
 
 - [ ] Commit the run-row file-open follow-up.
-- [ ] Implement profile management UI.
-- [ ] Add PTY dependencies and prove Electron packaging.
-- [ ] Build Electron run manager.
+- [x] Implement profile management UI.
+- [x] Add PTY dependencies and prove Electron packaging.
+- [x] Build Electron run manager.
 - [ ] Render embedded terminal.

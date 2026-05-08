@@ -6,6 +6,7 @@ import path from 'node:path'
 import { createAgentProfile, listAgentProfiles, updateAgentProfile } from '../core/agentProfiles'
 import { listAgentRuns, listTaskRuns, markAgentRunExited, markAgentRunFailed, markAgentRunStarted, prepareTaskRun } from '../core/agentRuns'
 import { getLatestTaskBuild, runTaskBuild } from '../core/builds'
+import { getPtyRuntimeStatus, RunManager } from './runManager'
 import { getAppState, openDatabase, updateNotificationSettings } from '../core/db'
 import type { NotificationSettings } from '../core/db'
 import { getCustomThemeState, updateCustomThemeState } from '../core/themeConfig'
@@ -115,6 +116,9 @@ process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL
 
 let win: BrowserWindow | null
 const db = openDatabase()
+const runManager = new RunManager(db, (event) => {
+  win?.webContents.send('agentRuns:terminalEvent', event)
+})
 
 async function getRendererAppState() {
   const appState = getAppState(db)
@@ -230,6 +234,19 @@ ipcMain.handle('agentRuns:prepareTask', (_event, input: { taskId: number; profil
 ipcMain.handle('agentRuns:markStarted', (_event, runId: number) => markAgentRunStarted(db, runId))
 ipcMain.handle('agentRuns:markExited', (_event, runId: number, exitCode: number) => markAgentRunExited(db, runId, exitCode))
 ipcMain.handle('agentRuns:markFailed', (_event, runId: number, error: string) => markAgentRunFailed(db, runId, error))
+ipcMain.handle('agentRuns:ptyStatus', () => getPtyRuntimeStatus())
+ipcMain.handle('agentRuns:start', (_event, runId: number, size: { cols: number; rows: number }) =>
+  runManager.start(runId, size),
+)
+ipcMain.handle('agentRuns:write', (_event, runId: number, data: string) =>
+  runManager.write(runId, data),
+)
+ipcMain.handle('agentRuns:resize', (_event, runId: number, size: { cols: number; rows: number }) =>
+  runManager.resize(runId, size),
+)
+ipcMain.handle('agentRuns:stop', (_event, runId: number) =>
+  runManager.stop(runId),
+)
 ipcMain.handle('builds:latest', (_event, taskId: number) => getLatestTaskBuild(db, taskId))
 ipcMain.handle('builds:run', (_event, taskId: number) => runTaskBuild(db, taskId))
 
@@ -339,6 +356,7 @@ function createWindow() {
 }
 
 app.on('window-all-closed', () => {
+  runManager.stopAll()
   if (process.platform !== 'darwin') {
     app.quit()
     win = null

@@ -21,8 +21,11 @@
   },
   "dependencies": {
     "@tanstack/react-query": "^5.100.1",
+    "@xterm/addon-fit": "^0.11.0",
+    "@xterm/xterm": "^6.0.0",
     "better-sqlite3": "^12.9.0",
     "lucide-react": "^0.460.0",
+    "node-pty": "^1.1.0",
     "react": "^18.2.0",
     "react-diff-view": "^3.3.3",
     "react-dom": "^18.2.0",

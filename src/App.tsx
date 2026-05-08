@@ -274,6 +274,28 @@ function App() {
     },
   })
 
+  const createAgentProfile = useMutation({
+    mutationFn: (input: Parameters<typeof window.effortless.createAgentProfile>[0]) =>
+      window.effortless.createAgentProfile(input),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['agent-profiles'] }),
+        queryClient.invalidateQueries({ queryKey: ['app-state'] }),
+      ])
+    },
+  })
+
+  const updateAgentProfile = useMutation({
+    mutationFn: (input: Parameters<typeof window.effortless.updateAgentProfile>[0]) =>
+      window.effortless.updateAgentProfile(input),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['agent-profiles'] }),
+        queryClient.invalidateQueries({ queryKey: ['app-state'] }),
+      ])
+    },
+  })
+
   const updateTemplatePlaybook = useMutation({
     mutationFn: (input: { template: 'bugfix' | 'delivery' | 'investigation'; body: string }) =>
       window.effortless.updateTemplatePlaybook(input),
@@ -606,11 +628,14 @@ function App() {
         {surfaceMode === 'manage' ? (
           <ManageSurface
             repos={reposQuery.data ?? []}
+            agentProfiles={agentProfilesQuery.data ?? []}
             mandates={mandatesQuery.data ?? []}
             playbooks={templatePlaybooksQuery.data ?? []}
             createRepo={repoMutations.createRepo.mutateAsync}
             updateRepo={repoMutations.updateRepo.mutateAsync}
             deleteRepo={repoMutations.deleteRepo.mutateAsync}
+            createAgentProfile={createAgentProfile.mutateAsync}
+            updateAgentProfile={updateAgentProfile.mutateAsync}
             createMandate={mandateMutations.createMandate.mutateAsync}
             updateMandate={mandateMutations.updateMandate.mutateAsync}
             deleteMandate={mandateMutations.deleteMandate.mutateAsync}
@@ -619,6 +644,8 @@ function App() {
             isCreatingRepo={repoMutations.createRepo.isPending}
             isUpdatingRepo={repoMutations.updateRepo.isPending}
             isDeletingRepo={repoMutations.deleteRepo.isPending}
+            isCreatingAgentProfile={createAgentProfile.isPending}
+            isUpdatingAgentProfile={updateAgentProfile.isPending}
             isCreatingMandate={mandateMutations.createMandate.isPending}
             isUpdatingMandate={mandateMutations.updateMandate.isPending}
             isDeletingMandate={mandateMutations.deleteMandate.isPending}
