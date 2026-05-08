@@ -36,7 +36,6 @@ export function useEffortMutations(selectedEffortId: number | null) {
           queryClient.invalidateQueries({ queryKey: ['references', 'effort', selectedEffortId] }),
           queryClient.invalidateQueries({ queryKey: ['tasks', selectedEffortId] }),
           queryClient.invalidateQueries({ queryKey: ['plans', selectedEffortId] }),
-          queryClient.invalidateQueries({ queryKey: ['discussion', selectedEffortId] }),
           queryClient.invalidateQueries({ queryKey: ['inputs', selectedEffortId] }),
         ])
       }

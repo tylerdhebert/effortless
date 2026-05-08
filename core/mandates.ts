@@ -3,6 +3,9 @@ import type { AppDatabase } from './db'
 import { bumpAppState } from './db'
 import type { CreateMandateInput, Mandate, UpdateMandateInput, WorkSurface } from './types'
 
+const WORK_SURFACES: WorkSurface[] = ['effort', 'plan', 'task', 'review', 'run']
+const WORK_SURFACE_PLACEHOLDERS = WORK_SURFACES.map(() => '?').join(', ')
+
 type MandateRow = {
   id: number
   short_ref: string
@@ -16,8 +19,8 @@ type MandateRow = {
 
 export function listMandates(db: AppDatabase): Mandate[] {
   return db
-    .prepare<MandateRow>(`SELECT * FROM mandates ORDER BY work_surface ASC, id ASC`)
-    .all()
+    .prepare<MandateRow>(`SELECT * FROM mandates WHERE work_surface IN (${WORK_SURFACE_PLACEHOLDERS}) ORDER BY work_surface ASC, id ASC`)
+    .all(...WORK_SURFACES)
     .map(mapMandate)
 }
 
@@ -26,28 +29,30 @@ export function listMandatesBySurface(
   workSurface: WorkSurface,
   repoId?: number | null,
 ): Mandate[] {
+  const surface = parseWorkSurface(workSurface)
   if (repoId != null) {
     return db
       .prepare<MandateRow>(
         `SELECT * FROM mandates WHERE work_surface = ? AND (repo_id = ? OR repo_id IS NULL) ORDER BY repo_id ASC, id ASC`,
       )
-      .all(workSurface, repoId)
+      .all(surface, repoId)
       .map(mapMandate)
   }
 
   return db
     .prepare<MandateRow>(`SELECT * FROM mandates WHERE work_surface = ? AND repo_id IS NULL ORDER BY id ASC`)
-    .all(workSurface)
+    .all(surface)
     .map(mapMandate)
 }
 
 export function createMandate(db: AppDatabase, input: CreateMandateInput): Mandate {
+  const workSurface = parseWorkSurface(input.workSurface)
   const now = new Date().toISOString()
   const result = db
     .prepare(
       `INSERT INTO mandates (work_surface, repo_id, source_type, body, file_path, updated_at) VALUES (?, ?, ?, ?, ?, ?)`,
     )
-    .run(input.workSurface, input.repoId ?? null, input.sourceType, input.body ?? null, input.filePath ?? null, now)
+    .run(workSurface, input.repoId ?? null, input.sourceType, input.body ?? null, input.filePath ?? null, now)
 
   const id = Number(result.lastInsertRowid)
   db.prepare(`UPDATE mandates SET short_ref = ? WHERE id = ?`).run(`mandate-${id}`, id)
@@ -57,7 +62,7 @@ export function createMandate(db: AppDatabase, input: CreateMandateInput): Manda
 
 export function updateMandate(db: AppDatabase, input: UpdateMandateInput): Mandate {
   const existing = getMandate(db, input.mandateId)
-  const workSurface = input.workSurface ?? existing.workSurface
+  const workSurface = parseWorkSurface(input.workSurface ?? existing.workSurface)
   const repoId = input.repoId !== undefined ? input.repoId : existing.repoId
   const sourceType = input.sourceType ?? existing.sourceType
   const body = input.body !== undefined ? input.body : existing.body
@@ -103,10 +108,11 @@ export function resolveMandate(
   workSurface: WorkSurface,
   repoId?: number | null,
 ): { mandate: Mandate; text: string; source: 'repo' | 'global' } | null {
+  const surface = parseWorkSurface(workSurface)
   if (repoId != null) {
     const repoRow = db
       .prepare<MandateRow>(`SELECT * FROM mandates WHERE work_surface = ? AND repo_id = ?`)
-      .get(workSurface, repoId)
+      .get(surface, repoId)
     if (repoRow) {
       const mandate = mapMandate(repoRow)
       const text = readMandateContent(mandate)
@@ -118,7 +124,7 @@ export function resolveMandate(
 
   const globalRow = db
     .prepare<MandateRow>(`SELECT * FROM mandates WHERE work_surface = ? AND repo_id IS NULL`)
-    .get(workSurface)
+    .get(surface)
   if (globalRow) {
     const mandate = mapMandate(globalRow)
     const text = readMandateContent(mandate)
@@ -128,6 +134,13 @@ export function resolveMandate(
   }
 
   return null
+}
+
+export function parseWorkSurface(value: string): WorkSurface {
+  if (WORK_SURFACES.includes(value as WorkSurface)) {
+    return value as WorkSurface
+  }
+  throw new Error(`surface must be one of: ${WORK_SURFACES.join(', ')}`)
 }
 
 export function resolveMandateText(

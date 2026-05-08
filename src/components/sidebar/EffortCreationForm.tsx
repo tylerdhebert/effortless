@@ -15,10 +15,6 @@ const templateOptions: Array<{
     label: 'investigation',
   },
   {
-    value: 'discussion',
-    label: 'discussion',
-  },
-  {
     value: 'bugfix',
     label: 'bugfix',
   },

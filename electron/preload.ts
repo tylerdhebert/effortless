@@ -6,14 +6,12 @@ import type {
   CheckpointTaskInput,
   ClaimTaskInput,
   CreateEffortInput,
-  CreateDiscussionMessageInput,
   DiffType,
   CreateInputRequestInput,
   CreateMandateInput,
   CreatePlanInput,
   CreateReferenceInput,
   CreateRepoInput,
-  DiscussionMessage,
   Effort,
   EffortTemplate,
   InputRequest,
@@ -106,10 +104,6 @@ contextBridge.exposeInMainWorld('effortless', {
   markPlanReady: (planId: number) => ipcRenderer.invoke('plans:ready', planId) as Promise<Plan>,
   requestPlanChanges: (input: RequestPlanChangesInput) =>
     ipcRenderer.invoke('plans:requestChanges', input) as Promise<Plan>,
-  listDiscussionMessages: (effortId: number) =>
-    ipcRenderer.invoke('discussion:list', effortId) as Promise<DiscussionMessage[]>,
-  createDiscussionMessage: (input: CreateDiscussionMessageInput) =>
-    ipcRenderer.invoke('discussion:create', input) as Promise<DiscussionMessage>,
   listTaskComments: (taskId: number) =>
     ipcRenderer.invoke('tasks:comments', taskId) as Promise<TaskComment[]>,
   getLatestTaskBuild: (taskId: number) =>

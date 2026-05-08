@@ -4,7 +4,7 @@ import type { Mandate, Repo, WorkSurface } from '../../../core/types'
 import { PathPicker } from '../ui/PathPicker'
 import styles from './MandateTab.module.css'
 
-const WORK_SURFACES: WorkSurface[] = ['effort', 'plan', 'task', 'review', 'discussion']
+const WORK_SURFACES: WorkSurface[] = ['effort', 'plan', 'task', 'review', 'run']
 
 type MandateTabProps = {
   repos: Repo[]
@@ -51,22 +51,25 @@ export function MandateTab({
   const selectedRepoId = selectedContext === 'global' ? null : Number(selectedContext)
   const isBusy = isCreating || isUpdating || isDeleting
   const showRepoScopedState = selectedRepoId != null
+  const visibleMandates = useMemo(() => {
+    return mandates.filter((mandate) => WORK_SURFACES.includes(mandate.workSurface))
+  }, [mandates])
 
   const filteredMandates = useMemo(() => {
-    return mandates.filter((mandate) =>
+    return visibleMandates.filter((mandate) =>
       selectedRepoId == null ? mandate.repoId == null : mandate.repoId === selectedRepoId,
     )
-  }, [mandates, selectedRepoId])
+  }, [selectedRepoId, visibleMandates])
 
   const repoMandateCounts = useMemo(() => {
     return repos.map((repo) => {
-      const configured = mandates.filter((mandate) => mandate.repoId === repo.id).length
+      const configured = visibleMandates.filter((mandate) => mandate.repoId === repo.id).length
       return {
         repoId: repo.id,
         configured,
       }
     })
-  }, [mandates, repos])
+  }, [repos, visibleMandates])
 
   const selectedMandate = useMemo(() => {
     return filteredMandates.find((mandate) => mandate.workSurface === selectedSurface) ?? null

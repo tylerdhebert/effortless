@@ -7,16 +7,12 @@ import {
   ChevronsRight,
   Hammer,
   Home,
-  MessageSquare,
   Plus,
   ScrollText,
   Settings,
-  Speech,
   Trash2,
   X,
 } from 'lucide-react'
-import { DiscussionPanel } from './components/effort/DiscussionPanel'
-import { DiscussionThreadItem } from './components/effort/DiscussionThreadItem'
 import { EffortSummarySection } from './components/effort/EffortSummarySection'
 import { EffortCreationForm } from './components/sidebar/EffortCreationForm'
 import { InputRequestList } from './components/effort/InputRequestList'
@@ -32,12 +28,10 @@ import { TaskDetailPane } from './components/task/TaskDetailPane'
 import { TaskList } from './components/task/TaskList'
 import {
   effortStatusColor,
-  effortSupportsDiscussion,
   effortSupportsPlans,
   effortSupportsTasks,
 } from './lib/helpers'
 import { MANAGE_SECTIONS, type ManageSection } from './lib/manageSections'
-import { useDiscussionMutations } from './hooks/useDiscussionMutations'
 import { useEffortMutations } from './hooks/useEffortMutations'
 import { useInputMutations } from './hooks/useInputMutations'
 import { useMandateMutations } from './hooks/useMandateMutations'
@@ -59,8 +53,6 @@ function App() {
   const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null)
   const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null)
   const [taskRepoFilter, setTaskRepoFilter] = useState<string>('all')
-  const [discussionOpen, setDiscussionOpen] = useState(false)
-  const [discussionDraft, setDiscussionDraft] = useState('')
   const [createEffortOpen, setCreateEffortOpen] = useState(false)
   const [deleteEffortOpen, setDeleteEffortOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
@@ -155,12 +147,6 @@ function App() {
     enabled: Boolean(selectedEffort),
   })
 
-  const discussionQuery = useQuery({
-    queryKey: ['discussion', selectedEffort?.id],
-    queryFn: () => window.effortless.listDiscussionMessages(selectedEffort!.id),
-    enabled: Boolean(selectedEffort) && (discussionOpen || (selectedEffort ? effortSupportsDiscussion(selectedEffort.template) : false)),
-  })
-
   const selectedPlan =
     plansQuery.data?.find((plan) => plan.id === selectedPlanId) ?? plansQuery.data?.[0]
 
@@ -182,7 +168,6 @@ function App() {
   const template = selectedEffort?.template ?? null
   const supportsPlans = template ? effortSupportsPlans(template) : false
   const supportsTasks = template ? effortSupportsTasks(template) : false
-  const supportsDiscussion = template ? effortSupportsDiscussion(template) : false
   const usesBugfixOverview = template === 'bugfix'
   const hasPendingPlan = (plansQuery.data ?? []).some((p) => p.readyAt && !p.acceptedAt)
 
@@ -245,7 +230,6 @@ function App() {
   const { createEffort, deleteEffort, updateEffortPlanRequiresReview } = useEffortMutations(selectedEffort?.id ?? null)
   const repoMutations = useRepoMutations(selectedEffort?.id ?? null)
   const mandateMutations = useMandateMutations()
-  const { createDiscussionMessage } = useDiscussionMutations(selectedEffort?.id ?? null)
   const planMutations = usePlanMutations(
     selectedEffort?.id ?? null,
     selectedPlan?.id ?? null,
@@ -280,7 +264,7 @@ function App() {
   })
 
   const updateTemplatePlaybook = useMutation({
-    mutationFn: (input: { template: 'bugfix' | 'delivery' | 'investigation' | 'discussion'; body: string }) =>
+    mutationFn: (input: { template: 'bugfix' | 'delivery' | 'investigation'; body: string }) =>
       window.effortless.updateTemplatePlaybook(input),
     onSuccess: async () => {
       await Promise.all([
@@ -291,7 +275,7 @@ function App() {
   })
 
   const resetTemplatePlaybook = useMutation({
-    mutationFn: (template: 'bugfix' | 'delivery' | 'investigation' | 'discussion') =>
+    mutationFn: (template: 'bugfix' | 'delivery' | 'investigation') =>
       window.effortless.resetTemplatePlaybook(template),
     onSuccess: async () => {
       await Promise.all([
@@ -330,8 +314,6 @@ function App() {
 
     setSelectedTaskId(null)
     setSelectedPlanId(null)
-    setDiscussionOpen(false)
-    setDiscussionDraft('')
     if (effortScrollRef.current) {
       effortScrollRef.current.scrollTop = 0
     }
@@ -439,7 +421,6 @@ function App() {
   async function handleNotificationNavigate(notification: PendingNotification) {
     setSurfaceMode('effort')
     setSelectedEffortId(notification.effortId)
-    setDiscussionOpen(false)
 
     if (notification.kind === 'plan-review') {
       setSelectedPlanId(notification.entityId)
@@ -686,24 +667,6 @@ function App() {
                   </div>
                 </div>
               </div>
-              <div
-                className="effort-header-actions"
-              >
-                <button
-                  className={`discussion-button ${discussionOpen ? 'active' : ''}`}
-                  onClick={() => {
-                    if (supportsDiscussion) {
-                      setDiscussionOpen((open) => !open)
-                    }
-                  }}
-                  type="button"
-                  aria-label="open discussion"
-                  title={supportsDiscussion ? 'open discussion' : 'discussion is not part of this effort type'}
-                  disabled={!supportsDiscussion}
-                >
-                  <MessageSquare size={18} />
-                </button>
-              </div>
               <button
                 className="effort-delete-button"
                 onClick={() => setDeleteEffortOpen(true)}
@@ -716,30 +679,6 @@ function App() {
               </button>
             </header>
 
-            {discussionOpen ? (
-              <DiscussionPanel
-                messages={discussionQuery.data ?? []}
-                draft={discussionDraft}
-                onDraftChange={setDiscussionDraft}
-                onSubmit={() => {
-                  if (selectedEffort && discussionDraft.trim()) {
-                    createDiscussionMessage.mutate(
-                      {
-                        effortId: selectedEffort.id,
-                        author: 'user',
-                        body: discussionDraft,
-                      },
-                      {
-                        onSuccess: () => setDiscussionDraft(''),
-                      },
-                    )
-                  }
-                }}
-                isPending={createDiscussionMessage.isPending}
-                onClose={() => setDiscussionOpen(false)}
-              />
-            ) : null}
-
             <div
               ref={effortScrollRef}
               className={`effort-scroll ${supportsTasks ? 'effort-scroll--delivery' : 'effort-scroll--compact'}`}
@@ -748,9 +687,6 @@ function App() {
                 <div style={{ padding: '0 30px', marginBottom: '18px' }}>
                   {selectedEffort.template === 'investigation' ? (
                     <EffortSummarySection label="findings" summary={selectedEffort.summary} />
-                  ) : null}
-                  {selectedEffort.template === 'discussion' ? (
-                    <EffortSummarySection label="conversation recap" summary={selectedEffort.summary} />
                   ) : null}
                   {selectedEffort.template === 'delivery' ? (
                     <EffortSummarySection label="effort summary" summary={selectedEffort.summary} />
@@ -762,7 +698,7 @@ function App() {
               ) : null}
 
               <div
-                className={`effort-overview-grid ${supportsDiscussion ? 'has-discussion' : 'no-discussion'} ${usesBugfixOverview ? 'bugfix-overview-grid' : ''}`}
+                className={`effort-overview-grid ${usesBugfixOverview ? 'bugfix-overview-grid' : ''}`}
               >
                 <div className="effort-overview-main">
                   <section
@@ -776,27 +712,6 @@ function App() {
                     </div>
                     <p className="effort-description">{selectedEffort.description}</p>
                   </section>
-
-                  {supportsDiscussion ? (
-                    <section className="surface-section discussion-summary-section">
-                      <div className="section-title">
-                        <span className="section-title-label">
-                          <Speech size={14} />
-                          <span>recent discussion</span>
-                        </span>
-                        <span>{discussionQuery.data?.length ?? 0} messages</span>
-                      </div>
-                      <div className="discussion-preview-list">
-                        {(discussionQuery.data ?? []).length === 0 ? (
-                          <p className="empty-state">no discussion yet</p>
-                        ) : (
-                          (discussionQuery.data ?? []).slice(0, 3).map((message) => (
-                            <DiscussionThreadItem message={message} key={message.id} />
-                          ))
-                        )}
-                      </div>
-                    </section>
-                  ) : null}
                 </div>
 
                 <div className="effort-overview-side">
@@ -958,7 +873,7 @@ function App() {
                 <h4>delete effort</h4>
                 <p>
                   Remove <strong>{selectedEffort.shortRef}</strong> and all of its plans, tasks,
-                  reviews, discussion, inputs, and references.
+                  reviews, inputs, and references.
                 </p>
               </div>
               <button
@@ -998,8 +913,6 @@ function App() {
                     onSuccess: () => {
                       setSelectedPlanId(null)
                       setSelectedTaskId(null)
-                      setDiscussionOpen(false)
-                      setDiscussionDraft('')
                       setDeleteEffortOpen(false)
                       setSelectedEffortId(fallbackEffort?.id ?? null)
                     },

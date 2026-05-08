@@ -7,7 +7,7 @@ import type {
 import { formatTemplate } from '../../lib/helpers'
 import styles from './TemplatePlaybookTab.module.css'
 
-const TEMPLATES: EffortTemplate[] = ['bugfix', 'delivery', 'investigation', 'discussion']
+const TEMPLATES: EffortTemplate[] = ['bugfix', 'delivery', 'investigation']
 
 type TemplatePlaybookTabProps = {
   playbooks: TemplatePlaybook[]

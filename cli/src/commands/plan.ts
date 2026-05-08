@@ -1,6 +1,5 @@
 import { createPlan, getPlanByRef, listPlanComments, listPlans, markPlanReady } from '../../../core/plans'
 import { getEffort } from '../../../core/efforts'
-import { listDiscussionMessages } from '../../../core/discussion'
 import { listTasks } from '../../../core/tasks'
 import { requiredOption, bodyArg } from '../args'
 import { db, wait } from '../context'
@@ -76,9 +75,8 @@ export async function handlePlan(surface: string, command: string): Promise<bool
       tasks: tasks.length,
       acceptedTasks: tasks.filter((task) => task.status === 'accepted').length,
       mergedTasks: tasks.filter((task) => task.status === 'merged').length,
-      discussionMessages: listDiscussionMessages(db, effort.id).length,
     })
-    printRelatedMandates(db, ['effort', 'task', 'review', 'discussion'])
+    printRelatedMandates(db, ['effort', 'task', 'review', 'run'])
 
     const comments = listPlanComments(db, plan.id)
     printLatestUpdate(comments)

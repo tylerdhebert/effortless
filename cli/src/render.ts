@@ -81,7 +81,7 @@ export function printReference(reference: Reference): void {
 }
 
 export function printHelp(): void {
-  console.log('efl effort create --title "title" --description "description" [--template bugfix|delivery|investigation|discussion]')
+  console.log('efl effort create --title "title" --description "description" [--template bugfix|delivery|investigation]')
   console.log('efl effort list')
   console.log('efl effort show --effort eff-1')
   console.log('efl effort context --effort eff-1')
@@ -117,10 +117,6 @@ export function printHelp(): void {
   console.log('efl review context --review rev-1')
   console.log('efl review ready --review rev-1')
   console.log('efl review wait --review rev-1')
-  console.log('efl discuss say --effort eff-1 --agent planner-1 --body "message" [--from-file message.md]')
-  console.log('efl discuss history --effort eff-1')
-  console.log('efl discuss listen --effort eff-1')
-  console.log('efl discuss context --effort eff-1')
   console.log('efl repo create --name ui --path C:\\repo\\ui --base-branch main --build-command "bun run build"')
   console.log('efl repo list')
   console.log('efl build run --task task-1')

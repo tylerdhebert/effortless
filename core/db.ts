@@ -107,15 +107,6 @@ export function initializeSchema(db: AppDatabase): void {
       applied_at TEXT
     );
 
-    CREATE TABLE IF NOT EXISTS discussion_messages (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      effort_id INTEGER NOT NULL REFERENCES efforts(id) ON DELETE CASCADE,
-      author TEXT NOT NULL,
-      agent_id TEXT,
-      body TEXT NOT NULL,
-      created_at TEXT NOT NULL
-    );
-
     CREATE TABLE IF NOT EXISTS input_requests (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       short_ref TEXT UNIQUE,
@@ -217,6 +208,8 @@ export function initializeSchema(db: AppDatabase): void {
   ensureColumn(db, 'app_state', 'sound_notifications_enabled', 'INTEGER NOT NULL DEFAULT 0')
   ensureColumn(db, 'app_state', 'toast_duration_seconds', 'INTEGER NOT NULL DEFAULT 5')
   ensureColumn(db, 'app_state', 'theme', 'TEXT NOT NULL DEFAULT \'grass\'')
+  // Deprecated tables intentionally remain in existing databases:
+  // - discussion_messages
   seedDefaultGlobalMandates(db)
   seedDefaultTemplatePlaybooks(db)
 }
@@ -324,6 +317,8 @@ function seedDefaultGlobalMandates(db: AppDatabase): void {
     SET short_ref = 'mandate-' || id
     WHERE short_ref IS NULL
   `).run()
+
+  refreshLegacyMandateDefaults(db, now)
 }
 
 function seedDefaultTemplatePlaybooks(db: AppDatabase): void {
@@ -336,4 +331,71 @@ function seedDefaultTemplatePlaybooks(db: AppDatabase): void {
   for (const playbook of DEFAULT_TEMPLATE_PLAYBOOKS) {
     insert.run(playbook.template, playbook.body, now)
   }
+
+  refreshLegacyTemplatePlaybookDefaults(db, now)
+}
+
+function refreshLegacyMandateDefaults(db: AppDatabase, now: string): void {
+  const update = db.prepare(`
+    UPDATE mandates
+    SET body = ?,
+        updated_at = ?
+    WHERE repo_id IS NULL
+      AND work_surface = ?
+      AND body LIKE ?
+      AND body LIKE ?
+  `)
+
+  const legacyMarkers: Array<{ workSurface: string; markers: [string, string] }> = [
+    { workSurface: 'effort', markers: ['%Read the effort context, references, discussion, plans, tasks, reviews, and inputs%', '%Use the effort surface for orchestration and synthesis%'] },
+    { workSurface: 'plan', markers: ['%Produce a clear implementation plan%', '%Make the plan specific enough to hand off%'] },
+    { workSurface: 'task', markers: ['%Claim the task and work in its assigned worktree%', '%Claim before editing files%'] },
+    { workSurface: 'review', markers: ['%Do not implement fixes%', '%Mark the review ready only after the verdict is explicit%'] },
+  ]
+
+  for (const legacy of legacyMarkers) {
+    const current = DEFAULT_GLOBAL_MANDATES.find((mandate) => mandate.workSurface === legacy.workSurface)
+    if (current) {
+      update.run(current.body, now, legacy.workSurface, ...legacy.markers)
+    }
+  }
+
+  db.prepare(`
+    DELETE FROM mandates
+    WHERE repo_id IS NULL
+      AND work_surface = 'discussion'
+      AND body LIKE '# Discussion Mandate%'
+      AND body LIKE '%Use discussion messages for framing and input requests%'
+  `).run()
+}
+
+function refreshLegacyTemplatePlaybookDefaults(db: AppDatabase, now: string): void {
+  const update = db.prepare(`
+    UPDATE template_playbooks
+    SET body = ?,
+        updated_at = ?
+    WHERE template = ?
+      AND body LIKE ?
+      AND body LIKE ?
+  `)
+
+  const legacyMarkers: Array<{ template: string; markers: [string, string] }> = [
+    { template: 'bugfix', markers: ['%When the implementer finishes, dispatch an implementation review%', '%Do not use discussion for bugfix efforts%'] },
+    { template: 'delivery', markers: ['%Dispatch a plan agent on the effort%', '%Use discussion for effort-level clarification and decisions%'] },
+    { template: 'investigation', markers: ['%Dispatch an investigation agent on the effort%', '%Use discussion for effort-level clarification and interpretation%'] },
+  ]
+
+  for (const legacy of legacyMarkers) {
+    const current = DEFAULT_TEMPLATE_PLAYBOOKS.find((playbook) => playbook.template === legacy.template)
+    if (current) {
+      update.run(current.body, now, legacy.template, ...legacy.markers)
+    }
+  }
+
+  db.prepare(`
+    DELETE FROM template_playbooks
+    WHERE template = 'discussion'
+      AND body LIKE '# Discussion Playbook%'
+      AND body LIKE '%Dispatch a discussion agent when sustained back-and-forth is needed%'
+  `).run()
 }

@@ -1,10 +1,11 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import type { WorkSurface } from '../../core/types'
 
 export function useMandateMutations() {
   const queryClient = useQueryClient()
 
   const createMandate = useMutation({
-    mutationFn: (input: { workSurface: 'effort' | 'plan' | 'task' | 'review' | 'discussion'; repoId: number | null; sourceType: 'body' | 'file'; body: string | null; filePath: string | null }) =>
+    mutationFn: (input: { workSurface: WorkSurface; repoId: number | null; sourceType: 'body' | 'file'; body: string | null; filePath: string | null }) =>
       window.effortless.createMandate(input),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['mandates'] })
@@ -12,7 +13,7 @@ export function useMandateMutations() {
   })
 
   const updateMandate = useMutation({
-    mutationFn: (input: { mandateId: number; workSurface: 'effort' | 'plan' | 'task' | 'review' | 'discussion'; repoId: number | null; sourceType: 'body' | 'file'; body: string | null; filePath: string | null }) =>
+    mutationFn: (input: { mandateId: number; workSurface: WorkSurface; repoId: number | null; sourceType: 'body' | 'file'; body: string | null; filePath: string | null }) =>
       window.effortless.updateMandate(input),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['mandates'] })

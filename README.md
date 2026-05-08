@@ -1,6 +1,6 @@
 # effortless
 
-effortless is a local-first Electron desktop app and CLI for coordinating agent efforts across plans, tasks, reviews, discussion, repos, and human approvals.
+effortless is a local-first Electron desktop app and CLI for coordinating agent efforts across plans, tasks, reviews, inputs, repos, runs, and human approvals.
 
 ## commands
 
@@ -61,6 +61,5 @@ bun run seed -- --replace
 The seed loader creates:
 
 - repo fixtures for `effortless` and `agentsyncboard` when that sibling repo exists
-- a discussion effort with answered input
 - a bugfix effort with an in-flight task and pending input
-- a delivery effort with discussion, plan history, accepted and rejected reviews, build results, and a pending seed task
+- a delivery effort with plan history, accepted and rejected reviews, build results, and a pending seed task

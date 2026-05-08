@@ -1,6 +1,8 @@
 import type { AppDatabase } from './db'
 import { bumpAppState } from './db'
-import type { CreateEffortInput, Effort } from './types'
+import type { CreateEffortInput, Effort, EffortTemplate } from './types'
+
+const EFFORT_TEMPLATES: EffortTemplate[] = ['bugfix', 'delivery', 'investigation']
 
 type EffortRow = {
   id: number
@@ -34,13 +36,12 @@ function templateDefaults(template: Effort['template']): { planRequiresReview: n
       return { planRequiresReview: 1, needsTasks: 1 }
     case 'investigation':
       return { planRequiresReview: 1, needsTasks: 0 }
-    case 'discussion':
-      return { planRequiresReview: 0, needsTasks: 0 }
   }
 }
 
 export function createEffort(db: AppDatabase, input: CreateEffortInput): Effort {
-  const defaults = templateDefaults(input.template)
+  const template = parseEffortTemplate(input.template)
+  const defaults = templateDefaults(template)
   const now = new Date().toISOString()
   const result = db
     .prepare(
@@ -51,7 +52,7 @@ export function createEffort(db: AppDatabase, input: CreateEffortInput): Effort 
       VALUES (?, ?, ?, NULL, ?, ?, 'active', ?, ?)
     `,
     )
-    .run(input.title.trim(), input.description.trim(), input.template, defaults.planRequiresReview, defaults.needsTasks, now, now)
+    .run(input.title.trim(), input.description.trim(), template, defaults.planRequiresReview, defaults.needsTasks, now, now)
 
   const id = Number(result.lastInsertRowid)
   const shortRef = `eff-${id}`
@@ -60,6 +61,13 @@ export function createEffort(db: AppDatabase, input: CreateEffortInput): Effort 
   bumpAppState(db)
 
   return getEffort(db, id)
+}
+
+export function parseEffortTemplate(value: string): EffortTemplate {
+  if (EFFORT_TEMPLATES.includes(value as EffortTemplate)) {
+    return value as EffortTemplate
+  }
+  throw new Error(`template must be one of: ${EFFORT_TEMPLATES.join(', ')}`)
 }
 
 export function getEffort(db: AppDatabase, id: number): Effort {

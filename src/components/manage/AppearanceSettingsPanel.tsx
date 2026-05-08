@@ -65,7 +65,7 @@ const THEME_GROUPS: Array<{ title: string; keys: string[] }> = [
 ]
 
 function prettyVariableName(key: string): string {
-  return key.replace(/^--/, '').replaceAll('-', ' ')
+  return key.replace(/^--/, '').replace(/-/g, ' ')
 }
 
 function colorInputValue(value: string): string | null {

@@ -4,7 +4,6 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { openDatabase } from '../core/db'
 import { getAppPaths } from '../core/appPaths'
-import { createDiscussionMessage } from '../core/discussion'
 import { acceptPlan, createPlan, markPlanReady, requestPlanChanges } from '../core/plans'
 import { submitReview } from '../core/reviews'
 import { checkpointTask, createTask, updateTaskDetails } from '../core/tasks'
@@ -39,7 +38,6 @@ async function main() {
   try {
     const repos = seedRepos(db)
     seedMandates(db, repos)
-    const discussionEffort = seedDiscussionEffort(db)
     const investigationEffort = seedInvestigationEffort(db)
     const bugfixEffort = await seedBugfixEffort(db, repos)
     const deliveryEffort = await seedDeliveryEffort(db, repos)
@@ -53,7 +51,6 @@ async function main() {
     console.log(`effort ${deliveryEffort.shortRef} delivery demo`)
     console.log(`effort ${bugfixEffort.shortRef} bugfix demo`)
     console.log(`effort ${investigationEffort.shortRef} investigation demo`)
-    console.log(`effort ${discussionEffort.shortRef} discussion demo`)
   } finally {
     db.close()
   }
@@ -88,54 +85,6 @@ function seedRepos(db: AppDatabase): { effortlessRepo: Repo; agentsyncboardRepo:
   return { effortlessRepo, agentsyncboardRepo }
 }
 
-function seedDiscussionEffort(db: AppDatabase): Effort {
-  const effort = insertEffort(db, {
-    title: 'choose initial notification defaults',
-    description:
-      'Decide which notification channels should ship enabled in the first install experience.',
-    template: 'discussion',
-    planRequiresReview: false,
-    needsTasks: false,
-    summary: 'Default notification posture: banner + badge. Sound remains opt-in.',
-  })
-
-  createDiscussionMessage(db, {
-    effortId: effort.id,
-    author: 'agent',
-    agentId: 'planner-peer',
-    body: 'I see three sensible defaults: banner only, banner plus sound, or all channels off.',
-  })
-  createDiscussionMessage(db, {
-    effortId: effort.id,
-    author: 'user',
-    body: 'I want something noticeable but not annoying for first launch.',
-  })
-  createDiscussionMessage(db, {
-    effortId: effort.id,
-    author: 'agent',
-    agentId: 'planner-peer',
-    body: 'Banner plus badge looks like the safest initial posture. Sound can remain opt-in.',
-  })
-
-  const input = createInputRequest(db, {
-    effortId: effort.id,
-    agentId: 'planner-peer',
-    type: 'choice',
-    prompt: 'Which default notification posture should effortless use?',
-    choices: [
-      { value: 'banner-badge', label: 'banner + badge' },
-      { value: 'banner-only', label: 'banner only' },
-      { value: 'all-off', label: 'all off' },
-    ],
-  })
-  answerInputRequest(db, {
-    inputRequestId: input.id,
-    answer: 'banner + badge',
-  })
-
-  return effort
-}
-
 function seedInvestigationEffort(db: AppDatabase): Effort {
   const effort = insertEffort(db, {
     title: 'investigate CLI packaging overhead',
@@ -145,13 +94,6 @@ function seedInvestigationEffort(db: AppDatabase): Effort {
     planRequiresReview: true,
     needsTasks: false,
     summary: 'Eager module loading is the primary overhead. Recommend lazy imports and splitting render.ts by domain.',
-  })
-
-  createDiscussionMessage(db, {
-    effortId: effort.id,
-    author: 'agent',
-    agentId: 'planner-1',
-    body: 'I will start with a bundle size baseline, then look at lazy-loading opportunities for the command modules.',
   })
 
   const plan = createPlan(db, {
@@ -260,24 +202,6 @@ async function seedDeliveryEffort(
     needsTasks: true,
     status: 'complete',
     summary: 'Plan review flow, repo-backed task detail, and input requests are all wired. One task accepted, one task returned for changes, one task waiting for human review.',
-  })
-
-  createDiscussionMessage(db, {
-    effortId: effort.id,
-    author: 'agent',
-    agentId: 'planner-1',
-    body: 'I think the highest-value slice is plan review, then repo-backed task detail, then input requests.',
-  })
-  createDiscussionMessage(db, {
-    effortId: effort.id,
-    author: 'user',
-    body: 'Keep the workflow plain. I care more about clear handoffs than maximum flexibility.',
-  })
-  createDiscussionMessage(db, {
-    effortId: effort.id,
-    author: 'agent',
-    agentId: 'planner-1',
-    body: 'Understood. I am keeping the state model local to the thing being reviewed rather than adding another orchestrator layer.',
   })
 
   const firstPlan = createPlan(db, {
@@ -442,7 +366,7 @@ async function seedDeliveryEffort(
     handoffSummary:
       'The seed script should reset the local DB, create fixtures, and print the key effort refs.',
     artifact:
-      'fixture targets\n- discussion\n- plans with feedback\n- accepted and rejected reviews\n- pending input request',
+      'fixture targets\n- plans with feedback\n- accepted and rejected reviews\n- pending input request',
   })
   attachTaskWorkspace(db, waitingTask, repos.effortlessRepo, 'impl-seed', 'in-flight')
   checkpointTask(db, {

@@ -52,16 +52,13 @@ The follow-up correctly restores case-insensitive schema-term dedupe and adds fo
 
 db.prepare(`UPDATE efforts SET accepted_plan_id = ?, updated_at = ? WHERE id = ?`).run(planId, now, effortId)
 
-insertDiscussion(effortId, 'orch-69', 'Decomposed ASB job #69 into an accepted plan, one accepted implementation task, and two review passes.')
-insertDiscussion(effortId, 'orch-69', 'Created second-pass review for the implementation after requested changes were applied.')
-
 insertTaskComment(taskId, 'impl-prop-variants-71', 'checkpoint', 'Implemented ToolSchemaPropertyVariantExtractor, appended schema terms into the full-text/filter-text path, added focused test coverage, and committed the changes.')
 insertTaskComment(taskId, 'review-prop-variants-72', 'comment', 'Review requested changes: dedupe schema terms case-insensitively and add regression coverage for casing-only duplicate properties.')
-insertTaskComment(taskId, 'orch-69', 'comment', 'Sent the implementation task back through the same branch/worktree for the requested review fix.')
+insertTaskComment(taskId, 'agent-69', 'comment', 'Sent the implementation task back through the same branch/worktree for the requested review fix.')
 insertTaskComment(taskId, 'impl-prop-variants-71', 'checkpoint', 'Addressed review findings: schema terms now dedupe case-insensitively, regression coverage was added, and build/tests passed.')
 insertTaskComment(taskId, null, 'approval', 'lgtm')
 
-insertPlanComment(planId, 'orch-69', 'comment', 'Planning guidance: use the supplied ToolSchemaPropertyVariantExtractor design as the baseline and refine it against local main.')
+insertPlanComment(planId, 'agent-69', 'comment', 'Planning guidance: use the supplied ToolSchemaPropertyVariantExtractor design as the baseline and refine it against local main.')
 insertPlanComment(planId, 'plan-prop-variants-70', 'comment', 'Drafted the minimal-first plan: extractor plus FilterText enrichment, keeping DiscoveryQueryNormalizer exception-only.')
 insertPlanComment(planId, null, 'approval', 'accepted')
 
@@ -103,7 +100,7 @@ function insertEffort(): number {
     VALUES (NULL, ?, ?, 'delivery', NULL, 1, 1, 'active', ?, ?, ?)
   `).run(
     title,
-    `Migrate ASB job #69 semantic aliases into Effortless as a comparison fixture for orchestrator, plan, task, and review contexts.`,
+    `Migrate ASB job #69 semantic aliases into Effortless as a comparison fixture for effort, plan, task, and review contexts.`,
     `- completed: Delivered ToolSchemaPropertyVariantExtractor planning, implementation, and review flow, resulting in schema-derived property variants being indexed for tool discovery while keeping DiscoveryQueryNormalizer as an exceptions-only layer.
 - impl: The implementation task is approved and ready for merge into feature/semantic-aliases.
 - decisions: Shipped the minimal-first rollout through the existing indexed text path, preserved query normalizer exception rules, and corrected schema-term dedupe to be case-insensitive after the first review cycle.`,
@@ -206,13 +203,6 @@ function insertReview(
   const id = Number(result.lastInsertRowid)
   db.prepare(`UPDATE reviews SET short_ref = ? WHERE id = ?`).run(`rev-${id}`, id)
   return id
-}
-
-function insertDiscussion(effortId: number, agentId: string, body: string): void {
-  db.prepare(`
-    INSERT INTO discussion_messages (effort_id, author, agent_id, body, created_at)
-    VALUES (?, 'agent', ?, ?, ?)
-  `).run(effortId, agentId, body, now)
 }
 
 function insertTaskComment(taskId: number, agentId: string | null, kind: string, body: string): void {

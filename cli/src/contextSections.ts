@@ -64,14 +64,12 @@ export function printTemplateWorkflow(
     tasks?: number
     acceptedTasks?: number
     mergedTasks?: number
-    discussionMessages?: number
   } = {},
 ): void {
   console.log('')
   console.log('required pieces')
   console.log(`plan: ${pieceState(requiresPlan(effort.template), counts.acceptedPlans ?? 0, counts.plans ?? 0)}`)
   console.log(`tasks: ${pieceState(effort.needsTasks, (counts.acceptedTasks ?? 0) + (counts.mergedTasks ?? 0), counts.tasks ?? 0)}`)
-  console.log(`discussion: ${discussionState(effort.template, counts.discussionMessages ?? 0)}`)
   console.log(`plan human approval req: ${effort.planRequiresReview ? 'on' : 'off'}`)
 }
 
@@ -163,18 +161,6 @@ function pieceState(required: boolean, completed: number, total: number): string
   if (completed > 0) return `satisfied (${completed}/${Math.max(total, completed)})`
   if (total > 0) return `pending approval (${total} submitted)`
   return 'required'
-}
-
-function discussionState(template: EffortTemplate, messages: number): string {
-  if (template === 'discussion') {
-    return messages > 0 ? `active (${messages} messages)` : 'required'
-  }
-
-  if (template === 'delivery' || template === 'investigation') {
-    return messages > 0 ? `available (${messages} messages)` : 'available'
-  }
-
-  return messages > 0 ? `available (${messages} messages)` : 'optional'
 }
 
 function printExpandedReference(db: AppDatabase, reference: Reference): void {

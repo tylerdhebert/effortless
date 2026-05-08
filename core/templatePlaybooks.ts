@@ -7,7 +7,6 @@ const TEMPLATE_ORDER: Record<EffortTemplate, number> = {
   bugfix: 0,
   delivery: 1,
   investigation: 2,
-  discussion: 3,
 }
 
 type TemplatePlaybookRow = {
@@ -21,6 +20,7 @@ export function listTemplatePlaybooks(db: AppDatabase): TemplatePlaybook[] {
     .prepare<TemplatePlaybookRow>(`
       SELECT template, body, updated_at
       FROM template_playbooks
+      WHERE template IN ('bugfix', 'delivery', 'investigation')
     `)
     .all()
     .map(mapTemplatePlaybook)

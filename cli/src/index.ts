@@ -1,7 +1,6 @@
 import { rawArgs } from './args'
 import { printHelp } from './render'
 import { handleBuild } from './commands/build'
-import { handleDiscuss } from './commands/discuss'
 import { handleEffort } from './commands/effort'
 import { handleInput } from './commands/input'
 import { handleMandate } from './commands/mandate'
@@ -31,7 +30,6 @@ async function main() {
     handleRef,
     handleEffort,
     handlePlaybook,
-    handleDiscuss,
   ]
 
   for (const handler of handlers) {

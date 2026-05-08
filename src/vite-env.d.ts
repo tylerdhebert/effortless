@@ -7,14 +7,12 @@ import type {
   CheckpointTaskInput,
   ClaimTaskInput,
   CreateEffortInput,
-  CreateDiscussionMessageInput,
   DiffType,
   CreateInputRequestInput,
   CreateMandateInput,
   CreatePlanInput,
   CreateReferenceInput,
   CreateRepoInput,
-  DiscussionMessage,
   Effort,
   EffortTemplate,
   InputRequest,
@@ -93,8 +91,6 @@ interface Window {
       acceptPlan: (planId: number) => Promise<Plan>
       markPlanReady: (planId: number) => Promise<Plan>
       requestPlanChanges: (input: RequestPlanChangesInput) => Promise<Plan>
-      listDiscussionMessages: (effortId: number) => Promise<DiscussionMessage[]>
-      createDiscussionMessage: (input: CreateDiscussionMessageInput) => Promise<DiscussionMessage>
       listTaskComments: (taskId: number) => Promise<TaskComment[]>
       getLatestTaskBuild: (taskId: number) => Promise<TaskBuildResult | null>
       runTaskBuild: (taskId: number) => Promise<TaskBuildResult>

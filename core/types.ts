@@ -1,4 +1,4 @@
-export type EffortTemplate = 'bugfix' | 'delivery' | 'investigation' | 'discussion'
+export type EffortTemplate = 'bugfix' | 'delivery' | 'investigation'
 
 export type EffortStatus = 'active' | 'complete' | 'archived'
 
@@ -12,7 +12,6 @@ export type TaskStatus =
   | 'merged'
 
 export type TaskCommentKind = 'comment' | 'checkpoint' | 'input-request' | 'input-response' | 'approval'
-export type MessageAuthor = 'user' | 'agent'
 export type ReviewVerdict = 'approve' | 'request-changes'
 export type BuildStatus = 'running' | 'passed' | 'failed'
 export type InputRequestType = 'yesno' | 'choice' | 'text'
@@ -67,15 +66,6 @@ export type PlanComment = {
   author: 'user' | 'agent'
   agentId: string | null
   kind: PlanCommentKind
-  body: string
-  createdAt: string
-}
-
-export type DiscussionMessage = {
-  id: number
-  effortId: number
-  author: MessageAuthor
-  agentId: string | null
   body: string
   createdAt: string
 }
@@ -252,13 +242,6 @@ export type RequestPlanChangesInput = {
   body: string
 }
 
-export type CreateDiscussionMessageInput = {
-  effortId: number
-  author: MessageAuthor
-  agentId?: string | null
-  body: string
-}
-
 export type CreateInputRequestInput = {
   effortId?: number | null
   planId?: number | null
@@ -290,7 +273,7 @@ export type UpdateRepoInput = {
   buildCommand?: string | null
 }
 
-export type WorkSurface = 'effort' | 'plan' | 'task' | 'review' | 'discussion'
+export type WorkSurface = 'effort' | 'plan' | 'task' | 'review' | 'run'
 export type MandateSourceType = 'body' | 'file'
 
 export type Mandate = {

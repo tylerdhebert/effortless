@@ -1,5 +1,4 @@
-import { createEffort, getEffortByRef, listEfforts, updateEffortStatus, updateEffortSummary } from '../../../core/efforts'
-import { listDiscussionMessages } from '../../../core/discussion'
+import { createEffort, getEffortByRef, listEfforts, parseEffortTemplate, updateEffortStatus, updateEffortSummary } from '../../../core/efforts'
 import { listInputRequests } from '../../../core/inputs'
 import { listPlans } from '../../../core/plans'
 import { listReferences } from '../../../core/references'
@@ -10,7 +9,6 @@ import {
   printArtifactPreview,
   printExpandedReferences,
   printHandoffSummary,
-  printLatestUpdate,
   printRelatedMandates,
   printSurfaceMandate,
   printTemplatePlaybook,
@@ -22,7 +20,7 @@ export async function handleEffort(surface: string, command: string): Promise<bo
   if (surface !== 'effort') return false
 
   if (command === 'create') {
-    const template = (option('--template') ?? 'bugfix') as 'bugfix' | 'delivery' | 'investigation' | 'discussion'
+    const template = parseEffortTemplate(option('--template') ?? 'bugfix')
     const effort = createEffort(db, {
       title: requiredOption('--title'),
       description: requiredOption('--description'),
@@ -67,7 +65,6 @@ export async function handleEffort(surface: string, command: string): Promise<bo
     const tasks = listTasks(db, effort.id)
     const references = listReferences(db, 'effort', effort.id)
     const inputs = listInputRequests(db, effort.id)
-    const messages = listDiscussionMessages(db, effort.id)
 
     console.log(`${effort.shortRef} ${effort.template} ${effort.status}`)
     console.log(effort.title)
@@ -79,14 +76,12 @@ export async function handleEffort(surface: string, command: string): Promise<bo
       tasks: tasks.length,
       acceptedTasks: tasks.filter((task) => task.status === 'accepted').length,
       mergedTasks: tasks.filter((task) => task.status === 'merged').length,
-      discussionMessages: messages.length,
     })
-    printRelatedMandates(db, ['plan', 'task', 'review', 'discussion'])
+    printRelatedMandates(db, ['plan', 'task', 'review', 'run'])
     console.log('')
     console.log('description')
     console.log(effort.description)
 
-    printLatestUpdate(messages)
     printHandoffSummary(effort.summary)
 
     if (acceptedPlan) {

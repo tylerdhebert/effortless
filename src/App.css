@@ -290,22 +290,6 @@
   padding: 8px 10px;
 }
 
-.discussion-button {
-  display: grid;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  padding: 0;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 13px;
-  color: var(--muted);
-  cursor: pointer;
-  transition: all 140ms ease;
-  box-shadow: 0 0 6px color-mix(in srgb, var(--accent) 6%, transparent);
-  flex: 0 0 auto;
-}
-
 .effort-header-actions {
   display: inline-flex;
   align-items: center;
@@ -349,37 +333,6 @@
   transform: none;
 }
 
-.discussion-button svg {
-  width: 18px;
-  height: 18px;
-}
-
-.discussion-button:hover {
-  background: color-mix(in srgb, var(--accent) 8%, transparent);
-  border-color: color-mix(in srgb, var(--accent) 15%, transparent);
-  color: var(--text);
-  box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 12%, transparent);
-}
-
-.discussion-button.active {
-  border-color: color-mix(in srgb, var(--accent) 34%, transparent);
-  color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 9%, transparent);
-}
-
-.discussion-button:disabled {
-  cursor: default;
-  opacity: 0.42;
-  box-shadow: none;
-}
-
-.discussion-button:disabled:hover {
-  background: rgba(255, 255, 255, 0.03);
-  border-color: rgba(255, 255, 255, 0.06);
-  color: var(--muted);
-  box-shadow: none;
-}
-
 .effort-scroll {
   min-height: 0;
   overflow-y: auto;
@@ -417,12 +370,6 @@
   min-height: 458px;
 }
 
-.discussion-summary-section {
-  min-height: 320px;
-  max-height: 460px;
-  overflow: hidden;
-}
-
 .input-section {
   min-height: 348px;
   max-height: 472px;
@@ -430,7 +377,6 @@
 }
 
 .effort-description-section,
-.discussion-summary-section,
 .input-section,
 .bugfix-description-section {
   box-sizing: border-box;
@@ -541,16 +487,6 @@
   border-color: color-mix(in srgb, var(--accent) 22%, transparent);
   color: var(--text);
   background: rgba(255, 255, 255, 0.045);
-}
-
-.discussion-preview-list {
-  display: grid;
-  align-content: start;
-  grid-auto-rows: min-content;
-  gap: 10px;
-  min-height: 0;
-  overflow-y: auto;
-  padding-right: 4px;
 }
 
 .template-summary-section {
@@ -877,7 +813,6 @@
   }
 
   .effort-description-section,
-  .discussion-summary-section,
   .input-section,
   .bugfix-description-section {
     min-height: 0;

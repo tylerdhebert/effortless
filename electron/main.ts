@@ -7,7 +7,6 @@ import { getLatestTaskBuild, runTaskBuild } from '../core/builds'
 import { getAppState, openDatabase, updateNotificationSettings } from '../core/db'
 import type { NotificationSettings } from '../core/db'
 import { getCustomThemeState, updateCustomThemeState } from '../core/themeConfig'
-import { createDiscussionMessage, listDiscussionMessages } from '../core/discussion'
 import { listEfforts, createEffort, deleteEffort, updateEffortSummary, updateEffortPlanRequiresReview } from '../core/efforts'
 import { browsePath } from '../core/filesystem'
 import {
@@ -68,7 +67,6 @@ import type {
   CheckpointTaskInput,
   ClaimTaskInput,
   CreateInputRequestInput,
-  CreateDiscussionMessageInput,
   CreateMandateInput,
   CreatePlanInput,
   CreateReferenceInput,
@@ -158,7 +156,7 @@ ipcMain.handle('theme:custom:update', async (_event, state: { customThemeActive:
   return getRendererAppState()
 })
 
-ipcMain.handle('efforts:create', (_event, input: { title: string; description: string; template: 'bugfix' | 'delivery' | 'investigation' | 'discussion' }) =>
+ipcMain.handle('efforts:create', (_event, input: { title: string; description: string; template: 'bugfix' | 'delivery' | 'investigation' }) =>
   createEffort(db, input),
 )
 ipcMain.handle('efforts:delete', (_event, effortId: number) =>
@@ -182,11 +180,6 @@ ipcMain.handle('plans:ready', (_event, planId: number) => markPlanReady(db, plan
 ipcMain.handle('plans:requestChanges', (_event, input: RequestPlanChangesInput) =>
   requestPlanChanges(db, input),
 )
-ipcMain.handle('discussion:list', (_event, effortId: number) => listDiscussionMessages(db, effortId))
-ipcMain.handle('discussion:create', (_event, input: CreateDiscussionMessageInput) =>
-  createDiscussionMessage(db, input),
-)
-
 ipcMain.handle('tasks:comments', (_event, taskId: number) => listTaskComments(db, taskId))
 ipcMain.handle('reviews:list', (_event, taskId: number) => listReviews(db, taskId))
 ipcMain.handle('reviews:submit', (_event, input: SubmitReviewInput) => submitReview(db, input))

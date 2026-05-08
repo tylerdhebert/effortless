@@ -11,11 +11,6 @@ type AppConfig = {
   customThemePalette?: Record<string, string> | null
 }
 
-const DEFAULT_CUSTOM_THEME_STATE: CustomThemeState = {
-  customThemeActive: false,
-  customThemePalette: null,
-}
-
 async function readAppConfig(): Promise<AppConfig> {
   const { configPath } = getAppPaths()
   try {

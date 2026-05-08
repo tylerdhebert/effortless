@@ -1,5 +1,6 @@
-import { createMandate, deleteMandate, getMandateByRef, listMandates, listMandatesBySurface, resolveMandateText, updateMandate } from '../../../core/mandates'
+import { createMandate, deleteMandate, getMandateByRef, listMandates, listMandatesBySurface, parseWorkSurface, resolveMandateText, updateMandate } from '../../../core/mandates'
 import { getRepoByRef } from '../../../core/repos'
+import type { MandateSourceType, UpdateMandateInput } from '../../../core/types'
 import { option, requiredOption, bodyArg } from '../args'
 import { db } from '../context'
 import { printMandate } from '../render'
@@ -8,7 +9,8 @@ export async function handleMandate(surface: string, command: string): Promise<b
   if (surface !== 'mandate') return false
 
   if (command === 'list') {
-    const surfaceFilter = option('--surface') as 'effort' | 'plan' | 'task' | 'review' | 'discussion' | null
+    const surfaceOption = option('--surface')
+    const surfaceFilter = surfaceOption ? parseWorkSurface(surfaceOption) : null
     const repoRef = option('--repo')
 
     if (surfaceFilter) {
@@ -27,10 +29,10 @@ export async function handleMandate(surface: string, command: string): Promise<b
   }
 
   if (command === 'create') {
-    const workSurface = requiredOption('--surface') as 'effort' | 'plan' | 'task' | 'review' | 'discussion'
+    const workSurface = parseWorkSurface(requiredOption('--surface'))
     const repoRef = option('--repo')
     const repo = repoRef ? getRepoByRef(db, repoRef) : null
-    const sourceType = (option('--source-type') ?? 'body') as 'body' | 'file'
+    const sourceType = parseSourceType(option('--source-type') ?? 'body')
 
     const mandate = createMandate(db, {
       workSurface,
@@ -45,17 +47,17 @@ export async function handleMandate(surface: string, command: string): Promise<b
 
   if (command === 'update') {
     const mandate = getMandateByRef(db, requiredOption('--mandate'))
-    const updates: Partial<{ workSurface: string; repoId: number | null; sourceType: string; body: string | null; filePath: string | null }> = {}
+    const updates: Partial<Omit<UpdateMandateInput, 'mandateId'>> = {}
 
     const workSurface = option('--surface')
-    if (workSurface) updates.workSurface = workSurface
+    if (workSurface) updates.workSurface = parseWorkSurface(workSurface)
     const repoRef = option('--repo')
     if (repoRef) {
       const repo = getRepoByRef(db, repoRef)
       updates.repoId = repo.id
     }
     const sourceType = option('--source-type')
-    if (sourceType) updates.sourceType = sourceType
+    if (sourceType) updates.sourceType = parseSourceType(sourceType)
     const body = option('--body')
     if (body !== null) updates.body = body
     const filePath = option('--file')
@@ -63,7 +65,7 @@ export async function handleMandate(surface: string, command: string): Promise<b
 
     const updated = updateMandate(db, {
       mandateId: mandate.id,
-      ...updates as any,
+      ...updates,
     })
     printMandate(updated)
     return true
@@ -77,7 +79,7 @@ export async function handleMandate(surface: string, command: string): Promise<b
   }
 
   if (command === 'resolve') {
-    const workSurface = requiredOption('--surface') as 'effort' | 'plan' | 'task' | 'review' | 'discussion'
+    const workSurface = parseWorkSurface(requiredOption('--surface'))
     const repoRef = option('--repo')
     const repo = repoRef ? getRepoByRef(db, repoRef) : null
     const text = resolveMandateText(db, workSurface, repo?.id ?? null)
@@ -91,4 +93,11 @@ export async function handleMandate(surface: string, command: string): Promise<b
   }
 
   return false
+}
+
+function parseSourceType(value: string): MandateSourceType {
+  if (value === 'body' || value === 'file') {
+    return value
+  }
+  throw new Error('source type must be one of: body, file')
 }
