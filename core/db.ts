@@ -33,7 +33,13 @@ export function initializeSchema(db: AppDatabase): void {
     CREATE TABLE IF NOT EXISTS app_state (
       id INTEGER PRIMARY KEY CHECK (id = 1),
       version INTEGER NOT NULL,
-      updated_at TEXT NOT NULL
+      updated_at TEXT NOT NULL,
+      os_notifications_enabled INTEGER NOT NULL DEFAULT 1,
+      banner_notifications_enabled INTEGER NOT NULL DEFAULT 1,
+      badge_notifications_enabled INTEGER NOT NULL DEFAULT 1,
+      sound_notifications_enabled INTEGER NOT NULL DEFAULT 0,
+      toast_duration_seconds INTEGER NOT NULL DEFAULT 5,
+      theme TEXT NOT NULL DEFAULT 'grass'
     );
 
     INSERT OR IGNORE INTO app_state (id, version, updated_at)
@@ -46,8 +52,8 @@ export function initializeSchema(db: AppDatabase): void {
       description TEXT NOT NULL,
       template TEXT NOT NULL,
       accepted_plan_id INTEGER,
-      plan_requires_review INTEGER NOT NULL DEFAULT 1,
       status TEXT NOT NULL,
+      summary TEXT,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
     );
@@ -70,13 +76,10 @@ export function initializeSchema(db: AppDatabase): void {
       title TEXT NOT NULL,
       description TEXT NOT NULL,
       status TEXT NOT NULL,
-      owner_agent_id TEXT,
       repo_id INTEGER,
       branch_name TEXT,
       base_branch TEXT,
       worktree_path TEXT,
-      requires_review INTEGER NOT NULL DEFAULT 1,
-      review_requires_review INTEGER NOT NULL DEFAULT 1,
       handoff_summary TEXT,
       artifact TEXT,
       created_at TEXT NOT NULL,
@@ -89,10 +92,8 @@ export function initializeSchema(db: AppDatabase): void {
       short_ref TEXT UNIQUE,
       body TEXT NOT NULL,
       summary TEXT,
-      author_agent_id TEXT,
       created_at TEXT NOT NULL,
-      ready_at TEXT,
-      accepted_at TEXT
+      updated_at TEXT
     );
 
     CREATE TABLE IF NOT EXISTS reviews (
@@ -102,19 +103,15 @@ export function initializeSchema(db: AppDatabase): void {
       verdict TEXT NOT NULL,
       body TEXT NOT NULL,
       summary TEXT,
-      author_agent_id TEXT,
-      created_at TEXT NOT NULL,
-      applied_at TEXT
+      created_at TEXT NOT NULL
     );
 
     CREATE TABLE IF NOT EXISTS input_requests (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       short_ref TEXT UNIQUE,
       effort_id INTEGER NOT NULL REFERENCES efforts(id) ON DELETE CASCADE,
-      plan_id INTEGER REFERENCES plans(id) ON DELETE CASCADE,
       task_id INTEGER REFERENCES tasks(id) ON DELETE CASCADE,
-      review_id INTEGER REFERENCES reviews(id) ON DELETE CASCADE,
-      agent_id TEXT,
+      run_id INTEGER,
       type TEXT NOT NULL,
       prompt TEXT NOT NULL,
       choices_json TEXT,
@@ -124,24 +121,15 @@ export function initializeSchema(db: AppDatabase): void {
       answered_at TEXT
     );
 
-    CREATE TABLE IF NOT EXISTS plan_comments (
+    CREATE TABLE IF NOT EXISTS activity_events (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      plan_id INTEGER NOT NULL REFERENCES plans(id) ON DELETE CASCADE,
+      effort_id INTEGER NOT NULL REFERENCES efforts(id) ON DELETE CASCADE,
+      task_id INTEGER REFERENCES tasks(id) ON DELETE CASCADE,
+      run_id INTEGER,
       author TEXT NOT NULL,
-      agent_id TEXT,
       kind TEXT NOT NULL,
       body TEXT NOT NULL,
-      created_at TEXT NOT NULL
-    );
-
-    CREATE TABLE IF NOT EXISTS task_comments (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
-      author TEXT NOT NULL,
-      agent_id TEXT,
-      kind TEXT NOT NULL,
-      body TEXT NOT NULL,
-      commit_hash TEXT,
+      metadata_json TEXT,
       created_at TEXT NOT NULL
     );
 
@@ -193,8 +181,6 @@ export function initializeSchema(db: AppDatabase): void {
       short_ref TEXT UNIQUE,
       effort_id INTEGER NOT NULL REFERENCES efforts(id) ON DELETE CASCADE,
       task_id INTEGER REFERENCES tasks(id) ON DELETE CASCADE,
-      plan_id INTEGER REFERENCES plans(id) ON DELETE CASCADE,
-      review_id INTEGER REFERENCES reviews(id) ON DELETE CASCADE,
       profile_id INTEGER NOT NULL REFERENCES agent_profiles(id),
       purpose TEXT NOT NULL,
       label TEXT NOT NULL,
@@ -202,9 +188,9 @@ export function initializeSchema(db: AppDatabase): void {
       environment TEXT NOT NULL,
       cwd TEXT NOT NULL,
       command TEXT NOT NULL,
-      context_path TEXT NOT NULL,
-      bootstrap_path TEXT NOT NULL,
       transcript_path TEXT NOT NULL,
+      provider_session_id TEXT,
+      terminal_tab_key TEXT,
       exit_code INTEGER,
       error TEXT,
       started_at TEXT,
@@ -226,29 +212,6 @@ export function initializeSchema(db: AppDatabase): void {
     );
   `)
 
-  ensureColumn(db, 'tasks', 'repo_id', 'INTEGER')
-  ensureColumn(db, 'tasks', 'branch_name', 'TEXT')
-  ensureColumn(db, 'tasks', 'base_branch', 'TEXT')
-  ensureColumn(db, 'tasks', 'worktree_path', 'TEXT')
-  ensureColumn(db, 'tasks', 'handoff_summary', 'TEXT')
-  ensureColumn(db, 'tasks', 'artifact', 'TEXT')
-  ensureColumn(db, 'tasks', 'auto_merge', 'INTEGER NOT NULL DEFAULT 0')
-  ensureColumn(db, 'tasks', 'conflicted_at', 'TEXT')
-  ensureColumn(db, 'tasks', 'conflict_details', 'TEXT')
-  ensureColumn(db, 'tasks', 'merged_at', 'TEXT')
-  ensureColumn(db, 'plans', 'ready_at', 'TEXT')
-  ensureColumn(db, 'plans', 'accepted_at', 'TEXT')
-  ensureColumn(db, 'input_requests', 'short_ref', 'TEXT')
-  ensureColumn(db, 'efforts', 'needs_tasks', 'INTEGER NOT NULL DEFAULT 1')
-  ensureColumn(db, 'efforts', 'summary', 'TEXT')
-  ensureColumn(db, 'app_state', 'os_notifications_enabled', 'INTEGER NOT NULL DEFAULT 1')
-  ensureColumn(db, 'app_state', 'banner_notifications_enabled', 'INTEGER NOT NULL DEFAULT 1')
-  ensureColumn(db, 'app_state', 'badge_notifications_enabled', 'INTEGER NOT NULL DEFAULT 1')
-  ensureColumn(db, 'app_state', 'sound_notifications_enabled', 'INTEGER NOT NULL DEFAULT 0')
-  ensureColumn(db, 'app_state', 'toast_duration_seconds', 'INTEGER NOT NULL DEFAULT 5')
-  ensureColumn(db, 'app_state', 'theme', 'TEXT NOT NULL DEFAULT \'grass\'')
-  // Deprecated tables intentionally remain in existing databases:
-  // - discussion_messages
   seedDefaultGlobalMandates(db)
   seedDefaultTemplatePlaybooks(db)
 }
@@ -327,19 +290,6 @@ export function getAppState(db: AppDatabase): AppState {
   }
 }
 
-function ensureColumn(db: AppDatabase, tableName: string, columnName: string, columnSql: string): void {
-  const columns = db
-    .prepare<{ name: string }>(`PRAGMA table_info(${tableName})`)
-    .all()
-    .map((row) => row.name)
-
-  if (columns.includes(columnName)) {
-    return
-  }
-
-  db.exec(`ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${columnSql}`)
-}
-
 function seedDefaultGlobalMandates(db: AppDatabase): void {
   const now = new Date().toISOString()
   const insert = db.prepare(`
@@ -356,8 +306,6 @@ function seedDefaultGlobalMandates(db: AppDatabase): void {
     SET short_ref = 'mandate-' || id
     WHERE short_ref IS NULL
   `).run()
-
-  refreshLegacyMandateDefaults(db, now)
 }
 
 function seedDefaultTemplatePlaybooks(db: AppDatabase): void {
@@ -370,71 +318,4 @@ function seedDefaultTemplatePlaybooks(db: AppDatabase): void {
   for (const playbook of DEFAULT_TEMPLATE_PLAYBOOKS) {
     insert.run(playbook.template, playbook.body, now)
   }
-
-  refreshLegacyTemplatePlaybookDefaults(db, now)
-}
-
-function refreshLegacyMandateDefaults(db: AppDatabase, now: string): void {
-  const update = db.prepare(`
-    UPDATE mandates
-    SET body = ?,
-        updated_at = ?
-    WHERE repo_id IS NULL
-      AND work_surface = ?
-      AND body LIKE ?
-      AND body LIKE ?
-  `)
-
-  const legacyMarkers: Array<{ workSurface: string; markers: [string, string] }> = [
-    { workSurface: 'effort', markers: ['%Read the effort context, references, discussion, plans, tasks, reviews, and inputs%', '%Use the effort surface for orchestration and synthesis%'] },
-    { workSurface: 'plan', markers: ['%Produce a clear implementation plan%', '%Make the plan specific enough to hand off%'] },
-    { workSurface: 'task', markers: ['%Claim the task and work in its assigned worktree%', '%Claim before editing files%'] },
-    { workSurface: 'review', markers: ['%Do not implement fixes%', '%Mark the review ready only after the verdict is explicit%'] },
-  ]
-
-  for (const legacy of legacyMarkers) {
-    const current = DEFAULT_GLOBAL_MANDATES.find((mandate) => mandate.workSurface === legacy.workSurface)
-    if (current) {
-      update.run(current.body, now, legacy.workSurface, ...legacy.markers)
-    }
-  }
-
-  db.prepare(`
-    DELETE FROM mandates
-    WHERE repo_id IS NULL
-      AND work_surface = 'discussion'
-      AND body LIKE '# Discussion Mandate%'
-      AND body LIKE '%Use discussion messages for framing and input requests%'
-  `).run()
-}
-
-function refreshLegacyTemplatePlaybookDefaults(db: AppDatabase, now: string): void {
-  const update = db.prepare(`
-    UPDATE template_playbooks
-    SET body = ?,
-        updated_at = ?
-    WHERE template = ?
-      AND body LIKE ?
-      AND body LIKE ?
-  `)
-
-  const legacyMarkers: Array<{ template: string; markers: [string, string] }> = [
-    { template: 'bugfix', markers: ['%When the implementer finishes, dispatch an implementation review%', '%Do not use discussion for bugfix efforts%'] },
-    { template: 'delivery', markers: ['%Dispatch a plan agent on the effort%', '%Use discussion for effort-level clarification and decisions%'] },
-    { template: 'investigation', markers: ['%Dispatch an investigation agent on the effort%', '%Use discussion for effort-level clarification and interpretation%'] },
-  ]
-
-  for (const legacy of legacyMarkers) {
-    const current = DEFAULT_TEMPLATE_PLAYBOOKS.find((playbook) => playbook.template === legacy.template)
-    if (current) {
-      update.run(current.body, now, legacy.template, ...legacy.markers)
-    }
-  }
-
-  db.prepare(`
-    DELETE FROM template_playbooks
-    WHERE template = 'discussion'
-      AND body LIKE '# Discussion Playbook%'
-      AND body LIKE '%Dispatch a discussion agent when sustained back-and-forth is needed%'
-  `).run()
 }

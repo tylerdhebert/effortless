@@ -1,4 +1,6 @@
 import * as pty from 'node-pty'
+import { chmodSync, mkdirSync, writeFileSync } from 'node:fs'
+import path from 'node:path'
 import { appendFile } from 'node:fs/promises'
 import type { AppDatabase } from '../core/db'
 import {
@@ -9,6 +11,7 @@ import {
   markAgentRunStarted,
   markAgentRunCancelled,
 } from '../core/agentRuns'
+import { getAgentProfile } from '../core/agentProfiles'
 
 type RunSession = {
   runId: number
@@ -52,7 +55,8 @@ export class RunManager {
       ...process.env,
       ...buildAgentRunEnvironment(this.db, runId),
     } as NodeJS.ProcessEnv
-    const launch = resolveShellLaunch(run.command)
+    const profile = getAgentProfile(this.db, run.profileId)
+    const launch = resolveShellLaunch(run, profile.wslDistro, env)
 
     try {
       const terminal = pty.spawn(launch.file, launch.args, {
@@ -117,16 +121,70 @@ export class RunManager {
   }
 }
 
-function resolveShellLaunch(command: string): { file: string; args: string[] } {
+function resolveShellLaunch(
+  run: { command: string; cwd: string; environment: string; transcriptPath: string },
+  wslDistro: string | null,
+  env: NodeJS.ProcessEnv,
+): { file: string; args: string[] } {
+  if (process.platform === 'win32' && run.environment === 'wsl') {
+    const runBinPath = ensureWslRunBin(run)
+    const exports = Object.entries(env)
+      .filter(([name]) => name.startsWith('EFFORTLESS_'))
+      .map(([name, value]) => `export ${name}=${posixShellQuote(value ?? '')}`)
+    const bashScript = [
+      ...exports,
+      `export PATH=${posixShellQuote(toWslPath(runBinPath))}:$PATH`,
+      `cd ${posixShellQuote(toWslPath(run.cwd))}`,
+      run.command,
+    ].join('\n')
+
+    return {
+      file: 'wsl.exe',
+      args: [
+        ...(wslDistro ? ['-d', wslDistro] : []),
+        'bash',
+        '-lc',
+        bashScript,
+      ],
+    }
+  }
+
   if (process.platform === 'win32') {
     return {
       file: 'powershell.exe',
-      args: ['-NoLogo', '-NoExit', '-Command', command],
+      args: ['-NoLogo', '-Command', run.command],
     }
   }
 
   return {
     file: process.env.SHELL ?? 'bash',
-    args: ['-lc', command],
+    args: ['-lc', run.command],
   }
+}
+
+function ensureWslRunBin(run: { transcriptPath: string }): string {
+  const appRoot = process.env.APP_ROOT ?? process.cwd()
+  const eflCommand = path.join(appRoot, 'efl.cmd')
+  const runBinPath = path.join(path.dirname(run.transcriptPath), 'bin')
+  mkdirSync(runBinPath, { recursive: true })
+  const wrapperPath = path.join(runBinPath, 'efl')
+  const wrapper = [
+    '#!/usr/bin/env bash',
+    `exec ${posixShellQuote(toWslPath(eflCommand))} "$@"`,
+    '',
+  ].join('\n')
+  writeFileSync(wrapperPath, wrapper)
+  chmodSync(wrapperPath, 0o755)
+  return runBinPath
+}
+
+function posixShellQuote(value: string): string {
+  return `'${value.replace(/'/g, "'\\''")}'`
+}
+
+function toWslPath(filePath: string): string {
+  const normalized = filePath.replace(/\\/g, '/')
+  const driveMatch = /^([A-Za-z]):\/(.*)$/.exec(normalized)
+  if (!driveMatch) return normalized
+  return `/mnt/${driveMatch[1].toLowerCase()}/${driveMatch[2]}`
 }

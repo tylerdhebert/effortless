@@ -3,9 +3,6 @@ import type { runTaskBuild } from '../../core/builds'
 
 export function printTask(task: Task): void {
   console.log(`${task.shortRef} ${task.status}`)
-  if (task.ownerAgentId) {
-    console.log(`owner ${task.ownerAgentId}`)
-  }
   if (task.branchName) {
     console.log(`branch ${task.branchName}`)
   }
@@ -16,17 +13,11 @@ export function printTask(task: Task): void {
 
 export function printPlan(plan: Plan): void {
   console.log(`${plan.shortRef} ${planState(plan)}`)
-  if (plan.authorAgentId) {
-    console.log(`author ${plan.authorAgentId}`)
-  }
 }
 
 export function printReview(review: Review): void {
-  console.log(`${review.shortRef} ${review.verdict} ${review.appliedAt ? 'applied' : 'pending'}`)
+  console.log(`${review.shortRef} ${review.verdict}`)
   console.log(`task ${review.taskId}`)
-  if (review.authorAgentId) {
-    console.log(`author ${review.authorAgentId}`)
-  }
 }
 
 export function printRepo(repo: Repo): void {
@@ -113,42 +104,43 @@ export function printHelp(): void {
   console.log('efl playbook show --template delivery')
   console.log('efl playbook update --template delivery --body "playbook body" [--from-file delivery.md]')
   console.log('efl playbook reset --template delivery')
-  console.log('efl plan submit --effort eff-1 --agent planner-1 --body "plan here" [--from-file plan.md]')
+  console.log('efl plan submit --effort eff-1 --body "plan here" [--from-file plan.md]')
   console.log('efl plan list --effort eff-1')
   console.log('efl plan show --plan plan-1')
   console.log('efl plan context --plan plan-1')
   console.log('efl plan ready --plan plan-1')
-  console.log('efl plan wait --plan plan-1')
   console.log(
     'efl task create --effort eff-1 --title "title" --description "description" --repo repo-1 --branch agent/task',
   )
-  console.log('efl task claim --task task-1 --agent impl-1')
+  console.log('efl task claim --task task-1')
   console.log('efl task list --effort eff-1')
   console.log('efl task show --task task-1')
   console.log('efl task context --task task-1')
-  console.log('efl task plan --task task-1 --agent impl-1 --body "implementation plan" [--from-file plan.md]')
-  console.log('efl task checkpoint --task task-1 --agent impl-1 --body "message" [--from-file checkpoint.md]')
-  console.log('efl task artifact --task task-1 --agent impl-1 --body "artifact summary" [--from-file artifact.md]')
+  console.log('efl task plan --task task-1 --body "implementation plan" [--from-file plan.md]')
+  console.log('efl task checkpoint --task task-1 --body "message" [--from-file checkpoint.md]')
+  console.log('efl task artifact --task task-1 --body "artifact summary" [--from-file artifact.md]')
   console.log('efl task ready --task task-1')
-  console.log('efl task wait --task task-1')
   console.log('efl task merge --task task-1')
   console.log('efl task worktree --task task-1')
   console.log('efl run profiles')
-  console.log('efl run prepare --task task-1 [--profile 1] [--label main]')
+  console.log('efl run prepare --effort eff-1 [--profile 1] [--label main]')
+  console.log('efl run prepare --task task-1 [--profile 1] [--label task-focus]')
   console.log('efl run list [--task task-1]')
-  console.log('efl review submit --task task-1 --agent rev-1 --verdict approve --body "message" [--from-file review.md]')
+  console.log('efl run show --run run-1')
+  console.log('efl run env --run run-1')
+  console.log('efl review submit --task task-1 --verdict approve --body "message" [--from-file review.md]')
   console.log('efl review list --task task-1')
   console.log('efl review show --review rev-1')
   console.log('efl review context --review rev-1')
   console.log('efl review ready --review rev-1')
-  console.log('efl review wait --review rev-1')
   console.log('efl repo create --name ui --path C:\\repo\\ui --base-branch main --build-command "bun run build"')
   console.log('efl repo list')
   console.log('efl build run --task task-1')
   console.log('efl build status --task task-1')
-  console.log('efl input request --task task-1 --agent impl-1 --type text --prompt "What copy should this use?"')
+  console.log('efl input request --task task-1 --type text --prompt "What copy should this use?"')
   console.log('efl input wait --input input-1')
   console.log('efl input show --input input-1')
+  console.log('efl input answer --input input-1 --answer "Use the simple version"')
   console.log('efl mandate list [--surface task] [--repo repo-1]')
   console.log('efl mandate create --surface task --body "instructions" [--from-file mandate.md] [--repo repo-1]')
   console.log('efl mandate create --surface task --source-type file --file /path/instructions.md [--repo repo-1]')
@@ -165,17 +157,5 @@ export function planState(plan: Plan): string {
   if (plan.accepted) {
     return 'accepted'
   }
-
-  if (plan.readyAt) {
-    if (
-      plan.latestFeedbackAt &&
-      new Date(plan.latestFeedbackAt).getTime() >= new Date(plan.readyAt).getTime()
-    ) {
-      return 'changes-requested'
-    }
-
-    return 'waiting'
-  }
-
   return 'draft'
 }

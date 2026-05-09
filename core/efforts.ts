@@ -11,8 +11,6 @@ type EffortRow = {
   description: string
   template: Effort['template']
   accepted_plan_id: number | null
-  plan_requires_review: number
-  needs_tasks: number
   status: Effort['status']
   summary: string | null
   created_at: string
@@ -28,31 +26,19 @@ export function listEfforts(db: AppDatabase): Effort[] {
     .map(mapEffort)
 }
 
-function templateDefaults(template: Effort['template']): { planRequiresReview: number; needsTasks: number } {
-  switch (template) {
-    case 'bugfix':
-      return { planRequiresReview: 0, needsTasks: 1 }
-    case 'delivery':
-      return { planRequiresReview: 1, needsTasks: 1 }
-    case 'investigation':
-      return { planRequiresReview: 1, needsTasks: 0 }
-  }
-}
-
 export function createEffort(db: AppDatabase, input: CreateEffortInput): Effort {
   const template = parseEffortTemplate(input.template)
-  const defaults = templateDefaults(template)
   const now = new Date().toISOString()
   const result = db
     .prepare(
       `
       INSERT INTO efforts (
-        title, description, template, accepted_plan_id, plan_requires_review, needs_tasks, status, created_at, updated_at
+        title, description, template, accepted_plan_id, status, created_at, updated_at
       )
-      VALUES (?, ?, ?, NULL, ?, ?, 'active', ?, ?)
+      VALUES (?, ?, ?, NULL, 'active', ?, ?)
     `,
     )
-    .run(input.title.trim(), input.description.trim(), template, defaults.planRequiresReview, defaults.needsTasks, now, now)
+    .run(input.title.trim(), input.description.trim(), template, now, now)
 
   const id = Number(result.lastInsertRowid)
   const shortRef = `eff-${id}`
@@ -114,16 +100,6 @@ export function updateEffortSummary(db: AppDatabase, effortId: number, summary: 
   return getEffort(db, effortId)
 }
 
-export function updateEffortPlanRequiresReview(db: AppDatabase, effortId: number, planRequiresReview: boolean): Effort {
-  db.prepare(`UPDATE efforts SET plan_requires_review = ?, updated_at = ? WHERE id = ?`).run(
-    planRequiresReview ? 1 : 0,
-    new Date().toISOString(),
-    effortId,
-  )
-  bumpAppState(db)
-  return getEffort(db, effortId)
-}
-
 export function deleteEffort(db: AppDatabase, effortId: number): void {
   const existing = db.prepare<{ id: number }>(`SELECT id FROM efforts WHERE id = ?`).get(effortId)
   if (!existing) {
@@ -170,8 +146,6 @@ function mapEffort(row: EffortRow): Effort {
     description: row.description,
     template: row.template,
     acceptedPlanId: row.accepted_plan_id,
-    planRequiresReview: Boolean(row.plan_requires_review),
-    needsTasks: Boolean(row.needs_tasks),
     status: row.status,
     summary: row.summary,
     createdAt: row.created_at,

@@ -1,25 +1,13 @@
 import type { EffortTemplate, Plan } from '../../core/types'
 
 export function isPlanWaiting(plan: Plan) {
-  return planStatus(plan) === 'waiting'
+  return planStatus(plan) === 'draft' && !plan.accepted
 }
 
 export function planStatus(plan: Plan) {
   if (plan.accepted) {
     return 'accepted'
   }
-
-  if (plan.readyAt) {
-    if (
-      plan.latestFeedbackAt &&
-      new Date(plan.latestFeedbackAt).getTime() >= new Date(plan.readyAt).getTime()
-    ) {
-      return 'changes requested'
-    }
-
-    return 'waiting'
-  }
-
   return 'draft'
 }
 
@@ -95,10 +83,10 @@ export function formatTimestamp(value: string) {
 
 export function reviewSummary(
   task: { status: string },
-  latestReview: { verdict: string; appliedAt: string | null } | null,
+  latestReview: { verdict: string } | null,
 ) {
   if (latestReview) {
-    return `${latestReview.verdict}${latestReview.appliedAt ? '' : ' pending'}`
+    return latestReview.verdict
   }
 
   if (task.status === 'reviewing') {

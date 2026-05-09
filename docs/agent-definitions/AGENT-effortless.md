@@ -71,7 +71,7 @@ efl review context --review rev-1
 For implementation work:
 
 ```bash
-efl task claim --task task-1 --agent main
+efl task claim --task task-1
 efl task context --task task-1
 ```
 
@@ -80,19 +80,19 @@ Then work in the printed worktree.
 Use checkpoints for durable progress:
 
 ```bash
-efl task checkpoint --task task-1 --agent main --body "Implemented X. Next: Y."
+efl task checkpoint --task task-1 --body "Implemented X. Next: Y."
 ```
 
 Use input requests for blocking decisions:
 
 ```bash
-efl input request --task task-1 --agent main --type choice --prompt "Which behavior should ship?" --choices "a:Simple|b:Configurable"
+efl input request --task task-1 --type choice --prompt "Which behavior should ship?" --choices "a:Simple|b:Configurable"
 ```
 
 Record the handoff artifact:
 
 ```bash
-efl task artifact --task task-1 --agent main --body "what changed, what was verified, remaining caveats"
+efl task artifact --task task-1 --body "what changed, what was verified, remaining caveats"
 ```
 
 Mark ready:
@@ -107,7 +107,7 @@ Use review when independent assessment adds value:
 
 ```bash
 efl task context --task task-1
-efl review submit --task task-1 --agent review-main --verdict approve --body "review body"
+efl review submit --task task-1 --verdict approve --body "review body"
 ```
 
 Review verdicts are explicit:

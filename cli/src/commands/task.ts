@@ -87,7 +87,7 @@ export async function handleTask(surface: string, command: string): Promise<bool
     }
     const comments = listTaskComments(db, task.id)
     for (const comment of comments) {
-      console.log(`${comment.kind} ${comment.agentId ?? comment.author}: ${comment.body}`)
+      console.log(`${comment.kind} ${comment.author}: ${comment.body}`)
     }
     return true
   }
@@ -129,22 +129,6 @@ export async function handleTask(surface: string, command: string): Promise<bool
         console.log(`build ${repo.buildCommand}`)
       }
       endSection('repo')
-    }
-
-    console.log('')
-    console.log('merge state')
-    console.log(`requires review ${task.requiresReview ? 'yes' : 'no'}`)
-    console.log(`review human approval req ${task.reviewRequiresReview ? 'yes' : 'no'}`)
-    console.log(`auto merge ${task.autoMerge ? 'on' : 'off'}`)
-    if (task.conflictedAt) {
-      console.log(`conflicted at ${task.conflictedAt}`)
-    }
-    if (task.mergedAt) {
-      console.log(`merged at ${task.mergedAt}`)
-    }
-    if (task.conflictDetails) {
-      console.log('conflict details')
-      console.log(task.conflictDetails)
     }
 
     const acceptedPlan = plans.find((plan) => plan.accepted)
@@ -263,7 +247,7 @@ function resolveTaskRef(): string {
 }
 
 function resolveAgentId(): string {
-  return option('--agent') ?? process.env.EFFORTLESS_RUN_LABEL ?? process.env.EFFORTLESS_AGENT_ID ?? 'main'
+  return process.env.EFFORTLESS_RUN_LABEL ?? 'main'
 }
 
 async function waitForTask(task: Task): Promise<void> {

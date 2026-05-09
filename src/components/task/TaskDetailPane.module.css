@@ -254,6 +254,25 @@
   gap: 7px;
 }
 
+.run-row-details {
+  display: grid;
+  gap: 8px;
+}
+
+.run-row-details summary {
+  width: fit-content;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.7rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: lowercase;
+}
+
+.run-row-details[open] summary {
+  color: var(--text);
+}
+
 .run-row-actions button {
   min-height: 28px;
   border: 1px solid var(--line-strong);

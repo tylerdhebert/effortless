@@ -1,9 +1,9 @@
-import type { PlanComment } from '../../../core/types'
+import type { ActivityEvent } from '../../../core/types'
 import { formatTimestamp } from '../../lib/helpers'
 import commentStyles from '../task/CommentStream.module.css'
 
 type PlanCommentStreamProps = {
-  comments: PlanComment[]
+  comments: ActivityEvent[]
 }
 
 export function PlanCommentStream({ comments }: PlanCommentStreamProps) {
@@ -18,9 +18,7 @@ export function PlanCommentStream({ comments }: PlanCommentStreamProps) {
           <div>
             <span>{comment.kind}</span>
             <small>
-              {comment.author === 'agent' && comment.agentId
-                ? `agent: ${comment.agentId}`
-                : comment.author}
+              {comment.author}
               {' · '}{formatTimestamp(comment.createdAt)}
             </small>
           </div>

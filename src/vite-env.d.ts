@@ -16,12 +16,13 @@ import type {
   CreatePlanInput,
   CreateReferenceInput,
   CreateRepoInput,
+  CreateTaskInput,
   Effort,
   EffortTemplate,
   InputRequest,
   Mandate,
   Plan,
-  PlanComment,
+  ActivityEvent,
   Reference,
   ReferenceOwnerType,
   Repo,
@@ -33,10 +34,10 @@ import type {
   Task,
   TaskBuildResult,
   TaskCommitView,
-  TaskComment,
   TaskConflictView,
   TaskDiffView,
   TemplatePlaybook,
+  PrepareEffortRunInput,
   PrepareTaskRunInput,
   UpdateAgentProfileInput,
   UpdateMandateInput,
@@ -86,17 +87,17 @@ interface Window {
       createEffort: (input: CreateEffortInput) => Promise<Effort>
       deleteEffort: (effortId: number) => Promise<void>
       updateEffortSummary: (effortId: number, summary: string) => Promise<Effort>
-      updateEffortPlanRequiresReview: (effortId: number, planRequiresReview: boolean) => Promise<Effort>
       listTasks: (effortId: number) => Promise<Task[]>
       listAllTasks: () => Promise<Task[]>
+      createTask: (input: CreateTaskInput) => Promise<Task>
       listPlans: (effortId: number) => Promise<Plan[]>
       getPlan: (planRef: string) => Promise<Plan>
-      listPlanComments: (planId: number) => Promise<PlanComment[]>
+      listPlanComments: (planId: number) => Promise<ActivityEvent[]>
       createPlan: (input: CreatePlanInput) => Promise<Plan>
       acceptPlan: (planId: number) => Promise<Plan>
       markPlanReady: (planId: number) => Promise<Plan>
       requestPlanChanges: (input: RequestPlanChangesInput) => Promise<Plan>
-      listTaskComments: (taskId: number) => Promise<TaskComment[]>
+      listTaskComments: (taskId: number) => Promise<ActivityEvent[]>
       getLatestTaskBuild: (taskId: number) => Promise<TaskBuildResult | null>
       runTaskBuild: (taskId: number) => Promise<TaskBuildResult>
       listReviews: (taskId: number) => Promise<Review[]>
@@ -105,7 +106,7 @@ interface Window {
       requestReviewChanges: (input: RequestReviewChangesInput) => Promise<Review>
       getReview: (reviewRef: string) => Promise<Review>
       claimTask: (input: ClaimTaskInput) => Promise<Task>
-      checkpointTask: (input: CheckpointTaskInput) => Promise<TaskComment>
+      checkpointTask: (input: CheckpointTaskInput) => Promise<ActivityEvent>
       markTaskReady: (taskId: number) => Promise<Task>
       mergeTask: (taskId: number) => Promise<Task>
       ensureTaskWorktree: (taskId: number) => Promise<Task>
@@ -113,9 +114,6 @@ interface Window {
       getTaskCommits: (taskId: number) => Promise<TaskCommitView>
       getTaskConflicts: (taskId: number) => Promise<TaskConflictView>
       updateTaskDetails: (input: UpdateTaskDetailsInput) => Promise<Task>
-      updateTaskRequiresReview: (taskId: number, requiresReview: boolean) => Promise<Task>
-      updateTaskReviewRequiresReview: (taskId: number, reviewRequiresReview: boolean) => Promise<Task>
-      updateTaskAutoMerge: (taskId: number, autoMerge: boolean) => Promise<Task>
       listAgentProfiles: () => Promise<AgentProfile[]>
       createAgentProfile: (input: CreateAgentProfileInput) => Promise<AgentProfile>
       updateAgentProfile: (input: UpdateAgentProfileInput) => Promise<AgentProfile>
@@ -124,6 +122,11 @@ interface Window {
       prepareTaskRun: (input: PrepareTaskRunInput) => Promise<{
         run: AgentRun
         task: Task
+        profile: AgentProfile
+        env: Record<string, string>
+      }>
+      prepareEffortRun: (input: PrepareEffortRunInput) => Promise<{
+        run: AgentRun
         profile: AgentProfile
         env: Record<string, string>
       }>
@@ -158,7 +161,7 @@ interface Window {
       captureDebugScreenshot: (relativePath?: string) => Promise<{ path: string; sha256: string }>
       listPendingNotifications: () => Promise<Array<{
         id: number
-        kind: 'plan-review' | 'task-review' | 'review-pass' | 'input-request'
+        kind: 'task-review' | 'input-request'
         effortId: number
         effortShortRef: string
         effortTitle: string

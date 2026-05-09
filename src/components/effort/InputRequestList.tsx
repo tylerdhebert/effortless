@@ -64,7 +64,6 @@ export function InputRequestList({ inputs, onAnswer, isAnswering }: InputRequest
                   <div className={styles['input-card-header-left']}>
                     <span>{input.shortRef}</span>
                     <strong>{input.type}</strong>
-                    {input.agentId ? <span className={styles['input-card-agent']}>{input.agentId}</span> : null}
                   </div>
                   <small className={styles['input-card-time']}>{timeAgo(input.requestedAt)}</small>
                 </div>

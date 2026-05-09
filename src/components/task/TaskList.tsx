@@ -43,9 +43,6 @@ export function TaskList({ tasks, selectedTaskId, onSelectTask, pendingTaskIds }
             {pendingTaskIds?.has(task.id) ? (
               <WarningIndicator title="needs input" size={12} />
             ) : null}
-            {task.ownerAgentId ? (
-              <span className={styles['task-list-agent']}>{task.ownerAgentId}</span>
-            ) : null}
           </div>
           <div className={styles['task-list-status-row']}>
             <span className={styles['task-list-status']}>{task.status}</span>

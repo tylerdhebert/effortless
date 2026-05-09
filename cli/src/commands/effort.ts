@@ -106,9 +106,6 @@ export async function handleEffort(surface: string, command: string): Promise<bo
         if (task.branchName) {
           console.log(`branch ${task.branchName}`)
         }
-        if (task.ownerAgentId) {
-          console.log(`owner ${task.ownerAgentId}`)
-        }
       }
     }
 

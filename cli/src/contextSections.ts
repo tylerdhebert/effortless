@@ -9,9 +9,8 @@ import { planState } from './render'
 import type {
   Effort,
   EffortTemplate,
-  PlanComment,
   Reference,
-  TaskComment,
+  ActivityEvent,
   WorkSurface,
 } from '../../core/types'
 
@@ -57,7 +56,7 @@ export function printTemplatePlaybook(db: AppDatabase, template: EffortTemplate)
 }
 
 export function printTemplateWorkflow(
-  effort: Pick<Effort, 'template' | 'planRequiresReview' | 'needsTasks'>,
+  effort: Pick<Effort, 'template'>,
   counts: {
     plans?: number
     acceptedPlans?: number
@@ -69,15 +68,13 @@ export function printTemplateWorkflow(
   console.log('')
   console.log('required pieces')
   console.log(`plan: ${pieceState(requiresPlan(effort.template), counts.acceptedPlans ?? 0, counts.plans ?? 0)}`)
-  console.log(`tasks: ${pieceState(effort.needsTasks, (counts.acceptedTasks ?? 0) + (counts.mergedTasks ?? 0), counts.tasks ?? 0)}`)
-  console.log(`plan human approval req: ${effort.planRequiresReview ? 'on' : 'off'}`)
+  console.log(`tasks: ${(counts.acceptedTasks ?? 0) + (counts.mergedTasks ?? 0)}/${counts.tasks ?? 0}`)
 }
 
 export function printLatestUpdate(
   updates: Array<{
     id?: number
     author: string
-    agentId?: string | null
     kind?: string
     body: string
     createdAt: string
@@ -96,7 +93,7 @@ export function printLatestUpdate(
   if (!latest) return
 
   printSection('latest update')
-  console.log(`[${latest.agentId ?? latest.author}] ${latest.body}`)
+  console.log(`[${latest.author}] ${latest.body}`)
   endSection('latest update')
 }
 
@@ -132,13 +129,13 @@ export function printExpandedReferences(db: AppDatabase, references: Reference[]
 }
 
 export function printComments(
-  comments: Array<Pick<TaskComment | PlanComment, 'author' | 'agentId' | 'body'> & { kind: string }>,
+  comments: Array<Pick<ActivityEvent, 'author' | 'body'> & { kind: string }>,
 ): void {
   if (comments.length === 0) return
 
   printSection('comments')
   for (const comment of comments) {
-    console.log(`[${comment.agentId ?? comment.author}] ${comment.kind}: ${comment.body}`)
+    console.log(`[${comment.author}] ${comment.kind}: ${comment.body}`)
   }
   endSection('comments')
 }
@@ -206,7 +203,6 @@ function printExpandedReference(db: AppDatabase, reference: Reference): void {
   if (reference.targetType === 'review') {
     const review = getReviewByRef(db, String(reference.targetId))
     console.log(`[${review.shortRef}] ${review.verdict} review${label}`)
-    console.log(`  status: ${review.appliedAt ? 'applied' : 'pending'}`)
     if (review.summary) printIndentedPreview('handoff', review.summary)
     else printIndentedPreview('body', review.body)
   }

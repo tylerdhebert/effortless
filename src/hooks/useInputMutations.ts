@@ -11,10 +11,6 @@ export function useInputMutations(selectedEffortId: number | null) {
     onSuccess: async (inputRequest) => {
       await queryClient.invalidateQueries({ queryKey: ['inputs', selectedEffortId] })
       await queryClient.invalidateQueries({ queryKey: ['efforts'] })
-      if (inputRequest.planId) {
-        await queryClient.invalidateQueries({ queryKey: ['plans', selectedEffortId] })
-        await queryClient.invalidateQueries({ queryKey: ['plan-comments', inputRequest.planId] })
-      }
       if (inputRequest.taskId && selectedEffortId) {
         await invalidateTask(inputRequest.taskId, selectedEffortId)
       }

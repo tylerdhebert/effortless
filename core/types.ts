@@ -11,12 +11,10 @@ export type TaskStatus =
   | 'accepted'
   | 'merged'
 
-export type TaskCommentKind = 'comment' | 'checkpoint' | 'input-request' | 'input-response' | 'approval'
 export type ReviewVerdict = 'approve' | 'request-changes'
 export type BuildStatus = 'running' | 'passed' | 'failed'
 export type InputRequestType = 'yesno' | 'choice' | 'text'
 export type InputRequestStatus = 'pending' | 'answered'
-export type PlanCommentKind = 'comment' | 'approval' | 'input-request' | 'input-response'
 export type DiffType = 'uncommitted' | 'branch' | 'combined'
 
 export type Repo = {
@@ -37,8 +35,6 @@ export type Effort = {
   description: string
   template: EffortTemplate
   acceptedPlanId: number | null
-  planRequiresReview: boolean
-  needsTasks: boolean
   status: EffortStatus
   summary: string | null
   createdAt: string
@@ -51,23 +47,8 @@ export type Plan = {
   shortRef: string
   body: string
   summary: string | null
-  authorAgentId: string | null
   createdAt: string
   accepted: boolean
-  readyAt: string | null
-  acceptedAt: string | null
-  latestFeedbackBody: string | null
-  latestFeedbackAt: string | null
-}
-
-export type PlanComment = {
-  id: number
-  planId: number
-  author: 'user' | 'agent'
-  agentId: string | null
-  kind: PlanCommentKind
-  body: string
-  createdAt: string
 }
 
 export type Task = {
@@ -77,17 +58,10 @@ export type Task = {
   title: string
   description: string
   status: TaskStatus
-  ownerAgentId: string | null
   repoId: number | null
   branchName: string | null
   baseBranch: string | null
   worktreePath: string | null
-  requiresReview: boolean
-  reviewRequiresReview: boolean
-  autoMerge: boolean
-  conflictedAt: string | null
-  conflictDetails: string | null
-  mergedAt: string | null
   handoffSummary: string | null
   artifact: string | null
   createdAt: string
@@ -131,10 +105,8 @@ export type InputRequest = {
   id: number
   shortRef: string
   effortId: number
-  planId: number | null
   taskId: number | null
-  reviewId: number | null
-  agentId: string | null
+  runId: number | null
   type: InputRequestType
   prompt: string
   choices: InputChoice[] | null
@@ -144,14 +116,15 @@ export type InputRequest = {
   answeredAt: string | null
 }
 
-export type TaskComment = {
+export type ActivityEvent = {
   id: number
-  taskId: number
+  effortId: number
+  taskId: number | null
+  runId: number | null
   author: 'user' | 'agent'
-  agentId: string | null
-  kind: TaskCommentKind
+  kind: string
   body: string
-  commitHash: string | null
+  metadata: Record<string, unknown> | null
   createdAt: string
 }
 
@@ -162,9 +135,7 @@ export type Review = {
   verdict: ReviewVerdict
   body: string
   summary: string | null
-  authorAgentId: string | null
   createdAt: string
-  appliedAt: string | null
 }
 
 export type CreateEffortInput = {
@@ -217,7 +188,6 @@ export type SubmitReviewInput = {
   verdict: ReviewVerdict
   body: string
   summary?: string | null
-  authorAgentId?: string | null
 }
 
 export type ApplyReviewInput = {
@@ -234,7 +204,6 @@ export type CreatePlanInput = {
   effortId: number
   body: string
   summary?: string | null
-  authorAgentId?: string | null
 }
 
 export type RequestPlanChangesInput = {
@@ -244,10 +213,8 @@ export type RequestPlanChangesInput = {
 
 export type CreateInputRequestInput = {
   effortId?: number | null
-  planId?: number | null
   taskId?: number | null
-  reviewId?: number | null
-  agentId?: string | null
+  runId?: number | null
   type: InputRequestType
   prompt: string
   choices?: InputChoice[] | null
@@ -351,8 +318,6 @@ export type AgentRun = {
   shortRef: string
   effortId: number
   taskId: number | null
-  planId: number | null
-  reviewId: number | null
   profileId: number
   purpose: AgentRunPurpose
   label: string
@@ -360,9 +325,9 @@ export type AgentRun = {
   environment: RunEnvironment
   cwd: string
   command: string
-  contextPath: string
-  bootstrapPath: string
   transcriptPath: string
+  providerSessionId: string | null
+  terminalTabKey: string | null
   exitCode: number | null
   error: string | null
   startedAt: string | null
@@ -373,6 +338,13 @@ export type AgentRun = {
 
 export type PrepareTaskRunInput = {
   taskId: number
+  profileId?: number | null
+  purpose?: AgentRunPurpose
+  label?: string
+}
+
+export type PrepareEffortRunInput = {
+  effortId: number
   profileId?: number | null
   purpose?: AgentRunPurpose
   label?: string

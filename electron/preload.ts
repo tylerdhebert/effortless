@@ -15,12 +15,13 @@ import type {
   CreatePlanInput,
   CreateReferenceInput,
   CreateRepoInput,
+  CreateTaskInput,
   Effort,
   EffortTemplate,
   InputRequest,
   Mandate,
   Plan,
-  PlanComment,
+  ActivityEvent,
   Reference,
   ReferenceOwnerType,
   Repo,
@@ -32,11 +33,11 @@ import type {
   Task,
   TaskBuildResult,
   TaskCommitView,
-  TaskComment,
   TaskConflictView,
   TaskDiffView,
   TemplatePlaybook,
   PrepareTaskRunInput,
+  PrepareEffortRunInput,
   UpdateAgentProfileInput,
   UpdateMandateInput,
   UpdateRepoInput,
@@ -96,21 +97,20 @@ contextBridge.exposeInMainWorld('effortless', {
     ipcRenderer.invoke('efforts:delete', effortId) as Promise<void>,
   updateEffortSummary: (effortId: number, summary: string) =>
     ipcRenderer.invoke('efforts:updateSummary', effortId, summary) as Promise<Effort>,
-  updateEffortPlanRequiresReview: (effortId: number, planRequiresReview: boolean) =>
-    ipcRenderer.invoke('efforts:updatePlanRequiresReview', effortId, planRequiresReview) as Promise<Effort>,
   listTasks: (effortId: number) => ipcRenderer.invoke('tasks:list', effortId) as Promise<Task[]>,
   listAllTasks: () => ipcRenderer.invoke('tasks:listAll') as Promise<Task[]>,
+  createTask: (input: CreateTaskInput) => ipcRenderer.invoke('tasks:create', input) as Promise<Task>,
   listPlans: (effortId: number) => ipcRenderer.invoke('plans:list', effortId) as Promise<Plan[]>,
   getPlan: (planRef: string) => ipcRenderer.invoke('plans:show', planRef) as Promise<Plan>,
   listPlanComments: (planId: number) =>
-    ipcRenderer.invoke('plans:comments', planId) as Promise<PlanComment[]>,
+    ipcRenderer.invoke('plans:comments', planId) as Promise<ActivityEvent[]>,
   createPlan: (input: CreatePlanInput) => ipcRenderer.invoke('plans:create', input) as Promise<Plan>,
   acceptPlan: (planId: number) => ipcRenderer.invoke('plans:accept', planId) as Promise<Plan>,
   markPlanReady: (planId: number) => ipcRenderer.invoke('plans:ready', planId) as Promise<Plan>,
   requestPlanChanges: (input: RequestPlanChangesInput) =>
     ipcRenderer.invoke('plans:requestChanges', input) as Promise<Plan>,
   listTaskComments: (taskId: number) =>
-    ipcRenderer.invoke('tasks:comments', taskId) as Promise<TaskComment[]>,
+    ipcRenderer.invoke('tasks:comments', taskId) as Promise<ActivityEvent[]>,
   getLatestTaskBuild: (taskId: number) =>
     ipcRenderer.invoke('builds:latest', taskId) as Promise<TaskBuildResult | null>,
   runTaskBuild: (taskId: number) =>
@@ -125,7 +125,7 @@ contextBridge.exposeInMainWorld('effortless', {
   getReview: (reviewRef: string) => ipcRenderer.invoke('reviews:show', reviewRef) as Promise<Review>,
   claimTask: (input: ClaimTaskInput) => ipcRenderer.invoke('tasks:claim', input) as Promise<Task>,
   checkpointTask: (input: CheckpointTaskInput) =>
-    ipcRenderer.invoke('tasks:checkpoint', input) as Promise<TaskComment>,
+    ipcRenderer.invoke('tasks:checkpoint', input) as Promise<ActivityEvent>,
   markTaskReady: (taskId: number) => ipcRenderer.invoke('tasks:ready', taskId) as Promise<Task>,
   mergeTask: (taskId: number) => ipcRenderer.invoke('tasks:merge', taskId) as Promise<Task>,
   ensureTaskWorktree: (taskId: number) =>
@@ -138,12 +138,6 @@ contextBridge.exposeInMainWorld('effortless', {
     ipcRenderer.invoke('tasks:conflicts', taskId) as Promise<TaskConflictView>,
   updateTaskDetails: (input: UpdateTaskDetailsInput) =>
     ipcRenderer.invoke('tasks:updateDetails', input) as Promise<Task>,
-  updateTaskRequiresReview: (taskId: number, requiresReview: boolean) =>
-    ipcRenderer.invoke('tasks:updateRequiresReview', taskId, requiresReview) as Promise<Task>,
-  updateTaskReviewRequiresReview: (taskId: number, reviewRequiresReview: boolean) =>
-    ipcRenderer.invoke('tasks:updateReviewRequiresReview', taskId, reviewRequiresReview) as Promise<Task>,
-  updateTaskAutoMerge: (taskId: number, autoMerge: boolean) =>
-    ipcRenderer.invoke('tasks:updateAutoMerge', taskId, autoMerge) as Promise<Task>,
   listAgentProfiles: () =>
     ipcRenderer.invoke('agentProfiles:list') as Promise<AgentProfile[]>,
   createAgentProfile: (input: CreateAgentProfileInput) =>
@@ -158,6 +152,12 @@ contextBridge.exposeInMainWorld('effortless', {
     ipcRenderer.invoke('agentRuns:prepareTask', input) as Promise<{
       run: AgentRun
       task: Task
+      profile: AgentProfile
+      env: Record<string, string>
+    }>,
+  prepareEffortRun: (input: PrepareEffortRunInput) =>
+    ipcRenderer.invoke('agentRuns:prepareEffort', input) as Promise<{
+      run: AgentRun
       profile: AgentProfile
       env: Record<string, string>
     }>,

@@ -16,7 +16,7 @@ export function ReviewHistory({ reviews }: ReviewHistoryProps) {
       {reviews.map((review) => (
         <ReviewRecord review={review} key={review.id}>
           <div className={styles['review-record-footer']}>
-            <span>{review.appliedAt ? 'applied' : 'awaiting human input'}</span>
+            <span>{review.verdict}</span>
           </div>
         </ReviewRecord>
       ))}

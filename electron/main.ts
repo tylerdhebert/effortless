@@ -4,13 +4,13 @@ import { createHash } from 'node:crypto'
 import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { createAgentProfile, listAgentProfiles, updateAgentProfile } from '../core/agentProfiles'
-import { listAgentRuns, listTaskRuns, markAgentRunExited, markAgentRunFailed, markAgentRunStarted, prepareTaskRun } from '../core/agentRuns'
+import { listAgentRuns, listTaskRuns, markAgentRunExited, markAgentRunFailed, markAgentRunStarted, prepareEffortRun, prepareTaskRun } from '../core/agentRuns'
 import { getLatestTaskBuild, runTaskBuild } from '../core/builds'
 import { getPtyRuntimeStatus, RunManager } from './runManager'
 import { getAppState, openDatabase, updateNotificationSettings } from '../core/db'
 import type { NotificationSettings } from '../core/db'
 import { getCustomThemeState, updateCustomThemeState } from '../core/themeConfig'
-import { listEfforts, createEffort, deleteEffort, updateEffortSummary, updateEffortPlanRequiresReview } from '../core/efforts'
+import { listEfforts, createEffort, deleteEffort, updateEffortSummary } from '../core/efforts'
 import { browsePath } from '../core/filesystem'
 import {
   answerInputRequest,
@@ -47,6 +47,7 @@ import { applyReview, getReviewByRef, listReviews, requestReviewChanges, submitR
 import {
   checkpointTask,
   claimTask,
+  createTask,
   ensureTaskWorktree,
   approveTask,
   getTaskCommitView,
@@ -59,9 +60,6 @@ import {
   mergeTask,
   requestTaskChanges,
   updateTaskDetails,
-  updateTaskAutoMerge,
-  updateTaskRequiresReview,
-  updateTaskReviewRequiresReview,
 } from '../core/tasks'
 import type {
   AnswerInputRequestInput,
@@ -69,6 +67,7 @@ import type {
   ApproveTaskInput,
   CheckpointTaskInput,
   ClaimTaskInput,
+  CreateTaskInput,
   CreateInputRequestInput,
   CreateAgentProfileInput,
   CreateMandateInput,
@@ -173,12 +172,9 @@ ipcMain.handle('efforts:delete', (_event, effortId: number) =>
 ipcMain.handle('efforts:updateSummary', (_event, effortId: number, summary: string) =>
   updateEffortSummary(db, effortId, summary),
 )
-ipcMain.handle('efforts:updatePlanRequiresReview', (_event, effortId: number, planRequiresReview: boolean) =>
-  updateEffortPlanRequiresReview(db, effortId, planRequiresReview),
-)
-
 ipcMain.handle('tasks:list', (_event, effortId: number) => listTasks(db, effortId))
 ipcMain.handle('tasks:listAll', () => listAllTasks(db))
+ipcMain.handle('tasks:create', (_event, input: CreateTaskInput) => createTask(db, input))
 ipcMain.handle('plans:list', (_event, effortId: number) => listPlans(db, effortId))
 ipcMain.handle('plans:show', (_event, planRef: string) => getPlanByRef(db, planRef))
 ipcMain.handle('plans:comments', (_event, planId: number) => listPlanComments(db, planId))
@@ -214,15 +210,6 @@ ipcMain.handle('tasks:conflicts', (_event, taskId: number) => getTaskConflictVie
 ipcMain.handle('tasks:updateDetails', (_event, input: UpdateTaskDetailsInput) =>
   updateTaskDetails(db, input),
 )
-ipcMain.handle('tasks:updateRequiresReview', (_event, taskId: number, requiresReview: boolean) =>
-  updateTaskRequiresReview(db, taskId, requiresReview),
-)
-ipcMain.handle('tasks:updateReviewRequiresReview', (_event, taskId: number, reviewRequiresReview: boolean) =>
-  updateTaskReviewRequiresReview(db, taskId, reviewRequiresReview),
-)
-ipcMain.handle('tasks:updateAutoMerge', (_event, taskId: number, autoMerge: boolean) =>
-  updateTaskAutoMerge(db, taskId, autoMerge),
-)
 ipcMain.handle('agentProfiles:list', () => listAgentProfiles(db))
 ipcMain.handle('agentProfiles:create', (_event, input: CreateAgentProfileInput) => createAgentProfile(db, input))
 ipcMain.handle('agentProfiles:update', (_event, input: UpdateAgentProfileInput) => updateAgentProfile(db, input))
@@ -230,6 +217,9 @@ ipcMain.handle('agentRuns:list', (_event, effortId?: number | null) => listAgent
 ipcMain.handle('agentRuns:listTask', (_event, taskId: number) => listTaskRuns(db, taskId))
 ipcMain.handle('agentRuns:prepareTask', (_event, input: { taskId: number; profileId?: number | null; purpose?: 'main' | 'side-investigation' | 'implementation' | 'review'; label?: string }) =>
   prepareTaskRun(db, input),
+)
+ipcMain.handle('agentRuns:prepareEffort', (_event, input: { effortId: number; profileId?: number | null; purpose?: 'main' | 'side-investigation' | 'implementation' | 'review'; label?: string }) =>
+  prepareEffortRun(db, input),
 )
 ipcMain.handle('agentRuns:markStarted', (_event, runId: number) => markAgentRunStarted(db, runId))
 ipcMain.handle('agentRuns:markExited', (_event, runId: number, exitCode: number) => markAgentRunExited(db, runId, exitCode))

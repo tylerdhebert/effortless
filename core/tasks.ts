@@ -1,8 +1,10 @@
 import type { AppDatabase } from './db'
 import { bumpAppState } from './db'
+import { addActivityEvent, listActivityEvents } from './activity'
 import { checkConflicts, getCommits, getDiff, getHeadCommit, mergeBranch, worktreeCreate, worktreeRemove } from './git'
 import { getRepo } from './repos'
 import type {
+  ActivityEvent,
   ApproveTaskInput,
   CheckpointTaskInput,
   ClaimTaskInput,
@@ -10,8 +12,6 @@ import type {
   RequestTaskChangesInput,
   Task,
   TaskCommitView,
-  TaskComment,
-  TaskCommentKind,
   TaskConflictView,
   TaskDiffView,
   UpdateTaskDetailsInput,
@@ -25,91 +25,58 @@ type TaskRow = {
   title: string
   description: string
   status: Task['status']
-  owner_agent_id: string | null
   repo_id: number | null
   branch_name: string | null
   base_branch: string | null
   worktree_path: string | null
-  requires_review: number
-  review_requires_review: number
-  auto_merge: number
-  conflicted_at: string | null
-  conflict_details: string | null
-  merged_at: string | null
   handoff_summary: string | null
   artifact: string | null
   created_at: string
   updated_at: string
 }
 
-type TaskCommentRow = {
-  id: number
-  task_id: number
-  author: 'user' | 'agent'
-  agent_id: string | null
-  kind: TaskCommentKind
-  body: string
-  commit_hash: string | null
-  created_at: string
-}
-
 export function listTasks(db: AppDatabase, effortId: number): Task[] {
-  return db
-    .prepare<TaskRow>(`SELECT * FROM tasks WHERE effort_id = ? ORDER BY id ASC`)
-    .all(effortId)
-    .map(mapTask)
+  return db.prepare<TaskRow>(`SELECT * FROM tasks WHERE effort_id = ? ORDER BY id ASC`).all(effortId).map(mapTask)
 }
 
 export function listAllTasks(db: AppDatabase): Task[] {
-  return db
-    .prepare<TaskRow>(`SELECT * FROM tasks ORDER BY id ASC`)
-    .all()
-    .map(mapTask)
+  return db.prepare<TaskRow>(`SELECT * FROM tasks ORDER BY id ASC`).all().map(mapTask)
 }
 
 export function createTask(db: AppDatabase, input: CreateTaskInput): Task {
   const now = new Date().toISOString()
-  const result = db
-    .prepare(
-      `
-      INSERT INTO tasks (
-        effort_id, title, description, status, repo_id, branch_name, base_branch, requires_review, review_requires_review, created_at, updated_at
-      )
-      VALUES (?, ?, ?, 'open', ?, ?, ?, 1, 1, ?, ?)
-    `,
+  const result = db.prepare(`
+    INSERT INTO tasks (
+      effort_id, title, description, status, repo_id, branch_name, base_branch, created_at, updated_at
     )
-    .run(
-      input.effortId,
-      input.title.trim(),
-      input.description.trim(),
-      input.repoId ?? null,
-      input.branchName?.trim() || null,
-      input.baseBranch?.trim() || null,
-      now,
-      now,
-    )
+    VALUES (?, ?, ?, 'open', ?, ?, ?, ?, ?)
+  `).run(
+    input.effortId,
+    input.title.trim(),
+    input.description.trim(),
+    input.repoId ?? null,
+    input.branchName?.trim() || null,
+    input.baseBranch?.trim() || null,
+    now,
+    now,
+  )
 
   const id = Number(result.lastInsertRowid)
-  const shortRef = `task-${id}`
-  db.prepare(`UPDATE tasks SET short_ref = ? WHERE id = ?`).run(shortRef, id)
+  db.prepare(`UPDATE tasks SET short_ref = ? WHERE id = ?`).run(`task-${id}`, id)
   bumpAppState(db)
-
   return getTask(db, id)
 }
 
 export function updateTaskDetails(db: AppDatabase, input: UpdateTaskDetailsInput): Task {
   const current = getTask(db, input.taskId)
   const nextRepoId = input.repoId === undefined ? current.repoId : input.repoId
-  const nextBranchName =
-    input.branchName === undefined ? current.branchName : input.branchName?.trim() || null
-  const nextBaseBranch =
-    input.baseBranch === undefined ? current.baseBranch : input.baseBranch?.trim() || null
+  const nextBranchName = input.branchName === undefined ? current.branchName : input.branchName?.trim() || null
+  const nextBaseBranch = input.baseBranch === undefined ? current.baseBranch : input.baseBranch?.trim() || null
   const repoChanged = nextRepoId !== current.repoId
   const branchChanged = nextBranchName !== current.branchName
   const baseBranchChanged = nextBaseBranch !== current.baseBranch
 
-  db.prepare(
-    `
+  db.prepare(`
     UPDATE tasks
     SET repo_id = ?,
         branch_name = ?,
@@ -119,15 +86,12 @@ export function updateTaskDetails(db: AppDatabase, input: UpdateTaskDetailsInput
         artifact = ?,
         updated_at = ?
     WHERE id = ?
-  `,
-  ).run(
+  `).run(
     nextRepoId,
     nextBranchName,
     nextBaseBranch,
     repoChanged || branchChanged || baseBranchChanged ? null : current.worktreePath,
-    input.handoffSummary === undefined
-      ? current.handoffSummary
-      : input.handoffSummary?.trim() || null,
+    input.handoffSummary === undefined ? current.handoffSummary : input.handoffSummary?.trim() || null,
     input.artifact === undefined ? current.artifact : input.artifact?.trim() || null,
     new Date().toISOString(),
     input.taskId,
@@ -139,11 +103,7 @@ export function updateTaskDetails(db: AppDatabase, input: UpdateTaskDetailsInput
 
 export function getTask(db: AppDatabase, id: number): Task {
   const row = db.prepare<TaskRow>(`SELECT * FROM tasks WHERE id = ?`).get(id)
-
-  if (!row) {
-    throw new Error(`Task ${id} was not found`)
-  }
-
+  if (!row) throw new Error(`Task ${id} was not found`)
   return mapTask(row)
 }
 
@@ -153,89 +113,45 @@ export function getTaskByRef(db: AppDatabase, taskRef: string): Task {
   const row = numericId
     ? db.prepare<TaskRow>(`SELECT * FROM tasks WHERE id = ?`).get(numericId)
     : db.prepare<TaskRow>(`SELECT * FROM tasks WHERE short_ref = ?`).get(normalized)
-
-  if (!row) {
-    throw new Error(`Task ${taskRef} was not found`)
-  }
-
+  if (!row) throw new Error(`Task ${taskRef} was not found`)
   return mapTask(row)
 }
 
-export function listTaskComments(db: AppDatabase, taskId: number): TaskComment[] {
-  return db
-    .prepare<TaskCommentRow>(`SELECT * FROM task_comments WHERE task_id = ? ORDER BY id ASC`)
-    .all(taskId)
-    .map(mapTaskComment)
+export function listTaskComments(db: AppDatabase, taskId: number): ActivityEvent[] {
+  return listActivityEvents(db, { taskId })
 }
 
 export async function claimTask(db: AppDatabase, input: ClaimTaskInput): Promise<Task> {
-  const now = new Date().toISOString()
   let task = getTask(db, input.taskId)
-
   if (task.repoId) {
     task = await ensureTaskWorktree(db, task.id)
   }
-
-  db.prepare(
-    `
-    UPDATE tasks
-    SET owner_agent_id = ?,
-        status = 'in-flight',
-        updated_at = ?
-    WHERE id = ?
-  `,
-  ).run(input.agentId.trim(), now, input.taskId)
+  updateTaskStatus(db, input.taskId, 'in-flight')
   addTaskComment(db, input.taskId, 'agent', input.agentId, 'comment', `claimed by ${input.agentId}`)
   bumpAppState(db)
-
   return getTask(db, input.taskId)
 }
 
-export function checkpointTask(db: AppDatabase, input: CheckpointTaskInput): TaskComment {
-  const comment = addTaskComment(
-    db,
-    input.taskId,
-    'agent',
-    input.agentId,
-    'checkpoint',
-    input.body.trim(),
-  )
+export function checkpointTask(db: AppDatabase, input: CheckpointTaskInput): ActivityEvent {
+  const event = addTaskComment(db, input.taskId, 'agent', input.agentId, 'checkpoint', input.body.trim())
   touchTask(db, input.taskId)
   bumpAppState(db)
-
-  return comment
+  return event
 }
 
 export async function markTaskReady(db: AppDatabase, taskId: number): Promise<Task> {
-  const task = getTask(db, taskId)
-  if (!task.requiresReview) {
-    addTaskComment(db, taskId, 'agent', task.ownerAgentId, 'checkpoint', 'ready and accepted')
-    return acceptTask(db, taskId)
-  }
-
-  const nextStatus = 'reviewing'
-  updateTaskStatus(db, taskId, nextStatus)
-  addTaskComment(
-    db,
-    taskId,
-    'agent',
-    task.ownerAgentId,
-    'checkpoint',
-    'ready for human review',
-  )
+  updateTaskStatus(db, taskId, 'reviewing')
+  addTaskComment(db, taskId, 'agent', null, 'checkpoint', 'ready for review')
   bumpAppState(db)
-
   return getTask(db, taskId)
 }
 
 export async function approveTask(db: AppDatabase, input: ApproveTaskInput): Promise<Task> {
   const task = getTask(db, input.taskId)
-  const commitHash =
-    input.commitHash ?? (task.worktreePath ? await getHeadCommit(task.worktreePath) : null)
-  addTaskComment(db, input.taskId, 'user', null, 'approval', 'lgtm', commitHash)
+  const commitHash = input.commitHash ?? (task.worktreePath ? await getHeadCommit(task.worktreePath) : null)
+  addTaskComment(db, input.taskId, 'user', null, 'approval', 'lgtm', commitHash ? { commitHash } : null)
   await acceptTask(db, input.taskId)
   bumpAppState(db)
-
   return getTask(db, input.taskId)
 }
 
@@ -243,98 +159,51 @@ export function requestTaskChanges(db: AppDatabase, input: RequestTaskChangesInp
   updateTaskStatus(db, input.taskId, 'changes-requested')
   addTaskComment(db, input.taskId, 'user', null, 'comment', input.body.trim())
   bumpAppState(db)
-
   return getTask(db, input.taskId)
 }
 
 export async function ensureTaskWorktree(db: AppDatabase, taskId: number): Promise<Task> {
   const task = getTask(db, taskId)
-
-  if (!task.repoId) {
-    throw new Error('Task does not have a repo')
-  }
+  if (!task.repoId) throw new Error('Task does not have a repo')
 
   const repo = getRepo(db, task.repoId)
   const branchName = task.branchName ?? `task/${task.shortRef}`
   const baseBranch = task.baseBranch ?? repo.baseBranch
   const resolvedWorktreePath = await worktreeCreate(repo.path, branchName, baseBranch)
 
-  db.prepare(
-    `
+  db.prepare(`
     UPDATE tasks
     SET branch_name = ?,
         base_branch = ?,
         worktree_path = ?,
         updated_at = ?
     WHERE id = ?
-  `,
-  ).run(branchName, baseBranch, resolvedWorktreePath, new Date().toISOString(), taskId)
+  `).run(branchName, baseBranch, resolvedWorktreePath, new Date().toISOString(), taskId)
 
   bumpAppState(db)
   return getTask(db, taskId)
 }
 
-export async function getTaskDiffView(
-  db: AppDatabase,
-  taskId: number,
-  type: DiffType,
-): Promise<TaskDiffView> {
+export async function getTaskDiffView(db: AppDatabase, taskId: number, type: DiffType): Promise<TaskDiffView> {
   const context = resolveTaskRepoContext(db, taskId)
-  const output = await getDiff(
-    context.repo.path,
-    context.branchName,
-    context.baseBranch,
-    type,
-  )
-
-  return {
-    taskId,
-    type,
-    output: output.trimEnd(),
-  }
+  const output = await getDiff(context.repo.path, context.branchName, context.baseBranch, type)
+  return { taskId, type, output: output.trimEnd() }
 }
 
 export async function getTaskCommitView(db: AppDatabase, taskId: number): Promise<TaskCommitView> {
   const context = resolveTaskRepoContext(db, taskId)
-  const output = await getCommits(
-    context.repo.path,
-    context.branchName,
-    context.baseBranch,
-  )
-
-  return {
-    taskId,
-    output: output.trimEnd(),
-  }
+  const output = await getCommits(context.repo.path, context.branchName, context.baseBranch)
+  return { taskId, output: output.trimEnd() }
 }
 
-export async function getTaskConflictView(
-  db: AppDatabase,
-  taskId: number,
-): Promise<TaskConflictView> {
+export async function getTaskConflictView(db: AppDatabase, taskId: number): Promise<TaskConflictView> {
   const context = resolveTaskRepoContext(db, taskId)
-  const result = await checkConflicts(
-    context.repo.path,
-    context.branchName,
-    context.baseBranch,
-  )
-
-  if (!result.hasConflicts) {
-    clearTaskConflict(db, taskId)
-    return {
-      taskId,
-      hasConflicts: false,
-      files: [],
-      details: null,
-    }
-  }
-
-  persistTaskConflict(db, taskId, result.details, result.files)
+  const result = await checkConflicts(context.repo.path, context.branchName, context.baseBranch)
   return {
     taskId,
-    hasConflicts: true,
-    files: result.files,
-    details: result.details.trimEnd(),
+    hasConflicts: result.hasConflicts,
+    files: result.hasConflicts ? result.files : [],
+    details: result.hasConflicts ? result.details.trimEnd() : null,
   }
 }
 
@@ -344,7 +213,6 @@ export async function acceptTask(db: AppDatabase, taskId: number): Promise<Task>
     const repo = getRepo(db, task.repoId)
     const conflicts = await checkConflicts(repo.path, task.branchName, task.baseBranch)
     if (conflicts.hasConflicts) {
-      persistTaskConflict(db, taskId, conflicts.details, conflicts.files)
       updateTaskStatus(db, taskId, 'conflicted')
       addTaskComment(
         db,
@@ -352,28 +220,21 @@ export async function acceptTask(db: AppDatabase, taskId: number): Promise<Task>
         'user',
         null,
         'comment',
-        `Conflict detected against ${task.baseBranch}. Affected files: ${conflicts.files.join(', ')}. Resolve in the worktree and mark ready again.`,
+        `Conflict detected against ${task.baseBranch}.`,
       )
       bumpAppState(db)
       return getTask(db, taskId)
     }
-    clearTaskConflict(db, taskId)
   }
 
   updateTaskStatus(db, taskId, 'accepted')
-  if (task.autoMerge) {
-    return mergeTask(db, taskId)
-  }
-
   bumpAppState(db)
   return getTask(db, taskId)
 }
 
 export async function mergeTask(db: AppDatabase, taskId: number): Promise<Task> {
   const task = getTask(db, taskId)
-  if (task.status !== 'accepted') {
-    throw new Error('Task must be accepted before merge')
-  }
+  if (task.status !== 'accepted') throw new Error('Task must be accepted before merge')
   if (!task.repoId || !task.branchName || !task.baseBranch) {
     throw new Error('Task needs repo, branch, and base branch before merge')
   }
@@ -381,7 +242,6 @@ export async function mergeTask(db: AppDatabase, taskId: number): Promise<Task> 
   const repo = getRepo(db, task.repoId)
   const conflicts = await checkConflicts(repo.path, task.branchName, task.baseBranch)
   if (conflicts.hasConflicts) {
-    persistTaskConflict(db, taskId, conflicts.details, conflicts.files)
     updateTaskStatus(db, taskId, 'conflicted')
     addTaskComment(
       db,
@@ -389,7 +249,7 @@ export async function mergeTask(db: AppDatabase, taskId: number): Promise<Task> 
       'user',
       null,
       'comment',
-      `Conflict detected against ${task.baseBranch}. Affected files: ${conflicts.files.join(', ')}.`,
+      `Conflict detected against ${task.baseBranch}.`,
     )
     bumpAppState(db)
     return getTask(db, taskId)
@@ -397,40 +257,14 @@ export async function mergeTask(db: AppDatabase, taskId: number): Promise<Task> 
 
   await mergeBranch(repo.path, task.branchName, task.baseBranch)
   await worktreeRemove(repo.path, task.branchName)
-
-  const now = new Date().toISOString()
-  db.prepare(`
-    UPDATE tasks
-    SET status = 'merged',
-        conflicted_at = NULL,
-        conflict_details = NULL,
-        merged_at = ?,
-        updated_at = ?
-    WHERE id = ?
-  `).run(now, now, taskId)
+  updateTaskStatus(db, taskId, 'merged')
   addTaskComment(db, taskId, 'user', null, 'approval', `merged ${task.branchName} into ${task.baseBranch}`)
-  await refreshMergeableTaskConflicts(db, taskId)
-  bumpAppState(db)
-
-  return getTask(db, taskId)
-}
-
-export function updateTaskAutoMerge(db: AppDatabase, taskId: number, autoMerge: boolean): Task {
-  db.prepare(`UPDATE tasks SET auto_merge = ?, updated_at = ? WHERE id = ?`).run(
-    autoMerge ? 1 : 0,
-    new Date().toISOString(),
-    taskId,
-  )
   bumpAppState(db)
   return getTask(db, taskId)
 }
 
 export function updateTaskStatus(db: AppDatabase, taskId: number, status: Task['status']): void {
-  db.prepare(`UPDATE tasks SET status = ?, updated_at = ? WHERE id = ?`).run(
-    status,
-    new Date().toISOString(),
-    taskId,
-  )
+  db.prepare(`UPDATE tasks SET status = ?, updated_at = ? WHERE id = ?`).run(status, new Date().toISOString(), taskId)
 }
 
 function touchTask(db: AppDatabase, taskId: number): void {
@@ -442,18 +276,13 @@ function resolveTaskRepoContext(
   taskId: number,
 ): { task: Task; repo: ReturnType<typeof getRepo>; branchName: string; baseBranch: string } {
   const task = getTask(db, taskId)
-  if (!task.repoId) {
-    throw new Error('Task does not have a repo')
-  }
-
+  if (!task.repoId) throw new Error('Task does not have a repo')
   if (!task.branchName || !task.baseBranch) {
     throw new Error('Task needs branch and base branch before loading implementation context')
   }
-
-  const repo = getRepo(db, task.repoId)
   return {
     task,
-    repo,
+    repo: getRepo(db, task.repoId),
     branchName: task.branchName,
     baseBranch: task.baseBranch,
   }
@@ -462,111 +291,21 @@ function resolveTaskRepoContext(
 export function addTaskComment(
   db: AppDatabase,
   taskId: number,
-  author: TaskComment['author'],
+  author: 'user' | 'agent',
   agentId: string | null,
-  kind: TaskCommentKind,
+  kind: string,
   body: string,
-  commitHash: string | null = null,
-): TaskComment {
-  const now = new Date().toISOString()
-  const result = db
-    .prepare(
-      `
-      INSERT INTO task_comments (task_id, author, agent_id, kind, body, commit_hash, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `,
-    )
-    .run(taskId, author, agentId, kind, body, commitHash, now)
-
-  return getTaskComment(db, Number(result.lastInsertRowid))
-}
-
-function getTaskComment(db: AppDatabase, id: number): TaskComment {
-  const row = db.prepare<TaskCommentRow>(`SELECT * FROM task_comments WHERE id = ?`).get(id)
-
-  if (!row) {
-    throw new Error(`Task comment ${id} was not found`)
-  }
-
-  return mapTaskComment(row)
-}
-
-export function updateTaskRequiresReview(db: AppDatabase, taskId: number, requiresReview: boolean): Task {
-  db.prepare(`UPDATE tasks SET requires_review = ?, updated_at = ? WHERE id = ?`).run(
-    requiresReview ? 1 : 0,
-    new Date().toISOString(),
+  metadata: Record<string, unknown> | null = null,
+): ActivityEvent {
+  const task = getTask(db, taskId)
+  return addActivityEvent(db, {
+    effortId: task.effortId,
     taskId,
-  )
-  bumpAppState(db)
-  return getTask(db, taskId)
-}
-
-export function updateTaskReviewRequiresReview(db: AppDatabase, taskId: number, reviewRequiresReview: boolean): Task {
-  db.prepare(`UPDATE tasks SET review_requires_review = ?, updated_at = ? WHERE id = ?`).run(
-    reviewRequiresReview ? 1 : 0,
-    new Date().toISOString(),
-    taskId,
-  )
-  bumpAppState(db)
-  return getTask(db, taskId)
-}
-
-function persistTaskConflict(db: AppDatabase, taskId: number, details: string, files: string[]): void {
-  db.prepare(`
-    UPDATE tasks
-    SET conflicted_at = ?,
-        conflict_details = ?,
-        updated_at = ?
-    WHERE id = ?
-  `).run(
-    new Date().toISOString(),
-    JSON.stringify({ output: details, files }),
-    new Date().toISOString(),
-    taskId,
-  )
-}
-
-function clearTaskConflict(db: AppDatabase, taskId: number): void {
-  db.prepare(`
-    UPDATE tasks
-    SET conflicted_at = NULL,
-        conflict_details = NULL,
-        updated_at = ?
-    WHERE id = ?
-  `).run(new Date().toISOString(), taskId)
-}
-
-async function refreshMergeableTaskConflicts(db: AppDatabase, mergedTaskId: number): Promise<void> {
-  const mergedTask = getTask(db, mergedTaskId)
-  if (!mergedTask.repoId || !mergedTask.baseBranch) return
-
-  const repo = getRepo(db, mergedTask.repoId)
-  const siblings = db.prepare<TaskRow>(`
-    SELECT * FROM tasks
-    WHERE repo_id = ?
-      AND base_branch = ?
-      AND id != ?
-      AND status IN ('accepted', 'reviewing', 'conflicted')
-  `).all(mergedTask.repoId, mergedTask.baseBranch, mergedTaskId).map(mapTask)
-
-  for (const sibling of siblings) {
-    if (!sibling.branchName) continue
-    const result = await checkConflicts(repo.path, sibling.branchName, mergedTask.baseBranch)
-    if (result.hasConflicts) {
-      persistTaskConflict(db, sibling.id, result.details, result.files)
-      if (sibling.status === 'accepted') updateTaskStatus(db, sibling.id, 'conflicted')
-      addTaskComment(
-        db,
-        sibling.id,
-        'user',
-        null,
-        'comment',
-        `Conflict detected after merge of ${mergedTask.branchName}. Affected files: ${result.files.join(', ')}.`,
-      )
-      continue
-    }
-    clearTaskConflict(db, sibling.id)
-  }
+    author,
+    kind,
+    body,
+    metadata: agentId ? { ...(metadata ?? {}), agentId } : metadata,
+  })
 }
 
 function mapTask(row: TaskRow): Task {
@@ -577,33 +316,13 @@ function mapTask(row: TaskRow): Task {
     title: row.title,
     description: row.description,
     status: row.status,
-    ownerAgentId: row.owner_agent_id,
     repoId: row.repo_id,
     branchName: row.branch_name,
     baseBranch: row.base_branch,
     worktreePath: row.worktree_path,
-    requiresReview: Boolean(row.requires_review),
-    reviewRequiresReview: Boolean(row.review_requires_review),
-    autoMerge: Boolean(row.auto_merge),
-    conflictedAt: row.conflicted_at,
-    conflictDetails: row.conflict_details,
-    mergedAt: row.merged_at,
     handoffSummary: row.handoff_summary,
     artifact: row.artifact,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
-  }
-}
-
-function mapTaskComment(row: TaskCommentRow): TaskComment {
-  return {
-    id: row.id,
-    taskId: row.task_id,
-    author: row.author,
-    agentId: row.agent_id,
-    kind: row.kind,
-    body: row.body,
-    commitHash: row.commit_hash,
-    createdAt: row.created_at,
   }
 }

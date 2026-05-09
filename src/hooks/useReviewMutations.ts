@@ -5,7 +5,7 @@ export function useReviewMutations(selectedEffortId: number | null) {
   const { invalidateTask } = useCacheInvalidation()
 
   const submitReview = useMutation({
-    mutationFn: (input: { taskId: number; verdict: 'approve' | 'request-changes'; body: string; authorAgentId: string | null }) =>
+    mutationFn: (input: { taskId: number; verdict: 'approve' | 'request-changes'; body: string }) =>
       window.effortless.submitReview(input),
     onSuccess: async (review) => {
       if (selectedEffortId) {

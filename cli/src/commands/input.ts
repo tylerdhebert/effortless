@@ -1,5 +1,5 @@
-import { createInputRequest, getInputRequestByRef } from '../../../core/inputs'
-import { option, requiredOption, parseChoices } from '../args'
+import { answerInputRequest, createInputRequest, getInputRequestByRef } from '../../../core/inputs'
+import { option, requiredOption, parseChoices, rawArgs } from '../args'
 import { db, resolveInputTarget, wait } from '../context'
 import { printInputRequest } from '../render'
 import type { InputRequest } from '../../../core/types'
@@ -10,13 +10,26 @@ export async function handleInput(surface: string, command: string): Promise<boo
   if (command === 'request') {
     const inputRequest = createInputRequest(db, {
       ...resolveInputTarget(db),
-      agentId: option('--agent') ?? process.env.EFFORTLESS_RUN_LABEL ?? process.env.EFFORTLESS_AGENT_ID ?? 'main',
+      runId: null,
       type: requiredOption('--type') as 'yesno' | 'choice' | 'text',
       prompt: requiredOption('--prompt'),
       choices: parseChoices(option('--choices')),
     })
     printInputRequest(inputRequest)
+    if (rawArgs.includes('--no-wait')) {
+      return true
+    }
     await waitForInputRequest(inputRequest)
+    return true
+  }
+
+  if (command === 'answer') {
+    const inputRequest = getInputRequestByRef(db, requiredOption('--input'))
+    const answered = answerInputRequest(db, {
+      inputRequestId: inputRequest.id,
+      answer: requiredOption('--answer'),
+    })
+    printInputRequest(answered)
     return true
   }
 

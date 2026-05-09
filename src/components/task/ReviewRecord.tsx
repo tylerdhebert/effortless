@@ -10,14 +10,11 @@ type ReviewRecordProps = {
 
 export function ReviewRecord({ review, dateLabel, children }: ReviewRecordProps) {
   return (
-    <article
-      className={`${styles['review-record']} ${review.appliedAt ? styles.applied : ''}`}
-    >
+    <article className={styles['review-record']}>
       <div className={styles['review-record-header']}>
         <div>
           <span>{review.shortRef}</span>
           <strong>{review.verdict}</strong>
-          {review.authorAgentId ? <span className={styles['review-record-agent']}>{review.authorAgentId}</span> : null}
         </div>
         <small>{dateLabel ?? formatTimestamp(review.createdAt)}</small>
       </div>

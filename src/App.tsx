@@ -24,6 +24,8 @@ import { TitleBar } from './components/ui/TitleBar'
 import { PlanSection } from './components/effort/PlanSection'
 import { ReferenceSection } from './components/effort/ReferenceSection'
 import { Sidebar } from './components/sidebar/Sidebar'
+import { AgentRunTerminal } from './components/task/AgentRunTerminal'
+import { TaskCreationForm } from './components/task/TaskCreationForm'
 import { TaskDetailPane } from './components/task/TaskDetailPane'
 import { TaskList } from './components/task/TaskList'
 import {
@@ -174,7 +176,6 @@ function App() {
   const supportsPlans = template ? effortSupportsPlans(template) : false
   const supportsTasks = template ? effortSupportsTasks(template) : false
   const usesBugfixOverview = template === 'bugfix'
-  const hasPendingPlan = (plansQuery.data ?? []).some((p) => p.readyAt && !p.acceptedAt)
 
 
   const taskPendingInputIds = useMemo(() => {
@@ -226,6 +227,12 @@ function App() {
     enabled: Boolean(selectedTask),
   })
 
+  const effortRunsQuery = useQuery({
+    queryKey: ['agent-runs', selectedEffort?.id],
+    queryFn: () => window.effortless.listAgentRuns(selectedEffort!.id),
+    enabled: Boolean(selectedEffort),
+  })
+
   const commitsQuery = useQuery({
     queryKey: ['task-commits', selectedTask?.id],
     queryFn: () => window.effortless.getTaskCommits(selectedTask!.id),
@@ -238,7 +245,7 @@ function App() {
     enabled: Boolean(selectedTask),
   })
 
-  const { createEffort, deleteEffort, updateEffortPlanRequiresReview } = useEffortMutations(selectedEffort?.id ?? null)
+  const { createEffort, deleteEffort } = useEffortMutations(selectedEffort?.id ?? null)
   const repoMutations = useRepoMutations(selectedEffort?.id ?? null)
   const mandateMutations = useMandateMutations()
   const planMutations = usePlanMutations(
@@ -307,6 +314,18 @@ function App() {
     },
   })
 
+  const startEffortRun = useMutation({
+    mutationFn: async (effortId: number) => {
+      const prepared = await window.effortless.prepareEffortRun({ effortId, purpose: 'main' })
+      await window.effortless.startAgentRun(prepared.run.id, { cols: 100, rows: 24 })
+      return prepared
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['agent-runs'] })
+      await queryClient.invalidateQueries({ queryKey: ['app-state'] })
+    },
+  })
+
   const resetTemplatePlaybook = useMutation({
     mutationFn: (template: 'bugfix' | 'delivery' | 'investigation') =>
       window.effortless.resetTemplatePlaybook(template),
@@ -335,6 +354,18 @@ function App() {
       void queryClient.invalidateQueries()
     }
   }, [appStateQuery.data, observedAppVersion, queryClient])
+
+  useEffect(() => {
+    return window.effortless.onAgentRunTerminalEvent((event) => {
+      if (event.kind !== 'exit' && event.kind !== 'error') return
+      void queryClient.invalidateQueries({ queryKey: ['task-runs'] })
+      void queryClient.invalidateQueries({ queryKey: ['agent-runs'] })
+      void queryClient.invalidateQueries({ queryKey: ['app-state'] })
+      if (selectedEffort?.id) {
+        void queryClient.invalidateQueries({ queryKey: ['tasks', selectedEffort.id] })
+      }
+    })
+  }, [queryClient, selectedEffort?.id])
 
   useEffect(() => {
     if (preserveSelectionOnEffortChangeRef.current) {
@@ -455,20 +486,7 @@ function App() {
     setSurfaceMode('effort')
     setSelectedEffortId(notification.effortId)
 
-    if (notification.kind === 'plan-review') {
-      setSelectedPlanId(notification.entityId)
-      setSelectedTaskId(null)
-      return
-    }
-
     if (notification.kind === 'task-review') {
-      setSelectedTaskId(notification.entityId)
-      setSelectedPlanId(null)
-      return
-    }
-
-    if (notification.kind === 'review-pass') {
-      // notification.entityId is the task id for review-pass
       setSelectedTaskId(notification.entityId)
       setSelectedPlanId(null)
       return
@@ -476,25 +494,9 @@ function App() {
 
     if (notification.kind === 'input-request') {
       const input = await window.effortless.getInputRequest(notification.entityShortRef)
-      if (input.planId) {
-        setSelectedPlanId(input.planId)
-        setSelectedTaskId(null)
-      } else if (input.taskId) {
+      if (input.taskId) {
         setSelectedTaskId(input.taskId)
         setSelectedPlanId(null)
-      } else if (input.reviewId) {
-        const efforts = effortsQuery.data ?? await window.effortless.listEfforts()
-        for (const effort of efforts) {
-          const tasks = await window.effortless.listTasks(effort.id)
-          for (const task of tasks) {
-            const reviews = await window.effortless.listReviews(task.id)
-            if (reviews.some((r) => r.id === input.reviewId)) {
-              setSelectedTaskId(task.id)
-              setSelectedPlanId(null)
-              return
-            }
-          }
-        }
       }
     }
   }
@@ -721,6 +723,18 @@ function App() {
               ref={effortScrollRef}
               className={`effort-scroll ${supportsTasks ? 'effort-scroll--delivery' : 'effort-scroll--compact'}`}
             >
+              <AgentRunTerminal
+                activeRun={(effortRunsQuery.data ?? []).find((run) => run.status === 'running') ?? effortRunsQuery.data?.[0] ?? null}
+                isStarting={startEffortRun.isPending}
+                startLabel="start main"
+                emptyLabel="ready for effort"
+                onStart={() => {
+                  startEffortRun.mutate(selectedEffort.id)
+                }}
+                onStop={(runId) => taskMutations.stopAgentRun.mutate(runId)}
+                onOpenTranscript={(filePath) => void window.effortless.openPath(filePath)}
+              />
+
               {(selectedEffort.status === 'complete' || selectedEffort.status === 'archived') ? (
                 <div style={{ padding: '0 30px', marginBottom: '18px' }}>
                   {selectedEffort.template === 'investigation' ? (
@@ -794,14 +808,6 @@ function App() {
                   isAcceptingPlan={planMutations.acceptPlan.isPending}
                   isReadyingPlan={planMutations.readyPlan.isPending}
                   isRequestingPlanChanges={planMutations.requestPlanChanges.isPending}
-                  hasPendingPlan={hasPendingPlan}
-                  humanApprovalRequired={selectedEffort.planRequiresReview}
-                  onUpdateHumanApprovalRequired={(checked) =>
-                    updateEffortPlanRequiresReview.mutate({
-                      effortId: selectedEffort.id,
-                      planRequiresReview: checked,
-                    })
-                  }
                 />
               ) : null}
 
@@ -829,12 +835,24 @@ function App() {
                     </div>
                   ) : null}
                   <div className="task-workspace">
-                    <TaskList
-                      tasks={filteredTasks}
-                      selectedTaskId={selectedTaskId}
-                      onSelectTask={setSelectedTaskId}
-                      pendingTaskIds={taskPendingInputIds}
-                    />
+                    <div>
+                      <TaskCreationForm
+                        effortId={selectedEffort.id}
+                        repos={reposQuery.data ?? []}
+                        isCreating={taskMutations.createTask.isPending}
+                        onCreate={(input) => {
+                          taskMutations.createTask.mutate(input, {
+                            onSuccess: (task) => setSelectedTaskId(task.id),
+                          })
+                        }}
+                      />
+                      <TaskList
+                        tasks={filteredTasks}
+                        selectedTaskId={selectedTaskId}
+                        onSelectTask={setSelectedTaskId}
+                        pendingTaskIds={taskPendingInputIds}
+                      />
+                    </div>
                     <TaskDetailPane
                       task={selectedTask}
                       repos={reposQuery.data ?? []}
@@ -846,22 +864,13 @@ function App() {
                       commitView={commitsQuery.data ?? null}
                       conflictView={conflictsQuery.data ?? null}
                       onRunBuild={(taskId) => taskMutations.runBuild.mutate(taskId)}
-                      onPrepareTaskRun={(taskId) => taskMutations.prepareTaskRun.mutate({ taskId })}
+                      onStartTaskRun={(taskId) => taskMutations.startTaskRun.mutate({ taskId })}
                       onOpenRunFile={(filePath) => void window.effortless.openPath(filePath)}
                       onMergeTask={(taskId) => taskMutations.mergeTask.mutate(taskId)}
                       onApplyReview={(reviewId) => reviewMutations.applyReview.mutate({ reviewId })}
                       onRequestReviewChanges={(input) => reviewMutations.requestReviewChanges.mutate(input)}
-                      onUpdateTaskRequiresReview={(taskId, requiresReview) =>
-                        taskMutations.updateTaskRequiresReview.mutate({ taskId, requiresReview })
-                      }
-                      onUpdateTaskReviewRequiresReview={(taskId, reviewRequiresReview) =>
-                        taskMutations.updateTaskReviewRequiresReview.mutate({ taskId, reviewRequiresReview })
-                      }
-                      onUpdateTaskAutoMerge={(taskId, autoMerge) =>
-                        taskMutations.updateTaskAutoMerge.mutate({ taskId, autoMerge })
-                      }
                       isRunningBuild={taskMutations.runBuild.isPending}
-                      isPreparingRun={taskMutations.prepareTaskRun.isPending}
+                      isStartingRun={taskMutations.startTaskRun.isPending}
                       isMergingTask={taskMutations.mergeTask.isPending}
                       isApplyingReview={reviewMutations.applyReview.isPending}
                       isRequestingReviewChanges={reviewMutations.requestReviewChanges.isPending}

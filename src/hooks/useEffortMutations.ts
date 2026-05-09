@@ -13,14 +13,6 @@ export function useEffortMutations(selectedEffortId: number | null) {
     },
   })
 
-  const updateEffortPlanRequiresReview = useMutation({
-    mutationFn: ({ effortId, planRequiresReview }: { effortId: number; planRequiresReview: boolean }) =>
-      window.effortless.updateEffortPlanRequiresReview(effortId, planRequiresReview),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['efforts'] })
-    },
-  })
-
   const deleteEffort = useMutation({
     mutationFn: (effortId: number) => window.effortless.deleteEffort(effortId),
     onSuccess: async () => {
@@ -42,5 +34,5 @@ export function useEffortMutations(selectedEffortId: number | null) {
     },
   })
 
-  return { createEffort, deleteEffort, updateEffortPlanRequiresReview }
+  return { createEffort, deleteEffort }
 }

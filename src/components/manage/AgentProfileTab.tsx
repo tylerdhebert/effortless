@@ -21,7 +21,7 @@ export function AgentProfileTab({
 }: AgentProfileTabProps) {
   const [selectedProfileKey, setSelectedProfileKey] = useState<string>('new')
   const [name, setName] = useState('')
-  const [commandTemplate, setCommandTemplate] = useState('codex')
+  const [commandTemplate, setCommandTemplate] = useState('codex {prompt}')
   const [environment, setEnvironment] = useState<'windows' | 'wsl'>('windows')
   const [wslDistro, setWslDistro] = useState('')
   const [defaultCwdKind, setDefaultCwdKind] = useState<AgentProfile['defaultCwdKind']>('task_worktree')
@@ -37,7 +37,7 @@ export function AgentProfileTab({
   useEffect(() => {
     if (selectedProfileKey === 'new') {
       setName('')
-      setCommandTemplate('codex')
+      setCommandTemplate('codex {prompt}')
       setEnvironment('windows')
       setWslDistro('')
       setDefaultCwdKind('task_worktree')
@@ -69,7 +69,7 @@ export function AgentProfileTab({
       }
     : {
         name: '',
-        commandTemplate: 'codex',
+        commandTemplate: 'codex {prompt}',
         environment: 'windows',
         wslDistro: '',
         defaultCwdKind: 'task_worktree',
@@ -200,7 +200,7 @@ export function AgentProfileTab({
 
         <label className={styles.field}>
           <span>command template</span>
-          <input value={commandTemplate} onChange={(event) => setCommandTemplate(event.target.value)} placeholder="codex" />
+          <input value={commandTemplate} onChange={(event) => setCommandTemplate(event.target.value)} placeholder="codex {prompt}" />
           {unknownVariables.length > 0 ? (
             <small className={styles.error}>unknown variable: {unknownVariables.join(', ')}</small>
           ) : null}
@@ -266,8 +266,7 @@ export function AgentProfileTab({
 
         <div className={styles.variables}>
           <span>template variables</span>
-          <code>{'{context_path}'}</code>
-          <code>{'{bootstrap_path}'}</code>
+          <code>{'{prompt}'}</code>
           <code>{'{effort_ref}'}</code>
           <code>{'{task_ref}'}</code>
           <code>{'{plan_ref}'}</code>
@@ -314,8 +313,7 @@ function findInvalidEnvLines(value: string): string[] {
 }
 
 const TEMPLATE_VARIABLES = new Set([
-  'context_path',
-  'bootstrap_path',
+  'prompt',
   'effort_ref',
   'task_ref',
   'plan_ref',

@@ -2,10 +2,8 @@ import { useState } from 'react'
 import type { Plan } from '../../../core/types'
 import { PlanCommentStream } from './PlanCommentStream'
 import { ChevronLeft, ChevronRight, ListOrdered } from 'lucide-react'
-import { isPlanWaiting, planStatus } from '../../lib/helpers'
+import { planStatus } from '../../lib/helpers'
 import { MarkdownDocument } from '../ui/MarkdownDocument'
-import { WarningIndicator } from '../notifications/WarningIndicator'
-import { ToggleSwitch } from '../ui/ToggleSwitch'
 import styles from './PlanSection.module.css'
 
 type PlanSectionProps = {
@@ -19,9 +17,6 @@ type PlanSectionProps = {
   isAcceptingPlan: boolean
   isReadyingPlan: boolean
   isRequestingPlanChanges: boolean
-  hasPendingPlan?: boolean
-  humanApprovalRequired: boolean
-  onUpdateHumanApprovalRequired: (checked: boolean) => void
 }
 
 export function PlanSection({
@@ -35,9 +30,6 @@ export function PlanSection({
   isAcceptingPlan,
   isReadyingPlan,
   isRequestingPlanChanges,
-  hasPendingPlan = false,
-  humanApprovalRequired,
-  onUpdateHumanApprovalRequired,
 }: PlanSectionProps) {
   const [planFeedbackDrafts, setPlanFeedbackDrafts] = useState<Record<number, string>>({})
 
@@ -61,18 +53,6 @@ export function PlanSection({
             <ListOrdered size={14} />
             <span>plan</span>
           </span>
-          <span className={styles['plan-header-center']}>
-            <ToggleSwitch
-              label="human approval req"
-              checked={humanApprovalRequired}
-              onChange={onUpdateHumanApprovalRequired}
-            />
-          </span>
-          <span className={styles['plan-header-side']}>
-            {hasPendingPlan ? (
-              <WarningIndicator title="plan needs review" pulse size={14} />
-            ) : null}
-          </span>
         </div>
         <p className="empty-state">no plans yet</p>
       </section>
@@ -85,18 +65,6 @@ export function PlanSection({
         <span className="section-title-label">
           <ListOrdered size={14} />
           <span>plan</span>
-        </span>
-        <span className={styles['plan-header-center']}>
-          <ToggleSwitch
-            label="human approval req"
-            checked={humanApprovalRequired}
-            onChange={onUpdateHumanApprovalRequired}
-          />
-        </span>
-        <span className={styles['plan-header-side']}>
-          {hasPendingPlan ? (
-            <WarningIndicator title="plan needs review" pulse size={14} />
-          ) : null}
         </span>
       </div>
 
@@ -143,7 +111,7 @@ export function PlanSection({
         </div>
 
         <article
-          className={`${styles['plan-card']} ${plan.accepted ? styles.accepted : ''} ${isPlanWaiting(plan) ? styles.waiting : ''}`}
+          className={`${styles['plan-card']} ${plan.accepted ? styles.accepted : ''}`}
           data-state={planStatus(plan)}
         >
           <div className={styles['plan-card-header']}>
@@ -175,13 +143,7 @@ export function PlanSection({
           <div className={styles['plan-card-body']}>
             <MarkdownDocument content={plan.body} className={styles['plan-body-markdown']} />
           </div>
-          {plan.latestFeedbackBody ? (
-            <div className={styles['plan-feedback']}>
-              <span>feedback</span>
-              <p>{plan.latestFeedbackBody}</p>
-            </div>
-          ) : null}
-          {isPlanWaiting(plan) && !hasAcceptedPlan ? (
+          {!plan.accepted && !hasAcceptedPlan ? (
             <form
               className={styles['plan-feedback-form']}
               onSubmit={(event) => {

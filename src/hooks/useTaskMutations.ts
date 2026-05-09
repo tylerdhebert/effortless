@@ -5,6 +5,22 @@ export function useTaskMutations(selectedEffortId: number | null) {
   const queryClient = useQueryClient()
   const { invalidateTask } = useCacheInvalidation()
 
+  const createTask = useMutation({
+    mutationFn: (input: {
+      effortId: number
+      title: string
+      description: string
+      repoId?: number | null
+      branchName?: string | null
+      baseBranch?: string | null
+    }) => window.effortless.createTask(input),
+    onSuccess: async (task) => {
+      await queryClient.invalidateQueries({ queryKey: ['tasks', task.effortId] })
+      await queryClient.invalidateQueries({ queryKey: ['all-tasks'] })
+      await queryClient.invalidateQueries({ queryKey: ['app-state'] })
+    },
+  })
+
   const readyTask = useMutation({
     mutationFn: (taskId: number) => window.effortless.markTaskReady(taskId),
     onSuccess: async (task) => {
@@ -53,36 +69,6 @@ export function useTaskMutations(selectedEffortId: number | null) {
     },
   })
 
-  const updateTaskRequiresReview = useMutation({
-    mutationFn: ({ taskId, requiresReview }: { taskId: number; requiresReview: boolean }) =>
-      window.effortless.updateTaskRequiresReview(taskId, requiresReview),
-    onSuccess: async (task) => {
-      if (selectedEffortId) {
-        await invalidateTask(task.id, selectedEffortId)
-      }
-    },
-  })
-
-  const updateTaskReviewRequiresReview = useMutation({
-    mutationFn: ({ taskId, reviewRequiresReview }: { taskId: number; reviewRequiresReview: boolean }) =>
-      window.effortless.updateTaskReviewRequiresReview(taskId, reviewRequiresReview),
-    onSuccess: async (task) => {
-      if (selectedEffortId) {
-        await invalidateTask(task.id, selectedEffortId)
-      }
-    },
-  })
-
-  const updateTaskAutoMerge = useMutation({
-    mutationFn: ({ taskId, autoMerge }: { taskId: number; autoMerge: boolean }) =>
-      window.effortless.updateTaskAutoMerge(taskId, autoMerge),
-    onSuccess: async (task) => {
-      if (selectedEffortId) {
-        await invalidateTask(task.id, selectedEffortId)
-      }
-    },
-  })
-
   const prepareTaskRun = useMutation({
     mutationFn: (input: { taskId: number; profileId?: number | null; label?: string }) =>
       window.effortless.prepareTaskRun(input),
@@ -96,5 +82,30 @@ export function useTaskMutations(selectedEffortId: number | null) {
     },
   })
 
-  return { readyTask, updateTaskDetails, ensureTaskWorktree, mergeTask, runBuild, updateTaskRequiresReview, updateTaskReviewRequiresReview, updateTaskAutoMerge, prepareTaskRun }
+  const startTaskRun = useMutation({
+    mutationFn: async (input: { taskId: number; profileId?: number | null; purpose?: 'main' | 'side-investigation' | 'implementation' | 'review'; label?: string }) => {
+      const prepared = await window.effortless.prepareTaskRun(input)
+      await window.effortless.startAgentRun(prepared.run.id, { cols: 100, rows: 24 })
+      return prepared
+    },
+    onSuccess: async (prepared) => {
+      await queryClient.invalidateQueries({ queryKey: ['task-runs', prepared.task.id] })
+      await queryClient.invalidateQueries({ queryKey: ['agent-runs'] })
+      await queryClient.invalidateQueries({ queryKey: ['app-state'] })
+      if (selectedEffortId) {
+        await invalidateTask(prepared.task.id, selectedEffortId)
+      }
+    },
+  })
+
+  const stopAgentRun = useMutation({
+    mutationFn: (runId: number) => window.effortless.stopAgentRun(runId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['task-runs'] })
+      await queryClient.invalidateQueries({ queryKey: ['agent-runs'] })
+      await queryClient.invalidateQueries({ queryKey: ['app-state'] })
+    },
+  })
+
+  return { createTask, readyTask, updateTaskDetails, ensureTaskWorktree, mergeTask, runBuild, prepareTaskRun, startTaskRun, stopAgentRun }
 }

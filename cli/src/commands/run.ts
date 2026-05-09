@@ -1,6 +1,7 @@
 import { listAgentProfiles } from '../../../core/agentProfiles'
-import { listAgentRuns, listTaskRuns, prepareTaskRun } from '../../../core/agentRuns'
-import { option, requiredOption } from '../args'
+import { buildAgentRunEnvironment, getAgentRun, listAgentRuns, listTaskRuns, prepareEffortRun, prepareTaskRun } from '../../../core/agentRuns'
+import { getEffortByRef } from '../../../core/efforts'
+import { option } from '../args'
 import { db, resolveTask } from '../context'
 import { printAgentProfile, printAgentRun } from '../render'
 
@@ -15,17 +16,25 @@ export async function handleRun(surface: string, command: string): Promise<boole
   }
 
   if (command === 'prepare') {
-    const task = resolveTask(db, requiredOption('--task'))
+    const taskRef = option('--task')
+    const effortRef = option('--effort')
+    if (!taskRef && !effortRef) {
+      throw new Error('run prepare requires --task or --effort')
+    }
     const profileId = resolveProfileId()
-    const prepared = await prepareTaskRun(db, {
-      taskId: task.id,
-      profileId,
-      label: option('--label') ?? undefined,
-    })
+    const prepared = taskRef
+      ? await prepareTaskRun(db, {
+          taskId: resolveTask(db, taskRef).id,
+          profileId,
+          label: option('--label') ?? undefined,
+        })
+      : await prepareEffortRun(db, {
+          effortId: getEffortByRef(db, effortRef!).id,
+          profileId,
+          label: option('--label') ?? undefined,
+        })
     printAgentRun(prepared.run)
     console.log(`profile ${prepared.profile.shortRef} ${prepared.profile.name}`)
-    console.log(`context ${prepared.run.contextPath}`)
-    console.log(`bootstrap ${prepared.run.bootstrapPath}`)
     console.log(`transcript ${prepared.run.transcriptPath}`)
     console.log('')
     console.log('env')
@@ -46,7 +55,49 @@ export async function handleRun(surface: string, command: string): Promise<boole
     return true
   }
 
+  if (command === 'show') {
+    const run = resolveRun()
+    printAgentRun(run)
+    console.log(`profile ${run.profileId}`)
+    console.log(`effort ${run.effortId}`)
+    console.log(`environment ${run.environment}`)
+    console.log(`transcript ${run.transcriptPath}`)
+    if (run.providerSessionId) {
+      console.log(`provider session ${run.providerSessionId}`)
+    }
+    if (run.exitCode !== null) {
+      console.log(`exit ${run.exitCode}`)
+    }
+    if (run.error) {
+      console.log(`error ${run.error}`)
+    }
+    return true
+  }
+
+  if (command === 'env') {
+    const run = resolveRun()
+    for (const [name, value] of Object.entries(buildAgentRunEnvironment(db, run.id))) {
+      console.log(`${name}=${value}`)
+    }
+    return true
+  }
+
   return false
+}
+
+function resolveRun() {
+  const runRef = option('--run') ?? process.env.EFFORTLESS_RUN_ID
+  if (!runRef) {
+    throw new Error('run command requires --run or EFFORTLESS_RUN_ID')
+  }
+  const numericId = runRef.trim().match(/^\d+$/) ? Number(runRef.trim()) : null
+  if (numericId) return getAgentRun(db, numericId)
+
+  const match = /^run-(\d+)$/.exec(runRef.trim())
+  if (!match) {
+    throw new Error(`Run ${runRef} was not found`)
+  }
+  return getAgentRun(db, Number(match[1]))
 }
 
 function resolveProfileId(): number | null {

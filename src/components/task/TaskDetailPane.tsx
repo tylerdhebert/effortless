@@ -9,10 +9,10 @@ import type {
   AgentProfile,
   AgentRun,
   Task,
+  ActivityEvent,
   Repo,
   Review,
   TaskBuildResult,
-  TaskComment,
   TaskDiffView,
   TaskCommitView,
   TaskConflictView,
@@ -22,30 +22,26 @@ import { ReviewHistory } from './ReviewHistory'
 import { ReviewRecord } from './ReviewRecord'
 import { reviewSummary } from '../../lib/helpers'
 import { PillSwitcher } from '../ui/PillSwitcher'
-import { ToggleSwitch } from '../ui/ToggleSwitch'
 import styles from './TaskDetailPane.module.css'
 
 type TaskDetailPaneProps = {
   task: Task | null
   repos: Repo[]
   reviews: Review[]
-  comments: TaskComment[]
+  comments: ActivityEvent[]
   latestBuild: TaskBuildResult | null
   runs: AgentRun[]
   agentProfiles: AgentProfile[]
   commitView: TaskCommitView | null
   conflictView: TaskConflictView | null
   onRunBuild: (taskId: number) => void
-  onPrepareTaskRun: (taskId: number) => void
+  onStartTaskRun: (taskId: number) => void
   onOpenRunFile: (filePath: string) => void
   onMergeTask: (taskId: number) => void
   onApplyReview: (reviewId: number) => void
   onRequestReviewChanges: (input: { reviewId: number; body: string }) => void
-  onUpdateTaskRequiresReview: (taskId: number, requiresReview: boolean) => void
-  onUpdateTaskReviewRequiresReview: (taskId: number, reviewRequiresReview: boolean) => void
-  onUpdateTaskAutoMerge: (taskId: number, autoMerge: boolean) => void
   isRunningBuild: boolean
-  isPreparingRun: boolean
+  isStartingRun: boolean
   isMergingTask: boolean
   isApplyingReview: boolean
   isRequestingReviewChanges: boolean
@@ -62,16 +58,13 @@ export function TaskDetailPane({
   commitView,
   conflictView,
   onRunBuild,
-  onPrepareTaskRun,
+  onStartTaskRun,
   onOpenRunFile,
   onMergeTask,
   onApplyReview,
   onRequestReviewChanges,
-  onUpdateTaskRequiresReview,
-  onUpdateTaskReviewRequiresReview,
-  onUpdateTaskAutoMerge,
   isRunningBuild,
-  isPreparingRun,
+  isStartingRun,
   isMergingTask,
   isApplyingReview,
   isRequestingReviewChanges,
@@ -89,8 +82,7 @@ export function TaskDetailPane({
   const taskRepo = repos.find((repo) => repo.id === (task?.repoId ?? null)) ?? null
   const defaultProfile = agentProfiles[0] ?? null
   const latestReview = reviews[0] ?? null
-  const pendingReview = reviews.find((review) => !review.appliedAt) ?? null
-  const persistedConflict = parsePersistedConflict(task?.conflictDetails ?? null)
+  const pendingReview = reviews[0] ?? null
   const diffViewQuery = useQuery<TaskDiffView>({
     queryKey: ['task-diff', task?.id ?? null, diffType],
     queryFn: () => {
@@ -168,11 +160,6 @@ export function TaskDetailPane({
           <div className={styles['task-detail-header-copy']}>
             <div className={styles['task-title-row']}>
               <h3>{task.title}</h3>
-              <ToggleSwitch
-                label="human approval req"
-                checked={task.requiresReview}
-                onChange={(checked) => onUpdateTaskRequiresReview(task.id, checked)}
-              />
             </div>
             <div className={styles['expanded-meta']}>
               <div className={styles['chip-group']}>
@@ -183,12 +170,6 @@ export function TaskDetailPane({
                 <small>status</small>
                 <span>{task.status}</span>
               </div>
-              {task.ownerAgentId ? (
-                <div className={styles['chip-group']}>
-                  <small>agent</small>
-                  <span>{task.ownerAgentId}</span>
-                </div>
-              ) : null}
               <div className={styles['chip-group']}>
                 <small>repo</small>
                 <span>{taskRepo?.name ?? 'no repo'}</span>
@@ -221,12 +202,12 @@ export function TaskDetailPane({
             <button
               type="button"
               className={styles['task-header-action']}
-              title={taskRepo ? 'prepare agent run' : 'task needs a repo before preparing a run'}
-              onClick={() => onPrepareTaskRun(task.id)}
-              disabled={isPreparingRun || !taskRepo}
+              title={taskRepo ? 'start agent run' : 'task needs a repo before starting a run'}
+              onClick={() => onStartTaskRun(task.id)}
+              disabled={isStartingRun || !taskRepo}
             >
               <SquareTerminal size={14} aria-hidden="true" />
-              <span>prepare run</span>
+              <span>{isStartingRun ? 'starting' : 'start'}</span>
             </button>
             <button
               type="button"
@@ -268,7 +249,7 @@ export function TaskDetailPane({
           <section className={styles['task-detail-section']}>
             <div className={styles['run-section-header']}>
               <h4>runs</h4>
-              <span>{runs.length} prepared</span>
+              <span>{runs.length} total</span>
             </div>
             <div className={styles['run-profile-summary']}>
               <span>default profile</span>
@@ -284,24 +265,20 @@ export function TaskDetailPane({
                     </div>
                     <div className={styles['run-row-paths']}>
                       <span title={run.cwd}>cwd {run.cwd}</span>
-                      <span title={run.contextPath}>context {run.contextPath}</span>
                     </div>
-                    <div className={styles['run-row-actions']}>
-                      <button type="button" onClick={() => onOpenRunFile(run.contextPath)}>
-                        context
-                      </button>
-                      <button type="button" onClick={() => onOpenRunFile(run.bootstrapPath)}>
-                        bootstrap
-                      </button>
-                      <button type="button" onClick={() => onOpenRunFile(run.transcriptPath)}>
-                        transcript
-                      </button>
-                    </div>
+                    <details className={styles['run-row-details']}>
+                      <summary>artifacts</summary>
+                      <div className={styles['run-row-actions']}>
+                        <button type="button" onClick={() => onOpenRunFile(run.transcriptPath)}>
+                          transcript
+                        </button>
+                      </div>
+                    </details>
                   </article>
                 ))}
               </div>
             ) : (
-              <p className="empty-state">no runs prepared</p>
+              <p className="empty-state">no runs yet</p>
             )}
           </section>
 
@@ -324,18 +301,13 @@ export function TaskDetailPane({
           <section className={styles['task-detail-section']}>
             <div className={styles['review-section-header']}>
               <h4>review</h4>
-              <ToggleSwitch
-                label="human approval req"
-                checked={task.reviewRequiresReview}
-                onChange={(checked) => onUpdateTaskReviewRequiresReview(task.id, checked)}
-              />
             </div>
             <p className={styles['task-review-summary']}>{reviewSummary(task, latestReview)}</p>
 
             {pendingReview ? (
               <ReviewRecord
                 review={pendingReview}
-                dateLabel={pendingReview.authorAgentId ?? pendingReview.createdAt}
+                dateLabel={pendingReview.createdAt}
               >
                 <div className={styles['task-action-row']}>
                   <button
@@ -392,11 +364,6 @@ export function TaskDetailPane({
           <section className={styles['task-detail-section']}>
             <h4>implementation</h4>
             <div className={styles['implementation-controls']}>
-              <ToggleSwitch
-                label="auto merge"
-                checked={task.autoMerge}
-                onChange={(checked) => onUpdateTaskAutoMerge(task.id, checked)}
-              />
               <PillSwitcher
                 ariaLabel="implementation diff type"
                 options={[
@@ -461,16 +428,16 @@ export function TaskDetailPane({
               <article className={styles['implementation-card']}>
                 <div className={styles['implementation-card-header']}>
                   <strong>conflicts</strong>
-                  {conflictView || task.conflictedAt ? (
-                    <small>{conflictView?.hasConflicts || task.conflictedAt ? 'conflicts found' : 'merge is clean'}</small>
+                  {conflictView ? (
+                    <small>{conflictView.hasConflicts ? 'conflicts found' : 'merge is clean'}</small>
                   ) : null}
                 </div>
-                {conflictView?.hasConflicts || task.conflictedAt ? (
+                {conflictView?.hasConflicts ? (
                   <div className={styles['conflict-block']}>
-                    {(conflictView?.files.length ? conflictView.files : persistedConflict?.files ?? []).length > 0 ? (
-                      <p>{(conflictView?.files.length ? conflictView.files : persistedConflict?.files ?? []).join(', ')}</p>
+                    {conflictView.files.length > 0 ? (
+                      <p>{conflictView.files.join(', ')}</p>
                     ) : null}
-                    {conflictView?.details ?? persistedConflict?.output ? <pre>{conflictView?.details ?? persistedConflict?.output}</pre> : null}
+                    {conflictView.details ? <pre>{conflictView.details}</pre> : null}
                   </div>
                 ) : (
                   <p>no conflicts detected</p>
@@ -584,17 +551,4 @@ function resolveDiffFilePath(file: FileData): string {
   const rawPath =
     file.newPath !== '/dev/null' ? (file.newPath ?? '') : (file.oldPath ?? '')
   return sanitizeDiffPath(rawPath)
-}
-
-function parsePersistedConflict(value: string | null): { output: string; files: string[] } | null {
-  if (!value) return null
-  try {
-    const parsed = JSON.parse(value) as { output?: unknown; files?: unknown }
-    return {
-      output: typeof parsed.output === 'string' ? parsed.output : value,
-      files: Array.isArray(parsed.files) ? parsed.files.filter((file): file is string => typeof file === 'string') : [],
-    }
-  } catch {
-    return { output: value, files: [] }
-  }
 }

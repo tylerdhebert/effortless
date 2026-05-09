@@ -1,9 +1,9 @@
-import type { TaskComment } from '../../../core/types'
+import type { ActivityEvent } from '../../../core/types'
 import { formatTimestamp } from '../../lib/helpers'
 import styles from './CommentStream.module.css'
 
 type CommentStreamProps = {
-  comments: TaskComment[]
+  comments: ActivityEvent[]
 }
 
 export function CommentStream({ comments }: CommentStreamProps) {
@@ -14,14 +14,11 @@ export function CommentStream({ comments }: CommentStreamProps) {
           <div>
             <span>{comment.kind}</span>
             <small>
-              {comment.author === 'agent' && comment.agentId
-                ? `agent: ${comment.agentId}`
-                : comment.author}
+              {comment.author}
               {' · '}{formatTimestamp(comment.createdAt)}
             </small>
           </div>
           <p>{comment.body}</p>
-          {comment.commitHash ? <code>{comment.commitHash}</code> : null}
         </article>
       ))}
 

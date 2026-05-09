@@ -64,28 +64,14 @@ export function resolveRefOwnerId(database: AppDatabase): number {
 
 export function resolveInputTarget(database: AppDatabase): {
   effortId?: number | null
-  planId?: number | null
   taskId?: number | null
-  reviewId?: number | null
 } {
   const effortRef = option('--effort')
-  const planRef = option('--plan')
   const taskRef = option('--task') ?? process.env.EFFORTLESS_TASK ?? null
-  const reviewRef = option('--review')
-
-  if (reviewRef) {
-    const review = getReviewByRef(database, reviewRef)
-    return { reviewId: review.id }
-  }
 
   if (taskRef) {
     const task = getTaskByRef(database, taskRef)
     return { taskId: task.id }
-  }
-
-  if (planRef) {
-    const planId = resolveNumericOrShortRef(database, 'plans', planRef)
-    return { planId }
   }
 
   if (effortRef) {
@@ -93,5 +79,5 @@ export function resolveInputTarget(database: AppDatabase): {
     return { effortId: effort.id }
   }
 
-  throw new Error('input request needs --effort, --plan, --task, or --review')
+  throw new Error('input request needs --effort or --task')
 }
