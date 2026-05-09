@@ -29,7 +29,6 @@ type AgentRunRow = {
   environment: RunEnvironment
   cwd: string
   command: string
-  transcript_path: string
   provider_session_id: string | null
   terminal_tab_key: string | null
   exit_code: number | null
@@ -128,10 +127,9 @@ export async function prepareTaskRun(db: AppDatabase, input: PrepareTaskRunInput
   db.prepare(`
     UPDATE agent_runs
     SET command = ?,
-        transcript_path = ?,
         updated_at = ?
     WHERE id = ?
-  `).run(command, paths.transcriptPath, new Date().toISOString(), id)
+  `).run(command, new Date().toISOString(), id)
 
   bumpAppState(db)
 
@@ -194,10 +192,9 @@ export async function prepareEffortRun(db: AppDatabase, input: PrepareEffortRunI
   db.prepare(`
     UPDATE agent_runs
     SET command = ?,
-        transcript_path = ?,
         updated_at = ?
     WHERE id = ?
-  `).run(command, paths.transcriptPath, new Date().toISOString(), id)
+  `).run(command, new Date().toISOString(), id)
 
   bumpAppState(db)
   run = getAgentRun(db, id)
@@ -346,11 +343,11 @@ function insertPreparedAgentRun(
   return db.prepare(`
     INSERT INTO agent_runs (
       short_ref, effort_id, task_id, profile_id, purpose, label, status,
-      environment, cwd, command, transcript_path, provider_session_id,
+      environment, cwd, command, provider_session_id,
       terminal_tab_key, exit_code, error,
       started_at, completed_at, created_at, updated_at
     )
-    VALUES (NULL, ?, ?, ?, ?, ?, 'prepared', ?, ?, '', '', NULL, ?, NULL, NULL, NULL, NULL, ?, ?)
+    VALUES (NULL, ?, ?, ?, ?, ?, 'prepared', ?, ?, '', NULL, ?, NULL, NULL, NULL, NULL, ?, ?)
   `).run(
     input.effortId,
     input.taskId,
@@ -409,7 +406,6 @@ function mapAgentRun(row: AgentRunRow): AgentRun {
     environment: row.environment,
     cwd: row.cwd,
     command: row.command,
-    transcriptPath: row.transcript_path,
     providerSessionId: row.provider_session_id,
     terminalTabKey: row.terminal_tab_key,
     exitCode: row.exit_code,

@@ -29,6 +29,8 @@ export function openDatabase(): AppDatabase {
 }
 
 export function initializeSchema(db: AppDatabase): void {
+  resetOldV2Schema(db)
+
   db.exec(`
     CREATE TABLE IF NOT EXISTS app_state (
       id INTEGER PRIMARY KEY CHECK (id = 1),
@@ -188,7 +190,6 @@ export function initializeSchema(db: AppDatabase): void {
       environment TEXT NOT NULL,
       cwd TEXT NOT NULL,
       command TEXT NOT NULL,
-      transcript_path TEXT NOT NULL,
       provider_session_id TEXT,
       terminal_tab_key TEXT,
       exit_code INTEGER,
@@ -214,6 +215,44 @@ export function initializeSchema(db: AppDatabase): void {
 
   seedDefaultGlobalMandates(db)
   seedDefaultTemplatePlaybooks(db)
+}
+
+function resetOldV2Schema(db: AppDatabase): void {
+  const agentRuns = db
+    .prepare<{ name: string }>(`SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'agent_runs'`)
+    .get()
+
+  if (!agentRuns) {
+    return
+  }
+
+  const columns = db.prepare<{ name: string }>(`PRAGMA table_info(agent_runs)`).all()
+  const hasRawTranscriptColumn = columns.some((column) => column.name === 'transcript_path')
+
+  if (!hasRawTranscriptColumn) {
+    return
+  }
+
+  db.exec(`
+    PRAGMA foreign_keys = OFF;
+
+    DROP TABLE IF EXISTS "references";
+    DROP TABLE IF EXISTS agent_runs;
+    DROP TABLE IF EXISTS agent_profiles;
+    DROP TABLE IF EXISTS template_playbooks;
+    DROP TABLE IF EXISTS mandates;
+    DROP TABLE IF EXISTS task_build_results;
+    DROP TABLE IF EXISTS activity_events;
+    DROP TABLE IF EXISTS input_requests;
+    DROP TABLE IF EXISTS reviews;
+    DROP TABLE IF EXISTS plans;
+    DROP TABLE IF EXISTS tasks;
+    DROP TABLE IF EXISTS repos;
+    DROP TABLE IF EXISTS efforts;
+    DROP TABLE IF EXISTS app_state;
+
+    PRAGMA foreign_keys = ON;
+  `)
 }
 
 export function bumpAppState(db: AppDatabase): void {

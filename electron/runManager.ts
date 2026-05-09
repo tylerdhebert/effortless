@@ -1,7 +1,7 @@
 import * as pty from 'node-pty'
 import { chmodSync, mkdirSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
-import { appendFile } from 'node:fs/promises'
+import { getRunPaths } from '../core/contextPacks'
 import type { AppDatabase } from '../core/db'
 import {
   buildAgentRunEnvironment,
@@ -71,7 +71,6 @@ export class RunManager {
       markAgentRunStarted(this.db, runId)
 
       terminal.onData((body) => {
-        void appendFile(run.transcriptPath, body)
         this.emit({ kind: 'data', runId, body })
       })
 
@@ -122,7 +121,7 @@ export class RunManager {
 }
 
 function resolveShellLaunch(
-  run: { command: string; cwd: string; environment: string; transcriptPath: string },
+  run: { shortRef: string; command: string; cwd: string; environment: string },
   wslDistro: string | null,
   env: NodeJS.ProcessEnv,
 ): { file: string; args: string[] } {
@@ -162,10 +161,10 @@ function resolveShellLaunch(
   }
 }
 
-function ensureWslRunBin(run: { transcriptPath: string }): string {
+function ensureWslRunBin(run: { shortRef: string }): string {
   const appRoot = process.env.APP_ROOT ?? process.cwd()
   const eflCommand = path.join(appRoot, 'efl.cmd')
-  const runBinPath = path.join(path.dirname(run.transcriptPath), 'bin')
+  const runBinPath = path.join(getRunPaths(run.shortRef).runDir, 'bin')
   mkdirSync(runBinPath, { recursive: true })
   const wrapperPath = path.join(runBinPath, 'efl')
   const wrapper = [

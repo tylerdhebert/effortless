@@ -1,4 +1,6 @@
-import { rawArgs } from './args'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { rawArgs, setRawArgs } from './args'
 import { printHelp } from './render'
 import { handleBuild } from './commands/build'
 import { handleEffort } from './commands/effort'
@@ -11,9 +13,18 @@ import { handleRepo } from './commands/repo'
 import { handleReview } from './commands/review'
 import { handleRun } from './commands/run'
 import { handleTask } from './commands/task'
+import { ensureCliDatabase, setCliDatabase } from './context'
+import type { AppDatabase } from '../../core/db'
 
-async function main() {
-  const [surface, command] = rawArgs
+export async function runCli(args = rawArgs, database?: AppDatabase): Promise<void> {
+  setRawArgs(args)
+  if (database) {
+    setCliDatabase(database)
+  } else {
+    ensureCliDatabase()
+  }
+
+  const [surface, command] = args
 
   if (!surface || !command) {
     printHelp()
@@ -44,7 +55,10 @@ async function main() {
   printHelp()
 }
 
-main().catch((error: unknown) => {
-  console.error(error instanceof Error ? error.message : String(error))
-  process.exitCode = 1
-})
+const executedPath = process.argv[1] ? path.resolve(process.argv[1]) : null
+if (executedPath && fileURLToPath(import.meta.url) === executedPath) {
+  runCli().catch((error: unknown) => {
+    console.error(error instanceof Error ? error.message : String(error))
+    process.exitCode = 1
+  })
+}

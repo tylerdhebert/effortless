@@ -1,10 +1,12 @@
 .terminal-section {
   display: grid;
-  gap: 10px;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.018);
-  padding: 12px;
+  gap: 0;
+  margin-right: -30px;
+  margin-left: -30px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  background: #10120e;
+  padding: 0;
 }
 
 .terminal-header {
@@ -12,10 +14,19 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
+  min-height: 38px;
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 82%, transparent);
+  background: rgba(255, 255, 255, 0.026);
+  padding: 4px 30px;
 }
 
 .terminal-header h4 {
   margin: 0;
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-transform: lowercase;
 }
 
 .terminal-header span {
@@ -26,22 +37,22 @@
 .terminal-actions {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .terminal-actions button {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  min-height: 30px;
+  min-height: 26px;
   border: 1px solid var(--line-strong);
-  border-radius: 8px;
+  border-radius: 7px;
   background: var(--button);
   color: var(--text);
   cursor: pointer;
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   font-weight: 650;
-  padding: 5px 9px;
+  padding: 4px 8px;
 }
 
 .terminal-actions button:disabled {
@@ -49,36 +60,48 @@
   opacity: 0.5;
 }
 
-.run-details {
-  display: grid;
-  gap: 5px;
-  min-width: 0;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: rgba(0, 0, 0, 0.12);
-  padding: 8px 10px;
-}
-
-.run-details span,
-.run-details code {
-  min-width: 0;
-  overflow: hidden;
-  color: var(--muted);
-  font-size: 0.72rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.run-details code {
-  color: var(--text);
+.collapse-button {
+  width: 28px;
+  justify-content: center;
+  padding-right: 0;
+  padding-left: 0;
 }
 
 .terminal-host {
-  height: 300px;
+  height: 520px;
   min-height: 0;
   overflow: hidden;
-  border: 1px solid var(--line);
-  border-radius: 10px;
+  border: 0;
+  border-radius: 0;
   background: #10120e;
-  padding: 8px;
+  padding: 10px 30px 12px;
+  transition: height 160ms ease, padding 160ms ease;
+}
+
+.collapsed .terminal-header {
+  border-bottom: 0;
+}
+
+.collapsed .terminal-host {
+  height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+@media (max-width: 960px) {
+  .terminal-section {
+    margin-right: -18px;
+    margin-left: -18px;
+  }
+
+  .terminal-header {
+    padding-right: 18px;
+    padding-left: 18px;
+  }
+
+  .terminal-host {
+    height: 460px;
+    padding-right: 18px;
+    padding-left: 18px;
+  }
 }

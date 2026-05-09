@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { FitAddon } from '@xterm/addon-fit'
 import { Terminal } from '@xterm/xterm'
-import { ExternalLink } from 'lucide-react'
+import { ChevronsDown, ChevronsUp } from 'lucide-react'
 import '@xterm/xterm/css/xterm.css'
 import type { AgentRun } from '../../../core/types'
 import styles from './AgentRunTerminal.module.css'
@@ -14,7 +14,6 @@ type AgentRunTerminalProps = {
   emptyLabel?: string
   onStart?: () => void
   onStop: (runId: number) => void
-  onOpenTranscript?: (filePath: string) => void
 }
 
 export function AgentRunTerminal({
@@ -25,12 +24,12 @@ export function AgentRunTerminal({
   emptyLabel = 'ready',
   onStart,
   onStop,
-  onOpenTranscript,
 }: AgentRunTerminalProps) {
   const hostRef = useRef<HTMLDivElement | null>(null)
   const terminalRef = useRef<Terminal | null>(null)
   const fitRef = useRef<FitAddon | null>(null)
   const [terminalReady, setTerminalReady] = useState(false)
+  const [collapsed, setCollapsed] = useState(false)
 
   useEffect(() => {
     if (!hostRef.current) return
@@ -56,6 +55,12 @@ export function AgentRunTerminal({
     fitRef.current = fit
     setTerminalReady(true)
 
+    const consumeWheel = (event: WheelEvent) => {
+      event.preventDefault()
+      event.stopPropagation()
+    }
+    hostRef.current.addEventListener('wheel', consumeWheel, { passive: false })
+
     terminal.onData((data) => {
       if (activeRun?.status === 'running') {
         void window.effortless.writeAgentRun(activeRun.id, data)
@@ -74,6 +79,7 @@ export function AgentRunTerminal({
     resizeObserver.observe(hostRef.current)
 
     return () => {
+      hostRef.current?.removeEventListener('wheel', consumeWheel)
       resizeObserver.disconnect()
       terminal.dispose()
       terminalRef.current = null
@@ -106,24 +112,20 @@ export function AgentRunTerminal({
     terminalRef.current?.focus()
   }, [activeRun?.id, terminalReady])
 
+  useEffect(() => {
+    if (collapsed) return
+    fitRef.current?.fit()
+    terminalRef.current?.focus()
+  }, [collapsed])
+
   return (
-    <section className={styles['terminal-section']}>
+    <section className={`${styles['terminal-section']} ${collapsed ? styles.collapsed : ''}`}>
       <div className={styles['terminal-header']}>
         <div>
           <h4>terminal</h4>
           <span>{activeRun ? `${activeRun.shortRef} ${activeRun.status}` : emptyLabel}</span>
         </div>
         <div className={styles['terminal-actions']}>
-          <button
-            type="button"
-            disabled={!activeRun || !onOpenTranscript}
-            onClick={() => activeRun && onOpenTranscript ? onOpenTranscript(activeRun.transcriptPath) : undefined}
-            title="open transcript"
-            aria-label="open transcript"
-          >
-            <ExternalLink size={13} />
-            transcript
-          </button>
           {onStart ? (
             <button type="button" disabled={isStarting || startDisabled} onClick={onStart}>
               {isStarting ? 'starting' : startLabel}
@@ -136,14 +138,17 @@ export function AgentRunTerminal({
           >
             stop
           </button>
+          <button
+            type="button"
+            className={styles['collapse-button']}
+            onClick={() => setCollapsed((value) => !value)}
+            title={collapsed ? 'expand terminal' : 'collapse terminal'}
+            aria-label={collapsed ? 'expand terminal' : 'collapse terminal'}
+          >
+            {collapsed ? <ChevronsDown size={14} /> : <ChevronsUp size={14} />}
+          </button>
         </div>
       </div>
-      {activeRun ? (
-        <div className={styles['run-details']}>
-          <span>{activeRun.cwd}</span>
-          <code>{activeRun.command || 'command pending'}</code>
-        </div>
-      ) : null}
       <div ref={hostRef} className={styles['terminal-host']} />
     </section>
   )

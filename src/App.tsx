@@ -732,7 +732,6 @@ function App() {
                   startEffortRun.mutate(selectedEffort.id)
                 }}
                 onStop={(runId) => taskMutations.stopAgentRun.mutate(runId)}
-                onOpenTranscript={(filePath) => void window.effortless.openPath(filePath)}
               />
 
               {(selectedEffort.status === 'complete' || selectedEffort.status === 'archived') ? (
@@ -865,7 +864,6 @@ function App() {
                       conflictView={conflictsQuery.data ?? null}
                       onRunBuild={(taskId) => taskMutations.runBuild.mutate(taskId)}
                       onStartTaskRun={(taskId) => taskMutations.startTaskRun.mutate({ taskId })}
-                      onOpenRunFile={(filePath) => void window.effortless.openPath(filePath)}
                       onMergeTask={(taskId) => taskMutations.mergeTask.mutate(taskId)}
                       onApplyReview={(reviewId) => reviewMutations.applyReview.mutate({ reviewId })}
                       onRequestReviewChanges={(input) => reviewMutations.requestReviewChanges.mutate(input)}

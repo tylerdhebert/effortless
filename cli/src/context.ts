@@ -5,7 +5,19 @@ import { getTaskByRef } from '../../core/tasks'
 import type { AppDatabase } from '../../core/db'
 import { option } from './args'
 
-export const db = openDatabase()
+export let db: AppDatabase = undefined as unknown as AppDatabase
+
+export function setCliDatabase(database: AppDatabase): void {
+  db = database
+}
+
+export function ensureCliDatabase(): AppDatabase {
+  if (!db) {
+    db = openDatabase()
+  }
+
+  return db
+}
 
 export function wait(ms: number): Promise<void> {
   return new Promise((resolve) => {

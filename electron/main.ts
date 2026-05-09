@@ -7,6 +7,7 @@ import { createAgentProfile, listAgentProfiles, updateAgentProfile } from '../co
 import { listAgentRuns, listTaskRuns, markAgentRunExited, markAgentRunFailed, markAgentRunStarted, prepareEffortRun, prepareTaskRun } from '../core/agentRuns'
 import { getLatestTaskBuild, runTaskBuild } from '../core/builds'
 import { getPtyRuntimeStatus, RunManager } from './runManager'
+import { startCliCommandServer, type CliCommandServer } from './cliCommandServer'
 import { getAppState, openDatabase, updateNotificationSettings } from '../core/db'
 import type { NotificationSettings } from '../core/db'
 import { getCustomThemeState, updateCustomThemeState } from '../core/themeConfig'
@@ -118,6 +119,7 @@ const db = openDatabase()
 const runManager = new RunManager(db, (event) => {
   win?.webContents.send('agentRuns:terminalEvent', event)
 })
+let cliCommandServer: CliCommandServer | null = null
 
 async function getRendererAppState() {
   const appState = getAppState(db)
@@ -347,10 +349,16 @@ function createWindow() {
 
 app.on('window-all-closed', () => {
   runManager.stopAll()
+  void cliCommandServer?.close()
   if (process.platform !== 'darwin') {
     app.quit()
     win = null
   }
+})
+
+app.on('before-quit', () => {
+  runManager.stopAll()
+  void cliCommandServer?.close()
 })
 
 app.on('activate', () => {
@@ -359,4 +367,7 @@ app.on('activate', () => {
   }
 })
 
-app.whenReady().then(createWindow)
+app.whenReady().then(async () => {
+  cliCommandServer = await startCliCommandServer(db)
+  createWindow()
+})

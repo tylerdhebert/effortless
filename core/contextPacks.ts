@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from 'node:fs/promises'
+import { mkdir } from 'node:fs/promises'
 import path from 'node:path'
 import { getAppPaths } from './appPaths'
 import type { AppDatabase } from './db'
@@ -12,7 +12,6 @@ import type { AgentProfile, AgentRun, Task } from './types'
 
 export type PreparedTaskRunContext = {
   runDir: string
-  transcriptPath: string
   prompt: string
 }
 
@@ -27,7 +26,6 @@ export async function writeTaskRunContext(
   const paths = getRunPaths(run.shortRef)
   const prompt = renderTaskBootstrap(db, run, task, profile)
   await mkdir(paths.runDir, { recursive: true })
-  await writeFile(paths.transcriptPath, '', { flag: 'a' })
   return { ...paths, prompt }
 }
 
@@ -39,7 +37,6 @@ export async function writeEffortRunContext(
   const paths = getRunPaths(run.shortRef)
   const prompt = renderEffortBootstrap(db, run, profile)
   await mkdir(paths.runDir, { recursive: true })
-  await writeFile(paths.transcriptPath, '', { flag: 'a' })
   return { ...paths, prompt }
 }
 
@@ -47,7 +44,6 @@ export function getRunPaths(runRef: string): TaskRunPaths {
   const runDir = path.join(getAppPaths().home, 'runs', runRef)
   return {
     runDir,
-    transcriptPath: path.join(runDir, 'transcript.txt'),
   }
 }
 
@@ -171,7 +167,7 @@ Use Effortless CLI updates as durable state:
 - efl build run --task ${task.shortRef}
 - efl task ready --task ${task.shortRef}
 
-Keep the terminal transcript useful, but put durable decisions, checkpoints, and handoff notes into Effortless.
+Keep durable decisions, checkpoints, and handoff notes in Effortless.
 
 ## Context
 
@@ -209,7 +205,7 @@ Useful commands:
 - efl task checkpoint --task task-1 --body "..."
 - efl input request --effort ${effort.shortRef} --type text --prompt "..."
 
-Keep the terminal transcript useful, but put durable decisions, checkpoints, and handoff notes into Effortless.
+Keep durable decisions, checkpoints, and handoff notes in Effortless.
 
 ## Context
 

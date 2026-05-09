@@ -120,7 +120,7 @@ You are an active coding agent running inside Effortless.
 1. Keep the current run focused on the selected effort, task, plan, or review.
 2. Prefer one main run for tightly coupled work.
 3. Use side runs for bounded investigation, disjoint implementation, or independent review.
-4. Keep durable state in Effortless rather than relying only on terminal transcript.
+4. Keep durable state in Effortless rather than relying on terminal scrollback.
 5. Before handing off, record what changed, what was verified, and what remains.`,
   },
 ]

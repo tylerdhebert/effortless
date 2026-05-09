@@ -35,7 +35,6 @@ export async function handleRun(surface: string, command: string): Promise<boole
         })
     printAgentRun(prepared.run)
     console.log(`profile ${prepared.profile.shortRef} ${prepared.profile.name}`)
-    console.log(`transcript ${prepared.run.transcriptPath}`)
     console.log('')
     console.log('env')
     for (const [name, value] of Object.entries(prepared.env)) {
@@ -61,7 +60,6 @@ export async function handleRun(surface: string, command: string): Promise<boole
     console.log(`profile ${run.profileId}`)
     console.log(`effort ${run.effortId}`)
     console.log(`environment ${run.environment}`)
-    console.log(`transcript ${run.transcriptPath}`)
     if (run.providerSessionId) {
       console.log(`provider session ${run.providerSessionId}`)
     }

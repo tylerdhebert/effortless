@@ -1,6 +1,10 @@
 import { readFileSync } from 'node:fs'
 
-export const rawArgs = process.argv.slice(2)
+export let rawArgs = process.argv.slice(2)
+
+export function setRawArgs(args: string[]): void {
+  rawArgs = args
+}
 
 export function option(name: string): string | null {
   const index = rawArgs.indexOf(name)

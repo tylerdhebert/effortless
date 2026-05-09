@@ -13,7 +13,7 @@ The core loop is:
 3. Effortless builds an effort context prompt and launches the configured main agent in the effort terminal.
 4. Let the agent read generated context and update Effortless through `efl`.
 5. Review diffs, builds, conflicts, inputs, reviews, and merge state in the app.
-6. Keep durable state in efforts, plans, tasks, reviews, inputs, references, mandates, runs, and transcripts.
+6. Keep durable state in efforts, plans, tasks, reviews, inputs, references, mandates, and runs.
 
 ## Phase 1: Single-Agent Cleanup
 
@@ -47,7 +47,6 @@ The core loop is:
 - [x] Add effort-level main-run core service.
 - [x] Generate task run startup prompts.
 - [x] Generate effort run startup prompts.
-- [x] Create empty `transcript.txt`.
 - [x] Expand command templates with run variables.
 - [x] Return run environment variables for launched agents.
 - [x] Include profile-level environment variables in prepared run env.
@@ -73,10 +72,9 @@ The core loop is:
 - [x] Add task detail `start` action.
 - [x] Show runs in the task detail pane.
 - [x] Show default profile in task detail.
-- [x] Show run cwd and transcript path.
+- [x] Show run cwd.
 - [x] Build verification: `bun run build`.
 - [x] Commit: `604f6a4 feat: show prepared task runs`.
-- [x] Open generated `transcript.txt` from a run row.
 - [x] Build verification after file-open follow-up: `bun run build`.
 - [ ] Commit current runner/schema/UI batch.
 
@@ -136,7 +134,6 @@ The core loop is:
 - [x] Move the visible terminal to the effort surface.
 - [x] Mark run `running` when the process starts.
 - [x] Stream PTY output to renderer.
-- [x] Append PTY output to transcript file.
 - [x] Accept terminal input from renderer.
 - [x] Resize PTY from renderer.
 - [x] Stop a running process.
@@ -175,7 +172,6 @@ The core loop is:
 - [x] Start a main effort run from the effort terminal.
 - [x] Stop running run.
 - [ ] Rerun from existing task context by preparing a new run.
-- [x] Show transcript-open action.
 - [ ] Keep task detail layout stable on narrow screens.
 - [ ] Build verification: `bun run build`.
 
@@ -224,6 +220,39 @@ The core loop is:
 - [x] Add `efl input request --no-wait`.
 - [ ] Build verification: `bun run build`.
 
+## Phase 2J.5: App-Owned CLI Transport
+
+- [x] Start a local authenticated command server from the Electron main process.
+- [x] Run existing `efl` command handlers inside the app process against the app-owned DB handle.
+- [x] Make CLI argument state injectable for app-hosted command execution.
+- [x] Make CLI database access lazy so importing CLI handlers does not open a second SQLite connection.
+- [x] Serialize app-hosted CLI command execution to avoid global console/env/exit-code capture bleed.
+- [x] Replace Electron-as-Node `efl.cmd` execution with a tiny native Go transport client.
+- [x] Forward caller cwd and run environment variables through the native client.
+- [x] Forward `CODEX_THREAD_ID` through the native client for Codex session capture.
+- [x] Package `efl.exe` as the helper CLI under Electron Builder extra resources.
+- [x] Keep the Windows `efl.cmd` wrapper as a thin launcher for `efl.exe`.
+- [x] Smoke verification: dev `efl.cmd effort list` against a running packaged app.
+- [x] Smoke verification: packaged `efl.cmd effort list` against a running packaged app.
+- [x] Build verification: `bun run build`.
+
+## Phase 2J.6: Provider Session And Resume CLI
+
+- [ ] Add provider session helpers that can resolve a provider session id from explicit CLI input or provider-specific environment variables.
+- [ ] Implement Codex session id detection from `CODEX_THREAD_ID`.
+- [ ] Add switch cases for future providers such as OpenCode, Claude, and custom profiles.
+- [ ] Add `efl session set --run run-1 [--id ...] [--provider codex]`.
+- [ ] Add `efl session set --effort eff-1 [--id ...] [--provider codex]`.
+- [ ] Resolve `efl session set --effort` to the most relevant running/prepared effort run.
+- [ ] Add `efl session show --run run-1`.
+- [ ] Add `efl session show --effort eff-1`.
+- [ ] Update Codex startup context to ask the agent to run `efl session set --run <run-ref>`.
+- [ ] Add `efl resume --run run-1`.
+- [ ] Add `efl resume --effort eff-1`.
+- [ ] Build provider-specific resume commands, starting with `codex resume <session-id>`.
+- [ ] Keep resume as CLI-only behavior for this phase.
+- [ ] Build verification: `bun run build`.
+
 ## Phase 2K: Run Status And Notifications
 
 - [ ] Show active run badges in task list.
@@ -270,12 +299,10 @@ The core loop is:
 
 ## Phase 2O: Runner Reliability
 
-- [ ] Persist transcript incrementally.
 - [ ] Survive renderer reload while run process continues.
 - [ ] Reattach UI to running process after renderer reload.
 - [ ] Recover run list after app restart.
 - [ ] Mark orphaned running runs clearly on app start.
-- [ ] Add transcript size guard.
 - [ ] Add context file overwrite behavior for reruns.
 - [ ] Handle missing worktree paths.
 - [ ] Build verification: `bun run build`.
@@ -289,7 +316,6 @@ The core loop is:
 - [ ] Document command-template variables.
 - [ ] Document environment variables.
 - [ ] Document how agents update Effortless through `efl`.
-- [ ] Document transcript file locations.
 - [ ] Update `AGENT-effortless.md` after the real runner exists.
 - [ ] Build verification: `bun run build`.
 
@@ -301,7 +327,6 @@ The core loop is:
 - [x] User can create repo-bound task.
 - [x] User can prepare an effort run.
 - [ ] User can prepare a task run.
-- [x] User can inspect transcript files.
 - [x] User can start an embedded terminal run.
 - [x] Agent starts in the task worktree.
 - [x] Agent can call `efl task checkpoint`.

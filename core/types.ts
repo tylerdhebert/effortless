@@ -325,7 +325,6 @@ export type AgentRun = {
   environment: RunEnvironment
   cwd: string
   command: string
-  transcriptPath: string
   providerSessionId: string | null
   terminalTabKey: string | null
   exitCode: number | null
