@@ -209,7 +209,7 @@ export async function handleTask(surface: string, command: string): Promise<bool
     const updated = await markTaskReady(db, task.id)
     printTask(updated)
 
-    if (updated.status === 'reviewing') {
+    if (updated.status === 'reviewing' && process.env.EFFORTLESS_CLIENT_WAIT !== '1') {
       await waitForTask(updated)
     }
 
