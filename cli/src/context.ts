@@ -1,7 +1,9 @@
 import { openDatabase } from '../../core/db'
 import { getEffortByRef } from '../../core/efforts'
+import { getAgentRun } from '../../core/agentRuns'
 import { getReviewByRef } from '../../core/reviews'
 import { getTaskByRef } from '../../core/tasks'
+import type { AgentRun } from '../../core/types'
 import type { AppDatabase } from '../../core/db'
 import { option } from './args'
 
@@ -72,6 +74,21 @@ export function resolveRefOwnerId(database: AppDatabase): number {
   if (ownerType === 'review') return getReviewByRef(database, ownerRef).id
 
   throw new Error('unable to resolve owner id')
+}
+
+export function resolveRunRef(database: AppDatabase, runRef?: string | null): AgentRun {
+  const ref = runRef ?? option('--run') ?? process.env.EFFORTLESS_RUN_ID
+  if (!ref) {
+    throw new Error('run command requires --run or EFFORTLESS_RUN_ID')
+  }
+  const numericId = ref.trim().match(/^\d+$/) ? Number(ref.trim()) : null
+  if (numericId) return getAgentRun(database, numericId)
+
+  const match = /^run-(\d+)$/.exec(ref.trim())
+  if (!match) {
+    throw new Error(`Run ${ref} was not found`)
+  }
+  return getAgentRun(database, Number(match[1]))
 }
 
 export function resolveInputTarget(database: AppDatabase): {

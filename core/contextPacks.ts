@@ -145,6 +145,9 @@ function renderTaskBootstrap(
   const effort = getEffort(db, task.effortId)
   const cwd = commandPath(profile, run.cwd)
   const context = renderTaskContext(db, task)
+  const sessionHint = profile.commandTemplate.toLowerCase().includes('codex')
+    ? `First, run: efl session set --run ${run.shortRef}\n\n`
+    : ''
   return `# Effortless Run Bootstrap
 
 You are running inside Effortless.
@@ -159,7 +162,7 @@ Current run:
 - task: ${task.shortRef}
 - cwd: ${cwd}
 
-Use Effortless CLI updates as durable state:
+${sessionHint}Use Effortless CLI updates as durable state:
 
 - efl task checkpoint --task ${task.shortRef} --body "..."
 - efl task artifact --task ${task.shortRef} --body "..."
@@ -183,6 +186,9 @@ function renderEffortBootstrap(
   const effort = getEffort(db, run.effortId)
   const cwd = commandPath(profile, run.cwd)
   const context = renderEffortContext(db, run.effortId)
+  const sessionHint = profile.commandTemplate.toLowerCase().includes('codex')
+    ? `First, run: efl session set --run ${run.shortRef}\n\n`
+    : ''
   return `# Effortless Main Run Bootstrap
 
 You are running inside Effortless as the main agent for this effort.
@@ -196,7 +202,7 @@ Current run:
 - effort: ${effort.shortRef}
 - cwd: ${cwd}
 
-Use Effortless CLI updates as durable state. When the user asks you to focus on a task, use its task ref in CLI commands.
+${sessionHint}Use Effortless CLI updates as durable state. When the user asks you to focus on a task, use its task ref in CLI commands.
 
 Useful commands:
 

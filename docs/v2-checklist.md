@@ -238,20 +238,20 @@ The core loop is:
 
 ## Phase 2J.6: Provider Session And Resume CLI
 
-- [ ] Add provider session helpers that can resolve a provider session id from explicit CLI input or provider-specific environment variables.
-- [ ] Implement Codex session id detection from `CODEX_THREAD_ID`.
-- [ ] Add switch cases for future providers such as OpenCode, Claude, and custom profiles.
-- [ ] Add `efl session set --run run-1 [--id ...] [--provider codex]`.
-- [ ] Add `efl session set --effort eff-1 [--id ...] [--provider codex]`.
-- [ ] Resolve `efl session set --effort` to the most relevant running/prepared effort run.
-- [ ] Add `efl session show --run run-1`.
-- [ ] Add `efl session show --effort eff-1`.
-- [ ] Update Codex startup context to ask the agent to run `efl session set --run <run-ref>`.
-- [ ] Add `efl resume --run run-1`.
-- [ ] Add `efl resume --effort eff-1`.
-- [ ] Build provider-specific resume commands, starting with `codex resume <session-id>`.
-- [ ] Keep resume as CLI-only behavior for this phase.
-- [ ] Build verification: `bun run build`.
+- [x] Add provider session helpers that can resolve a provider session id from explicit CLI input or provider-specific environment variables.
+- [x] Implement Codex session id detection from `CODEX_THREAD_ID`.
+- [x] Add switch cases for future providers such as OpenCode, Claude, and custom profiles.
+- [x] Add `efl session set --run run-1 [--id ...] [--provider codex]`.
+- [x] Add `efl session set --effort eff-1 [--id ...] [--provider codex]`.
+- [x] Resolve `efl session set --effort` to the most relevant running/prepared effort run.
+- [x] Add `efl session show --run run-1`.
+- [x] Add `efl session show --effort eff-1`.
+- [x] Update Codex startup context to ask the agent to run `efl session set --run <run-ref>`.
+- [x] Add `efl resume --run run-1`.
+- [x] Add `efl resume --effort eff-1`.
+- [x] Build provider-specific resume commands, starting with `codex resume <session-id>`.
+- [x] Keep resume as CLI-only behavior for this phase.
+- [ ] TODO: execute resume command via child_process.spawn when safe (currently print-only to avoid Electron stdio issues).
 
 ## Phase 2K: Run Status And Notifications
 

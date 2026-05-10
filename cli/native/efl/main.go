@@ -31,7 +31,7 @@ type commandResponse struct {
 
 var forwardedEnv = []string{
 	"EFFORTLESS_TASK",
-	"EFFORTLESS_RUN",
+	"EFFORTLESS_RUN_ID",
 	"EFFORTLESS_RUN_LABEL",
 	"EFFORTLESS_EFFORT",
 	"CODEX_THREAD_ID",

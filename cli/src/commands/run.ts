@@ -1,8 +1,8 @@
 import { listAgentProfiles } from '../../../core/agentProfiles'
-import { buildAgentRunEnvironment, getAgentRun, listAgentRuns, listTaskRuns, prepareEffortRun, prepareTaskRun } from '../../../core/agentRuns'
+import { buildAgentRunEnvironment, listAgentRuns, listTaskRuns, prepareEffortRun, prepareTaskRun } from '../../../core/agentRuns'
 import { getEffortByRef } from '../../../core/efforts'
 import { option } from '../args'
-import { db, resolveTask } from '../context'
+import { db, resolveRunRef, resolveTask } from '../context'
 import { printAgentProfile, printAgentRun } from '../render'
 
 export async function handleRun(surface: string, command: string): Promise<boolean> {
@@ -55,7 +55,7 @@ export async function handleRun(surface: string, command: string): Promise<boole
   }
 
   if (command === 'show') {
-    const run = resolveRun()
+    const run = resolveRunRef(db)
     printAgentRun(run)
     console.log(`profile ${run.profileId}`)
     console.log(`effort ${run.effortId}`)
@@ -73,7 +73,7 @@ export async function handleRun(surface: string, command: string): Promise<boole
   }
 
   if (command === 'env') {
-    const run = resolveRun()
+    const run = resolveRunRef(db)
     for (const [name, value] of Object.entries(buildAgentRunEnvironment(db, run.id))) {
       console.log(`${name}=${value}`)
     }
@@ -81,21 +81,6 @@ export async function handleRun(surface: string, command: string): Promise<boole
   }
 
   return false
-}
-
-function resolveRun() {
-  const runRef = option('--run') ?? process.env.EFFORTLESS_RUN_ID
-  if (!runRef) {
-    throw new Error('run command requires --run or EFFORTLESS_RUN_ID')
-  }
-  const numericId = runRef.trim().match(/^\d+$/) ? Number(runRef.trim()) : null
-  if (numericId) return getAgentRun(db, numericId)
-
-  const match = /^run-(\d+)$/.exec(runRef.trim())
-  if (!match) {
-    throw new Error(`Run ${runRef} was not found`)
-  }
-  return getAgentRun(db, Number(match[1]))
 }
 
 function resolveProfileId(): number | null {

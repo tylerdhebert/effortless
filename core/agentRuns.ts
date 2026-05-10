@@ -264,6 +264,46 @@ export function markAgentRunCancelled(db: AppDatabase, runId: number): AgentRun 
   return getAgentRun(db, runId)
 }
 
+export function setAgentRunProviderSessionId(
+  db: AppDatabase,
+  runId: number,
+  sessionId: string,
+): AgentRun {
+  const now = new Date().toISOString()
+  db.prepare(
+    'UPDATE agent_runs SET provider_session_id = ?, updated_at = ? WHERE id = ?',
+  ).run(sessionId, now, runId)
+  bumpAppState(db)
+  return getAgentRun(db, runId)
+}
+
+export function resolveRelevantEffortRun(db: AppDatabase, effortId: number): AgentRun {
+  const queries = [
+    `SELECT * FROM agent_runs WHERE effort_id = ? AND status = 'running' AND purpose = 'main' ORDER BY started_at DESC LIMIT 1`,
+    `SELECT * FROM agent_runs WHERE effort_id = ? AND status = 'prepared' AND purpose = 'main' ORDER BY created_at DESC LIMIT 1`,
+    `SELECT * FROM agent_runs WHERE effort_id = ? AND status = 'running' ORDER BY started_at DESC LIMIT 1`,
+    `SELECT * FROM agent_runs WHERE effort_id = ? AND status = 'prepared' ORDER BY created_at DESC LIMIT 1`,
+    `SELECT * FROM agent_runs WHERE effort_id = ? ORDER BY created_at DESC LIMIT 1`,
+  ]
+
+  for (const query of queries) {
+    const row = db.prepare<AgentRunRow>(query).get(effortId)
+    if (row) return mapAgentRun(row)
+  }
+
+  throw new Error('No runs found for this effort.')
+}
+
+export function resolveResumableEffortRun(db: AppDatabase, effortId: number): AgentRun {
+  const row = db.prepare<AgentRunRow>(
+    `SELECT * FROM agent_runs WHERE effort_id = ? AND provider_session_id IS NOT NULL ORDER BY created_at DESC LIMIT 1`,
+  ).get(effortId)
+  if (!row) {
+    throw new Error('No run with a provider session id found for this effort.')
+  }
+  return mapAgentRun(row)
+}
+
 export function buildAgentRunEnvironment(db: AppDatabase, runId: number): Record<string, string> {
   const run = getAgentRun(db, runId)
   const profile = getAgentProfile(db, run.profileId)

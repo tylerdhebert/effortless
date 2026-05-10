@@ -10,8 +10,10 @@ import { handlePlan } from './commands/plan'
 import { handlePlaybook } from './commands/playbook'
 import { handleRef } from './commands/ref'
 import { handleRepo } from './commands/repo'
+import { handleResume } from './commands/resume'
 import { handleReview } from './commands/review'
 import { handleRun } from './commands/run'
+import { handleSession } from './commands/session'
 import { handleTask } from './commands/task'
 import { ensureCliDatabase, setCliDatabase } from './context'
 import type { AppDatabase } from '../../core/db'
@@ -43,6 +45,8 @@ export async function runCli(args = rawArgs, database?: AppDatabase): Promise<vo
     handleRef,
     handleEffort,
     handlePlaybook,
+    handleSession,
+    handleResume,
   ]
 
   for (const handler of handlers) {
