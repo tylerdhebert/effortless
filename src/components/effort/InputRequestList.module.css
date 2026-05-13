@@ -40,7 +40,6 @@
   gap: 10px;
   overflow-y: auto;
   overflow-x: hidden;
-  max-height: 420px;
   padding-right: 4px;
   min-height: 0;
 }
@@ -50,13 +49,13 @@
   align-content: start;
   gap: 8px;
   border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--panel);
-  padding: 12px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--panel) 78%, transparent);
+  padding: 10px;
   cursor: pointer;
   transition: border-color 160ms ease;
   align-self: start;
-  min-height: 94px;
+  min-height: 0;
 }
 
 .input-card:hover {

@@ -4,10 +4,8 @@ import { Diff, Hunk, parseDiff, tokenize } from 'react-diff-view'
 import type { FileData, ViewType } from 'react-diff-view'
 import 'react-diff-view/style/index.css'
 import { refractor as rawRefractor } from 'refractor'
-import { Play, SquareTerminal } from 'lucide-react'
+import { Play, Send } from 'lucide-react'
 import type {
-  AgentProfile,
-  AgentRun,
   Task,
   ActivityEvent,
   Repo,
@@ -30,17 +28,15 @@ type TaskDetailPaneProps = {
   reviews: Review[]
   comments: ActivityEvent[]
   latestBuild: TaskBuildResult | null
-  runs: AgentRun[]
-  agentProfiles: AgentProfile[]
   commitView: TaskCommitView | null
   conflictView: TaskConflictView | null
   onRunBuild: (taskId: number) => void
-  onStartTaskRun: (taskId: number) => void
+  onWorkOnTask: (task: Task) => void
   onMergeTask: (taskId: number) => void
   onApplyReview: (reviewId: number) => void
   onRequestReviewChanges: (input: { reviewId: number; body: string }) => void
   isRunningBuild: boolean
-  isStartingRun: boolean
+  isSendingTaskToTerminal: boolean
   isMergingTask: boolean
   isApplyingReview: boolean
   isRequestingReviewChanges: boolean
@@ -52,17 +48,15 @@ export function TaskDetailPane({
   reviews,
   comments,
   latestBuild,
-  runs,
-  agentProfiles,
   commitView,
   conflictView,
   onRunBuild,
-  onStartTaskRun,
+  onWorkOnTask,
   onMergeTask,
   onApplyReview,
   onRequestReviewChanges,
   isRunningBuild,
-  isStartingRun,
+  isSendingTaskToTerminal,
   isMergingTask,
   isApplyingReview,
   isRequestingReviewChanges,
@@ -78,7 +72,6 @@ export function TaskDetailPane({
   }, [task?.id])
 
   const taskRepo = repos.find((repo) => repo.id === (task?.repoId ?? null)) ?? null
-  const defaultProfile = agentProfiles[0] ?? null
   const latestReview = reviews[0] ?? null
   const pendingReview = reviews[0] ?? null
   const diffViewQuery = useQuery<TaskDiffView>({
@@ -200,12 +193,12 @@ export function TaskDetailPane({
             <button
               type="button"
               className={styles['task-header-action']}
-              title={taskRepo ? 'start agent run' : 'task needs a repo before starting a run'}
-              onClick={() => onStartTaskRun(task.id)}
-              disabled={isStartingRun || !taskRepo}
+              title="send task context to the main effort terminal"
+              onClick={() => onWorkOnTask(task)}
+              disabled={isSendingTaskToTerminal}
             >
-              <SquareTerminal size={14} aria-hidden="true" />
-              <span>{isStartingRun ? 'starting' : 'start'}</span>
+              <Send size={14} aria-hidden="true" />
+              <span>{isSendingTaskToTerminal ? 'sending' : 'work on this'}</span>
             </button>
             <button
               type="button"
@@ -242,34 +235,6 @@ export function TaskDetailPane({
           <section className={styles['task-detail-section']}>
             <h4>comments</h4>
             <CommentStream comments={comments} />
-          </section>
-
-          <section className={styles['task-detail-section']}>
-            <div className={styles['run-section-header']}>
-              <h4>runs</h4>
-              <span>{runs.length} total</span>
-            </div>
-            <div className={styles['run-profile-summary']}>
-              <span>default profile</span>
-              <strong>{defaultProfile ? `${defaultProfile.shortRef} ${defaultProfile.name}` : 'none'}</strong>
-            </div>
-            {runs.length > 0 ? (
-              <div className={styles['run-list']}>
-                {runs.map((run) => (
-                  <article key={run.id} className={styles['run-row']}>
-                    <div className={styles['run-row-main']}>
-                      <strong>{run.shortRef}</strong>
-                      <span>{run.status} · {run.purpose} · {run.label}</span>
-                    </div>
-                    <div className={styles['run-row-paths']}>
-                      <span title={run.cwd}>cwd {run.cwd}</span>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            ) : (
-              <p className="empty-state">no runs yet</p>
-            )}
           </section>
 
           <div className={styles['task-detail-supporting-grid']}>

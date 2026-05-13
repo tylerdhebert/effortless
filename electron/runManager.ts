@@ -34,6 +34,8 @@ export function getPtyRuntimeStatus(): { available: boolean; platform: NodeJS.Pl
 
 export class RunManager {
   private readonly sessions = new Map<number, RunSession>()
+  private readonly providerRunIds = new Set<number>()
+  private readonly completedRunIds = new Set<number>()
   private readonly stoppingRunIds = new Set<number>()
 
   constructor(
@@ -47,7 +49,7 @@ export class RunManager {
     }
 
     const run = getAgentRun(this.db, runId)
-    if (run.status === 'running') {
+    if (this.providerRunIds.has(runId)) {
       throw new Error(`Run ${run.shortRef} is already running`)
     }
 
@@ -68,21 +70,44 @@ export class RunManager {
       })
 
       this.sessions.set(runId, { runId, terminal })
+      this.providerRunIds.add(runId)
+      this.completedRunIds.delete(runId)
       markAgentRunStarted(this.db, runId)
 
       terminal.onData((body) => {
+        const exitCode = parseProviderExitSentinel(body, runId)
+        if (exitCode != null && !this.completedRunIds.has(runId)) {
+          const visibleBody = stripProviderExitSentinel(body, runId)
+          if (visibleBody) {
+            this.emit({ kind: 'data', runId, body: visibleBody })
+          }
+          this.providerRunIds.delete(runId)
+          this.completedRunIds.add(runId)
+          markAgentRunExited(this.db, runId, exitCode)
+          this.emit({ kind: 'exit', runId, exitCode })
+          return
+        }
         this.emit({ kind: 'data', runId, body })
       })
 
       terminal.onExit(({ exitCode }) => {
         this.sessions.delete(runId)
+        let shouldEmitExit = true
         if (this.stoppingRunIds.has(runId)) {
           this.stoppingRunIds.delete(runId)
+          this.providerRunIds.delete(runId)
+          this.completedRunIds.add(runId)
           markAgentRunCancelled(this.db, runId)
-        } else {
+        } else if (!this.completedRunIds.has(runId)) {
+          this.providerRunIds.delete(runId)
+          this.completedRunIds.add(runId)
           markAgentRunExited(this.db, runId, exitCode)
+        } else {
+          shouldEmitExit = false
         }
-        this.emit({ kind: 'exit', runId, exitCode })
+        if (shouldEmitExit) {
+          this.emit({ kind: 'exit', runId, exitCode })
+        }
       })
     } catch (error) {
       markAgentRunFailed(this.db, runId, error instanceof Error ? error.message : String(error))
@@ -105,6 +130,14 @@ export class RunManager {
     session.terminal.resize(size.cols, size.rows)
   }
 
+  activeRunIds(): number[] {
+    return [...this.sessions.keys()]
+  }
+
+  activeProviderRunIds(): number[] {
+    return [...this.providerRunIds]
+  }
+
   stop(runId: number): void {
     const session = this.sessions.get(runId)
     if (!session) return
@@ -115,13 +148,19 @@ export class RunManager {
   stopAll(): void {
     for (const session of this.sessions.values()) {
       this.stoppingRunIds.add(session.runId)
+      if (!this.completedRunIds.has(session.runId)) {
+        this.providerRunIds.delete(session.runId)
+        this.completedRunIds.add(session.runId)
+        markAgentRunCancelled(this.db, session.runId)
+      }
       session.terminal.kill()
     }
+    this.sessions.clear()
   }
 }
 
 function resolveShellLaunch(
-  run: { shortRef: string; command: string; cwd: string; environment: string },
+  run: { id: number; shortRef: string; command: string; cwd: string; environment: string },
   wslDistro: string | null,
   env: NodeJS.ProcessEnv,
 ): { file: string; args: string[] } {
@@ -135,6 +174,9 @@ function resolveShellLaunch(
       `export PATH=${posixShellQuote(toWslPath(runBinPath))}:$PATH`,
       `cd ${posixShellQuote(toWslPath(run.cwd))}`,
       run.command,
+      `code=$?`,
+      `printf '\\n${providerExitSentinel(run.id)}:%s\\n' "$code"`,
+      `exec bash -i`,
     ].join('\n')
 
     return {
@@ -149,16 +191,42 @@ function resolveShellLaunch(
   }
 
   if (process.platform === 'win32') {
+    const command = [
+      run.command,
+      '$effortlessExitCode = if ($null -eq $LASTEXITCODE) { 0 } else { $LASTEXITCODE }',
+      `Write-Output "${providerExitSentinel(run.id)}:$effortlessExitCode"`,
+    ].join('; ')
     return {
       file: 'powershell.exe',
-      args: ['-NoLogo', '-Command', run.command],
+      args: ['-NoLogo', '-NoExit', '-Command', command],
     }
   }
 
+  const command = [
+    run.command,
+    'code=$?',
+    `printf '\\n${providerExitSentinel(run.id)}:%s\\n' "$code"`,
+    'exec "${SHELL:-bash}" -i',
+  ].join('\n')
   return {
     file: process.env.SHELL ?? 'bash',
-    args: ['-lc', run.command],
+    args: ['-lc', command],
   }
+}
+
+function providerExitSentinel(runId: number): string {
+  return `__EFFORTLESS_PROVIDER_EXIT__:${runId}`
+}
+
+function parseProviderExitSentinel(body: string, runId: number): number | null {
+  const escaped = providerExitSentinel(runId).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const match = body.match(new RegExp(`${escaped}:(\\d+)`))
+  return match ? Number(match[1]) : null
+}
+
+function stripProviderExitSentinel(body: string, runId: number): string {
+  const escaped = providerExitSentinel(runId).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return body.replace(new RegExp(`\\r?\\n?${escaped}:\\d+\\r?\\n?`, 'g'), '')
 }
 
 function ensureWslRunBin(run: { shortRef: string }): string {

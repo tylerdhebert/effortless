@@ -21,6 +21,21 @@ export async function worktreeCreate(
   const wtPath = worktreePath(repoPath, branchName)
   fs.mkdirSync(path.dirname(wtPath), { recursive: true })
 
+  if (fs.existsSync(wtPath)) {
+    if (await isWorktreeForBranch(wtPath, branchName)) {
+      return wtPath
+    }
+
+    const entries = fs.readdirSync(wtPath)
+    if (entries.length === 0) {
+      fs.rmdirSync(wtPath)
+    } else {
+      throw new Error(
+        `Worktree path already exists but is not checked out on ${branchName}: ${wtPath}`,
+      )
+    }
+  }
+
   const existingBranches = await git(repoPath, ['branch', '--list', branchName])
 
   if (existingBranches.trim()) {
@@ -30,6 +45,17 @@ export async function worktreeCreate(
   }
 
   return wtPath
+}
+
+async function isWorktreeForBranch(worktreePath: string, branchName: string): Promise<boolean> {
+  try {
+    const inside = (await git(worktreePath, ['rev-parse', '--is-inside-work-tree'])).trim()
+    if (inside !== 'true') return false
+    const currentBranch = (await git(worktreePath, ['branch', '--show-current'])).trim()
+    return currentBranch === branchName
+  } catch {
+    return false
+  }
 }
 
 export async function worktreeRemove(repoPath: string, branchName: string): Promise<void> {

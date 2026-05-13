@@ -38,7 +38,7 @@ import type {
   TaskDiffView,
   TemplatePlaybook,
   PrepareEffortRunInput,
-  PrepareTaskRunInput,
+  PrepareResumeRunInput,
   UpdateAgentProfileInput,
   UpdateMandateInput,
   UpdateRepoInput,
@@ -118,14 +118,12 @@ interface Window {
       createAgentProfile: (input: CreateAgentProfileInput) => Promise<AgentProfile>
       updateAgentProfile: (input: UpdateAgentProfileInput) => Promise<AgentProfile>
       listAgentRuns: (effortId?: number | null) => Promise<AgentRun[]>
-      listTaskRuns: (taskId: number) => Promise<AgentRun[]>
-      prepareTaskRun: (input: PrepareTaskRunInput) => Promise<{
+      prepareEffortRun: (input: PrepareEffortRunInput) => Promise<{
         run: AgentRun
-        task: Task
         profile: AgentProfile
         env: Record<string, string>
       }>
-      prepareEffortRun: (input: PrepareEffortRunInput) => Promise<{
+      prepareResumeRun: (input: PrepareResumeRunInput) => Promise<{
         run: AgentRun
         profile: AgentProfile
         env: Record<string, string>
@@ -134,6 +132,8 @@ interface Window {
       markAgentRunExited: (runId: number, exitCode: number) => Promise<AgentRun>
       markAgentRunFailed: (runId: number, error: string) => Promise<AgentRun>
       getPtyRuntimeStatus: () => Promise<{ available: boolean; platform: NodeJS.Platform }>
+      listActiveAgentRunIds: () => Promise<number[]>
+      listActiveProviderRunIds: () => Promise<number[]>
       startAgentRun: (runId: number, size: { cols: number; rows: number }) => Promise<void>
       writeAgentRun: (runId: number, data: string) => Promise<void>
       resizeAgentRun: (runId: number, size: { cols: number; rows: number }) => Promise<void>

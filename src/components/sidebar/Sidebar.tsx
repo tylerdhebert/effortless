@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import type { Effort, Task } from '../../../core/types'
 import type { PendingNotification } from '../../../core/notifications'
-import { Home, Plus, Settings, Filter } from 'lucide-react'
+import { ChevronsLeft, Home, Plus, Settings, Filter } from 'lucide-react'
 import { formatTemplate, effortStatusColor } from '../../lib/helpers'
 import { MANAGE_SECTIONS, type ManageSection } from '../../lib/manageSections'
 import { WarningIndicator } from '../notifications/WarningIndicator'
@@ -23,6 +23,7 @@ type SidebarProps = {
   notificationCount: number
   notifications: PendingNotification[]
   onNavigateNotification: (notification: PendingNotification) => void
+  onCollapseSidebar: () => void
 }
 
 export function Sidebar({
@@ -40,6 +41,7 @@ export function Sidebar({
   notificationCount,
   notifications,
   onNavigateNotification,
+  onCollapseSidebar,
 }: SidebarProps) {
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [statusFilter, setStatusFilter] = useState<string[]>([])
@@ -110,6 +112,14 @@ export function Sidebar({
           <h1>{surfaceMode === 'manage' ? 'manage' : 'efforts'}</h1>
         </div>
         <div className={styles['sidebar-actions']} aria-label="effort actions">
+          <button
+            type="button"
+            aria-label="collapse sidebar"
+            title="collapse sidebar"
+            onClick={onCollapseSidebar}
+          >
+            <ChevronsLeft size={16} />
+          </button>
           <button
             type="button"
             className={`icon-btn ${surfaceMode === 'effort' ? styles.active : ''}`}

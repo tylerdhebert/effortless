@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { InputRequest } from '../../../core/types'
 import { PillSwitcher } from '../ui/PillSwitcher'
 import styles from './InputRequestList.module.css'
@@ -18,12 +18,23 @@ type InputRequestListProps = {
   inputs: InputRequest[]
   onAnswer: (inputRequestId: number, answer: string) => void
   isAnswering: boolean
+  focusedInputId?: number | null
 }
 
-export function InputRequestList({ inputs, onAnswer, isAnswering }: InputRequestListProps) {
+export function InputRequestList({ inputs, onAnswer, isAnswering, focusedInputId = null }: InputRequestListProps) {
   const [tab, setTab] = useState<'pending' | 'answered'>('pending')
   const [expandedId, setExpandedId] = useState<number | null>(null)
   const [drafts, setDrafts] = useState<Record<number, string>>({})
+
+  useEffect(() => {
+    if (!focusedInputId) return
+    const input = inputs.find((candidate) => candidate.id === focusedInputId)
+    if (!input) return
+    setTab(input.status)
+    if (input.status === 'pending') {
+      setExpandedId(input.id)
+    }
+  }, [focusedInputId, inputs])
 
   const filtered = inputs.filter((input) => input.status === tab)
   const pendingCount = inputs.filter((input) => input.status === 'pending').length

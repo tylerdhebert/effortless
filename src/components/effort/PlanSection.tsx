@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { Plan } from '../../../core/types'
 import { PlanCommentStream } from './PlanCommentStream'
-import { ChevronLeft, ChevronRight, ListOrdered } from 'lucide-react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { planStatus } from '../../lib/helpers'
 import { MarkdownDocument } from '../ui/MarkdownDocument'
 import styles from './PlanSection.module.css'
@@ -47,27 +47,14 @@ export function PlanSection({
 
   if (plans.length === 0) {
     return (
-      <section className={`surface-section ${styles['plan-section']}`}>
-        <div className="section-title">
-          <span className="section-title-label">
-            <ListOrdered size={14} />
-            <span>plan</span>
-          </span>
-        </div>
+      <section className={styles['plan-section']}>
         <p className="empty-state">no plans yet</p>
       </section>
     )
   }
 
   return (
-    <section className={`surface-section ${styles['plan-section']}`}>
-      <div className="section-title">
-        <span className="section-title-label">
-          <ListOrdered size={14} />
-          <span>plan</span>
-        </span>
-      </div>
-
+    <section className={styles['plan-section']}>
       <div className={styles['plan-pager']}>
         <div className={styles['plan-pager-top']}>
           <button

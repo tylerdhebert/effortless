@@ -36,8 +36,8 @@ import type {
   TaskConflictView,
   TaskDiffView,
   TemplatePlaybook,
-  PrepareTaskRunInput,
   PrepareEffortRunInput,
+  PrepareResumeRunInput,
   UpdateAgentProfileInput,
   UpdateMandateInput,
   UpdateRepoInput,
@@ -146,17 +146,14 @@ contextBridge.exposeInMainWorld('effortless', {
     ipcRenderer.invoke('agentProfiles:update', input) as Promise<AgentProfile>,
   listAgentRuns: (effortId?: number | null) =>
     ipcRenderer.invoke('agentRuns:list', effortId ?? null) as Promise<AgentRun[]>,
-  listTaskRuns: (taskId: number) =>
-    ipcRenderer.invoke('agentRuns:listTask', taskId) as Promise<AgentRun[]>,
-  prepareTaskRun: (input: PrepareTaskRunInput) =>
-    ipcRenderer.invoke('agentRuns:prepareTask', input) as Promise<{
+  prepareEffortRun: (input: PrepareEffortRunInput) =>
+    ipcRenderer.invoke('agentRuns:prepareEffort', input) as Promise<{
       run: AgentRun
-      task: Task
       profile: AgentProfile
       env: Record<string, string>
     }>,
-  prepareEffortRun: (input: PrepareEffortRunInput) =>
-    ipcRenderer.invoke('agentRuns:prepareEffort', input) as Promise<{
+  prepareResumeRun: (input: PrepareResumeRunInput) =>
+    ipcRenderer.invoke('agentRuns:prepareResume', input) as Promise<{
       run: AgentRun
       profile: AgentProfile
       env: Record<string, string>
@@ -169,6 +166,10 @@ contextBridge.exposeInMainWorld('effortless', {
     ipcRenderer.invoke('agentRuns:markFailed', runId, error) as Promise<AgentRun>,
   getPtyRuntimeStatus: () =>
     ipcRenderer.invoke('agentRuns:ptyStatus') as Promise<{ available: boolean; platform: NodeJS.Platform }>,
+  listActiveAgentRunIds: () =>
+    ipcRenderer.invoke('agentRuns:activeIds') as Promise<number[]>,
+  listActiveProviderRunIds: () =>
+    ipcRenderer.invoke('agentRuns:activeProviderIds') as Promise<number[]>,
   startAgentRun: (runId: number, size: { cols: number; rows: number }) =>
     ipcRenderer.invoke('agentRuns:start', runId, size) as Promise<void>,
   writeAgentRun: (runId: number, data: string) =>

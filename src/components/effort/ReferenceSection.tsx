@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Effort, Plan, Reference, ReferenceTargetType, Review, Task } from '../../../core/types'
-import { ChevronDown, ChevronLeft, ChevronRight, Glasses, List, Plus, Trash2, X } from 'lucide-react'
+import { ChevronDown, ChevronLeft, ChevronRight, List, Plus, Trash2, X } from 'lucide-react'
 import { PathPicker } from '../ui/PathPicker'
 import styles from './ReferenceSection.module.css'
 
@@ -218,13 +218,10 @@ export function ReferenceSection({
   }, [activeReference])
 
   return (
-    <section className={`surface-section ${styles['reference-section']}`}>
-      <div className="section-title">
-        <span className="section-title-label">
-          <Glasses size={14} />
-          <span>references ({references.length})</span>
-        </span>
-        <div className={`section-title-actions ${styles['reference-title-actions']}`}>
+    <section className={styles['reference-section']}>
+      <div className={styles['reference-toolbar']}>
+        <span>{references.length} refs</span>
+        <div className={styles['reference-title-actions']}>
           {references.length > 1 ? (
             <button
               ref={listButtonRef}

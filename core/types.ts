@@ -349,6 +349,10 @@ export type PrepareEffortRunInput = {
   label?: string
 }
 
+export type PrepareResumeRunInput = {
+  runId: number
+}
+
 export type ReferenceOwnerType = 'effort' | 'plan' | 'task' | 'review'
 export type ReferenceTargetType = 'effort' | 'plan' | 'task' | 'review' | 'file'
 

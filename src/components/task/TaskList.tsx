@@ -16,15 +16,22 @@ type TaskListProps = {
   selectedTaskId: number | null
   onSelectTask: (taskId: number) => void
   pendingTaskIds?: Set<number>
+  variant?: 'list' | 'strip'
 }
 
-export function TaskList({ tasks, selectedTaskId, onSelectTask, pendingTaskIds }: TaskListProps) {
+export function TaskList({
+  tasks,
+  selectedTaskId,
+  onSelectTask,
+  pendingTaskIds,
+  variant = 'list',
+}: TaskListProps) {
   if (tasks.length === 0) {
     return <p className="empty-state">no tasks</p>
   }
 
   return (
-    <div className={styles['task-list']}>
+    <div className={`${styles['task-list']} ${variant === 'strip' ? styles['task-list--strip'] : ''}`}>
       {tasks.map((task) => (
         <button
           key={task.id}
@@ -33,21 +40,42 @@ export function TaskList({ tasks, selectedTaskId, onSelectTask, pendingTaskIds }
           title={`${task.title} | ${task.description}`}
           onClick={() => onSelectTask(task.id)}
         >
-          <div className={styles['task-list-topline']}>
-            <span
-              className={styles['task-list-dot']}
-              style={{ background: statusColors[task.status] ?? statusColors.open }}
-              aria-hidden="true"
-            />
-            <span className={styles['task-list-ref']}>{task.shortRef}</span>
-            {pendingTaskIds?.has(task.id) ? (
-              <WarningIndicator title="needs input" size={12} />
-            ) : null}
-          </div>
-          <div className={styles['task-list-status-row']}>
-            <span className={styles['task-list-status']}>{task.status}</span>
-          </div>
-          <strong className={styles['task-list-title']}>{task.title}</strong>
+          {variant === 'strip' ? (
+            <>
+              <span
+                className={styles['task-list-dot']}
+                style={{ background: statusColors[task.status] ?? statusColors.open }}
+                aria-hidden="true"
+              />
+              <span className={styles['task-list-ref']}>{task.shortRef}</span>
+              {pendingTaskIds?.has(task.id) ? (
+                <WarningIndicator title="needs input" size={12} />
+              ) : null}
+              <span className={styles['task-list-flyout']}>
+                <span className={styles['task-list-flyout-kicker']}>{task.status}</span>
+                <strong>{task.title}</strong>
+                <span>{task.description}</span>
+              </span>
+            </>
+          ) : (
+            <>
+              <div className={styles['task-list-topline']}>
+                <span
+                  className={styles['task-list-dot']}
+                  style={{ background: statusColors[task.status] ?? statusColors.open }}
+                  aria-hidden="true"
+                />
+                <span className={styles['task-list-ref']}>{task.shortRef}</span>
+                {pendingTaskIds?.has(task.id) ? (
+                  <WarningIndicator title="needs input" size={12} />
+                ) : null}
+              </div>
+              <div className={styles['task-list-status-row']}>
+                <span className={styles['task-list-status']}>{task.status}</span>
+              </div>
+              <strong className={styles['task-list-title']}>{task.title}</strong>
+            </>
+          )}
         </button>
       ))}
     </div>

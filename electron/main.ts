@@ -4,7 +4,7 @@ import { createHash } from 'node:crypto'
 import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { createAgentProfile, listAgentProfiles, updateAgentProfile } from '../core/agentProfiles'
-import { listAgentRuns, listTaskRuns, markAgentRunExited, markAgentRunFailed, markAgentRunStarted, prepareEffortRun, prepareTaskRun } from '../core/agentRuns'
+import { listAgentRuns, markAgentRunExited, markAgentRunFailed, markAgentRunStarted, prepareEffortRun, prepareResumeRun } from '../core/agentRuns'
 import { getLatestTaskBuild, runTaskBuild } from '../core/builds'
 import { getPtyRuntimeStatus, RunManager } from './runManager'
 import { startCliCommandServer, type CliCommandServer } from './cliCommandServer'
@@ -78,6 +78,7 @@ import type {
   RequestPlanChangesInput,
   RequestReviewChangesInput,
   RequestTaskChangesInput,
+  PrepareResumeRunInput,
   SubmitReviewInput,
   UpdateAgentProfileInput,
   UpdateMandateInput,
@@ -216,17 +217,18 @@ ipcMain.handle('agentProfiles:list', () => listAgentProfiles(db))
 ipcMain.handle('agentProfiles:create', (_event, input: CreateAgentProfileInput) => createAgentProfile(db, input))
 ipcMain.handle('agentProfiles:update', (_event, input: UpdateAgentProfileInput) => updateAgentProfile(db, input))
 ipcMain.handle('agentRuns:list', (_event, effortId?: number | null) => listAgentRuns(db, effortId ?? null))
-ipcMain.handle('agentRuns:listTask', (_event, taskId: number) => listTaskRuns(db, taskId))
-ipcMain.handle('agentRuns:prepareTask', (_event, input: { taskId: number; profileId?: number | null; purpose?: 'main' | 'side-investigation' | 'implementation' | 'review'; label?: string }) =>
-  prepareTaskRun(db, input),
-)
 ipcMain.handle('agentRuns:prepareEffort', (_event, input: { effortId: number; profileId?: number | null; purpose?: 'main' | 'side-investigation' | 'implementation' | 'review'; label?: string }) =>
   prepareEffortRun(db, input),
+)
+ipcMain.handle('agentRuns:prepareResume', (_event, input: PrepareResumeRunInput) =>
+  prepareResumeRun(db, input),
 )
 ipcMain.handle('agentRuns:markStarted', (_event, runId: number) => markAgentRunStarted(db, runId))
 ipcMain.handle('agentRuns:markExited', (_event, runId: number, exitCode: number) => markAgentRunExited(db, runId, exitCode))
 ipcMain.handle('agentRuns:markFailed', (_event, runId: number, error: string) => markAgentRunFailed(db, runId, error))
 ipcMain.handle('agentRuns:ptyStatus', () => getPtyRuntimeStatus())
+ipcMain.handle('agentRuns:activeIds', () => runManager.activeRunIds())
+ipcMain.handle('agentRuns:activeProviderIds', () => runManager.activeProviderRunIds())
 ipcMain.handle('agentRuns:start', (_event, runId: number, size: { cols: number; rows: number }) =>
   runManager.start(runId, size),
 )

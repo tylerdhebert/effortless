@@ -13,6 +13,7 @@ import type {
   AgentRunStatus,
   PrepareTaskRunInput,
   PrepareEffortRunInput,
+  PrepareResumeRunInput,
   RunEnvironment,
   Task,
 } from './types'
@@ -47,6 +48,12 @@ export type PreparedTaskRun = {
 }
 
 export type PreparedEffortRun = {
+  run: AgentRun
+  profile: AgentProfile
+  env: Record<string, string>
+}
+
+export type PreparedResumeRun = {
   run: AgentRun
   profile: AgentProfile
   env: Record<string, string>
@@ -95,7 +102,7 @@ export async function prepareTaskRun(db: AppDatabase, input: PrepareTaskRunInput
     label,
     environment: profile.environment,
     cwd,
-    terminalTabKey: purpose === 'main' ? 'main' : `${purpose}-${task.shortRef}`,
+    terminalTabKey: resolveTaskRunTerminalTabKey(purpose, task.shortRef),
     now,
   })
 
@@ -203,6 +210,52 @@ export async function prepareEffortRun(db: AppDatabase, input: PrepareEffortRunI
     run,
     profile,
     env: buildAgentRunEnvironment(db, run.id),
+  }
+}
+
+export async function prepareResumeRun(db: AppDatabase, input: PrepareResumeRunInput): Promise<PreparedResumeRun> {
+  const sourceRun = getAgentRun(db, input.runId)
+  if (!sourceRun.providerSessionId) {
+    throw new Error(`Run ${sourceRun.shortRef} does not have a provider session id`)
+  }
+
+  const profile = getAgentProfile(db, sourceRun.profileId)
+  if (!profile.commandTemplate.toLowerCase().includes('codex')) {
+    throw new Error('Only Codex resume is supported right now')
+  }
+
+  const now = new Date().toISOString()
+  const label = `resume-${sourceRun.shortRef}-${Date.now()}`
+  const result = insertPreparedAgentRun(db, {
+    effortId: sourceRun.effortId,
+    taskId: sourceRun.taskId,
+    profileId: profile.id,
+    purpose: sourceRun.purpose,
+    label,
+    environment: sourceRun.environment,
+    cwd: sourceRun.cwd,
+    terminalTabKey: sourceRun.terminalTabKey ?? 'main',
+    now,
+  })
+
+  const id = Number(result.lastInsertRowid)
+  const shortRef = `run-${id}`
+  const command = `codex resume ${shellQuote(sourceRun.providerSessionId, profile.environment)}`
+  db.prepare(`
+    UPDATE agent_runs
+    SET short_ref = ?,
+        command = ?,
+        provider_session_id = ?,
+        updated_at = ?
+    WHERE id = ?
+  `).run(shortRef, command, sourceRun.providerSessionId, new Date().toISOString(), id)
+
+  bumpAppState(db)
+
+  return {
+    run: getAgentRun(db, id),
+    profile,
+    env: buildAgentRunEnvironment(db, id),
   }
 }
 
@@ -334,6 +387,12 @@ function resolveTaskRunCwd(db: AppDatabase, task: Task, profile: AgentProfile): 
     throw new Error('Task worktree was not prepared')
   }
   return task.worktreePath
+}
+
+function resolveTaskRunTerminalTabKey(purpose: AgentRunPurpose, taskRef: string): string {
+  if (purpose === 'review') return `review-${taskRef}`
+  if (purpose === 'side-investigation') return `side-${taskRef}`
+  return `task-${taskRef}`
 }
 
 function resolveEffortRunCwd(db: AppDatabase, effortId: number, profile: AgentProfile): string {

@@ -6,7 +6,18 @@
   min-height: 0;
   height: 100%;
   overflow-y: auto;
+  overscroll-behavior: contain;
   padding-right: 4px;
+}
+
+.task-list--strip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: auto;
+  min-height: 0;
+  overflow: visible;
+  padding: 1px 0;
 }
 
 .task-list-row {
@@ -85,6 +96,100 @@
   line-height: 1.4;
   font-size: 0.86rem;
   color: var(--text);
+}
+
+.task-list--strip .task-list-row {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  min-height: 26px;
+  padding: 3px 8px;
+  border-color: color-mix(in srgb, var(--line) 74%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--button) 72%, transparent);
+  overflow: visible;
+}
+
+.task-list--strip .task-list-row:hover {
+  z-index: 20;
+  background: color-mix(in srgb, var(--accent) 7%, var(--button));
+  border-color: color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.task-list--strip .task-list-row.selected {
+  background: color-mix(in srgb, var(--accent) 11%, var(--button));
+  border-color: color-mix(in srgb, var(--accent) 48%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.task-list--strip .task-list-topline {
+  gap: 6px;
+}
+
+.task-list--strip .task-list-dot {
+  width: 6px;
+  height: 6px;
+}
+
+.task-list--strip .task-list-ref {
+  color: var(--text);
+  font-size: 0.68rem;
+  font-weight: 750;
+  letter-spacing: 0;
+}
+
+.task-list-flyout {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 30;
+  display: grid;
+  gap: 6px;
+  width: min(300px, 44vw);
+  max-width: 300px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--accent) 26%, var(--line));
+  border-radius: 10px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 38%),
+    color-mix(in srgb, var(--surface) 96%, black);
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.34);
+  opacity: 0;
+  padding: 10px;
+  pointer-events: none;
+  transform: translateY(-4px) scale(0.98);
+  transform-origin: top left;
+  transition:
+    opacity 120ms ease,
+    transform 140ms ease;
+}
+
+.task-list-row:hover .task-list-flyout,
+.task-list-row:focus-visible .task-list-flyout {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.task-list-flyout-kicker {
+  color: var(--muted);
+  font-size: 0.64rem;
+  font-weight: 750;
+  letter-spacing: 0.05em;
+  text-transform: lowercase;
+}
+
+.task-list-flyout strong {
+  color: var(--text-strong);
+  font-size: 0.82rem;
+  line-height: 1.25;
+}
+
+.task-list-flyout span:last-child {
+  color: var(--text);
+  font-size: 0.76rem;
+  line-height: 1.4;
 }
 
 @media (max-width: 1100px) {
