@@ -65,6 +65,8 @@ function App() {
   const [activeEffortDrawer, setActiveEffortDrawer] = useState<EffortRailDrawer | null>(null)
   const [taskCreateOpen, setTaskCreateOpen] = useState(false)
   const [focusedInputId, setFocusedInputId] = useState<number | null>(null)
+  const [terminalMenuOpen, setTerminalMenuOpen] = useState(false)
+  const [drawerClosedAt, setDrawerClosedAt] = useState(0)
   const [observedAppVersion, setObservedAppVersion] = useState<number | null>(null)
   const [customThemePalette, setCustomThemePalette] = useState<ThemePalette | null>(null)
   const [customThemeActive, setCustomThemeActive] = useState(false)
@@ -531,7 +533,14 @@ function App() {
   function openEffortDrawer(drawer: EffortRailDrawer) {
     if (drawer === 'plan' && !supportsPlans) return
     if (drawer === 'tasks' && !supportsTasks) return
-    setActiveEffortDrawer((current) => (current === drawer ? null : drawer))
+    setTerminalMenuOpen(false)
+    setActiveEffortDrawer((current) => {
+      if (current === drawer) {
+        setDrawerClosedAt((n) => n + 1)
+        return null
+      }
+      return drawer
+    })
   }
 
   function handleUpdateCustomTheme(palette: ThemePalette) {
@@ -648,6 +657,8 @@ function App() {
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key !== 'Escape') return
       setActiveEffortDrawer(null)
+      setTerminalMenuOpen(false)
+      setDrawerClosedAt((n) => n + 1)
     }
 
     window.addEventListener('keydown', handleKeyDown)
@@ -861,16 +872,22 @@ function App() {
                   activeTabKey={activeTerminalTabKey}
                   isStarting={startEffortRun.isPending || resumeAgentRun.isPending}
                   emptyLabel="ready for effort"
+                  menuOpen={terminalMenuOpen}
                   onStart={() => {
                     startEffortRun.mutate(selectedEffort.id)
                   }}
                   onResume={(runId) => resumeAgentRun.mutate(runId)}
-                  onSelectTab={setActiveTerminalTabKey}
+                  onSelectTab={(key) => {
+                    setActiveTerminalTabKey(key)
+                    setTerminalMenuOpen(false)
+                  }}
                   onOpenTask={(taskId) => {
                     setSelectedTaskId(taskId)
                     setActiveEffortDrawer('tasks')
                   }}
                   onStop={(runId) => taskMutations.stopAgentRun.mutate(runId)}
+                  onToggleMenu={setTerminalMenuOpen}
+                  drawerClosedAt={drawerClosedAt}
                 />
               </div>
               <aside className="effort-rail" aria-label="effort views">
@@ -911,7 +928,10 @@ function App() {
                       className="icon-btn"
                       aria-label="close effort drawer"
                       title="close"
-                      onClick={() => setActiveEffortDrawer(null)}
+                      onClick={() => {
+                        setActiveEffortDrawer(null)
+                        setDrawerClosedAt((n) => n + 1)
+                      }}
                     >
                       <X size={14} />
                     </button>

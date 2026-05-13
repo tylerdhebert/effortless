@@ -30,8 +30,8 @@
   display: grid;
   gap: 14px;
   border: 1px solid var(--line);
-  border-radius: 20px;
-  background: var(--panel);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--panel) 82%, transparent);
   padding: 18px;
   width: 100%;
   max-width: 720px;
@@ -151,7 +151,7 @@
   gap: 8px;
   width: 100%;
   border: 1px solid var(--line);
-  border-radius: 16px;
+  border-radius: 10px;
   background: transparent;
   cursor: pointer;
   padding: 12px 12px 12px 14px;
