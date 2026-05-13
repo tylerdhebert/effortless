@@ -328,7 +328,7 @@
   flex-direction: column;
   gap: 6px;
   align-items: stretch;
-  padding: 10px 6px;
+  padding: 10px 8px;
   border-left: 1px solid var(--line);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.012), transparent 38%),
@@ -348,12 +348,9 @@
 
 .effort-rail-button {
   position: relative;
-  display: grid;
-  grid-template-columns: 18px 0 0;
+  display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 0;
-  min-width: 30px;
+  justify-content: space-between;
   min-height: 30px;
   padding: 0 6px;
   border: 1px solid transparent;
@@ -365,21 +362,28 @@
   transition:
     background 150ms ease,
     border-color 150ms ease,
-    color 150ms ease,
-    padding 180ms ease;
+    color 150ms ease;
 }
 
-.effort-rail:hover .effort-rail-button,
-.effort-rail-button:focus-visible {
-  grid-template-columns: 18px minmax(0, 1fr) auto;
-  justify-content: stretch;
-  gap: 7px;
-  padding-right: 8px;
+.effort-rail-button .rail-left {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  margin-left: auto;
+  margin-right: auto;
+  transition: margin 160ms ease;
+}
+
+.effort-rail:hover .effort-rail-button .rail-left,
+.effort-rail:has(.effort-rail-button:focus-visible) .effort-rail-button .rail-left {
+  margin-left: 0;
+  margin-right: 0;
+  gap: 6px;
 }
 
 .effort-rail:hover,
 .effort-rail:has(.effort-rail-button:focus-visible) {
-  width: 154px;
+  width: 162px;
   border-color: color-mix(in srgb, var(--accent) 22%, var(--line));
   box-shadow: -10px 0 24px rgba(0, 0, 0, 0.16);
 }
@@ -402,21 +406,23 @@
   color: var(--muted);
 }
 
-.effort-rail-button span {
-  min-width: 0;
+.effort-rail-button .rail-left span {
+  max-width: 0;
   overflow: hidden;
   white-space: nowrap;
   opacity: 0;
   pointer-events: none;
   transform: translateX(-4px);
   transition:
+    max-width 160ms ease,
     opacity 110ms ease,
     transform 160ms ease;
 }
 
-.effort-rail:hover .effort-rail-button span,
-.effort-rail:has(.effort-rail-button:focus-visible) .effort-rail-button span,
-.effort-rail-button:focus-visible span {
+.effort-rail:hover .effort-rail-button .rail-left span,
+.effort-rail:has(.effort-rail-button:focus-visible) .effort-rail-button .rail-left span,
+.effort-rail-button:focus-visible .rail-left span {
+  max-width: 100px;
   opacity: 1;
   transform: translateX(0);
 }
@@ -425,9 +431,9 @@
   display: grid;
   place-items: center;
   min-width: 0;
-  width: 0;
+  max-width: 0;
   height: 17px;
-  padding: 0 5px;
+  padding: 0;
   border-radius: 999px;
   background: color-mix(in srgb, var(--button) 88%, transparent);
   color: var(--text);
@@ -436,6 +442,7 @@
   opacity: 0;
   transform: translateX(-4px);
   transition:
+    max-width 160ms ease,
     opacity 110ms ease,
     transform 160ms ease;
 }
@@ -444,7 +451,8 @@
 .effort-rail:has(.effort-rail-button:focus-visible) .effort-rail-button small,
 .effort-rail-button:focus-visible small {
   min-width: 18px;
-  width: auto;
+  max-width: 40px;
+  padding: 0 6px;
   opacity: 1;
   transform: translateX(0);
 }

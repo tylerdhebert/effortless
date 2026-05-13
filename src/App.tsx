@@ -907,8 +907,10 @@ function App() {
                     disabled={disabled}
                     onClick={() => openEffortDrawer(id)}
                   >
-                    <Icon size={16} />
-                    <span>{label}</span>
+                    <span className="rail-left">
+                      <Icon size={16} />
+                      <span>{label}</span>
+                    </span>
                     {badge ? <small>{badge}</small> : null}
                   </button>
                 ))}
