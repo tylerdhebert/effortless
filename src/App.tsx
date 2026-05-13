@@ -1095,7 +1095,20 @@ function App() {
             </div>
           </>
         ) : (
-          <p className="empty-state">no effort selected</p>
+          <section className="no-effort-state">
+            <div className="no-effort-state-content">
+              <Home size={28} aria-hidden="true" />
+              <span>no effort selected</span>
+              <p>select an effort from the sidebar or create a new one</p>
+              <button
+                type="button"
+                onClick={() => setCreateEffortOpen(true)}
+              >
+                <Plus size={14} />
+                <span>new effort</span>
+              </button>
+            </div>
+          </section>
         )}
       </section>
 
