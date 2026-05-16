@@ -212,7 +212,6 @@ export function AgentRunTerminal({
 
   const displayStatus =
     activeRun?.status === 'running' && !activeRunLive ? 'stale' : activeRun?.status
-    activeRun?.status === 'running' && !activeRunLive ? 'stale' : activeRun?.status
 
   useEffect(() => {
     return window.effortless.onAgentRunTerminalEvent((event) => {
@@ -422,7 +421,7 @@ function renderMenuStatus(status: string) {
 function resumeDisabledTitle(run: AgentRun | null, runLive: boolean | undefined, isStarting: boolean): string {
   if (!run) return ''
   if (isStarting) return 'another run is starting'
-  if (!run.providerSessionId) return 'no provider session — start a new run and let the agent register its session'
-  if (runLive) return 'run is currently live — stop before resuming'
+  if (!run.providerSessionId) return 'no provider session - start a new run and let the agent register its session'
+  if (runLive) return 'run is currently live - stop before resuming'
   return 'resume'
 }
