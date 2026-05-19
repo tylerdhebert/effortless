@@ -12,18 +12,26 @@ type TerminalEntry = {
   dispose: () => void
 }
 
+type TerminalTab = {
+  key: string
+  label: string
+  run: AgentRun | null
+  runLive?: boolean
+  profileLabel?: string | null
+  branchLabel?: string | null
+  taskId?: number | null
+  purpose?: AgentRun['purpose'] | null
+}
+
+type MountedTerminalRun = {
+  run: AgentRun
+  runLive: boolean
+}
+
 type AgentRunTerminalProps = {
   activeRun: AgentRun | null
-  tabs?: Array<{
-    key: string
-    label: string
-    run: AgentRun | null
-    runLive?: boolean
-    profileLabel?: string | null
-    branchLabel?: string | null
-    taskId?: number | null
-    purpose?: AgentRun['purpose'] | null
-  }>
+  tabs?: TerminalTab[]
+  mountedRuns?: MountedTerminalRun[]
   activeTabKey?: string
   isStarting: boolean
   activeRunLive?: boolean
@@ -44,6 +52,7 @@ type AgentRunTerminalProps = {
 export function AgentRunTerminal({
   activeRun,
   tabs = [],
+  mountedRuns = [],
   activeTabKey,
   isStarting,
   activeRunLive = false,
@@ -91,13 +100,16 @@ export function AgentRunTerminal({
 
   useEffect(() => {
     const next = new Map<number, { run: AgentRun; runLive: boolean }>()
+    for (const mountedRun of mountedRuns) {
+      next.set(mountedRun.run.id, mountedRun)
+    }
     for (const tab of tabs) {
       if (tab.run) {
         next.set(tab.run.id, { run: tab.run, runLive: Boolean(tab.runLive) })
       }
     }
     runsByIdRef.current = next
-  }, [tabs])
+  }, [mountedRuns, tabs])
 
   const queueViewportSync = useCallback((entry: TerminalEntry) => {
     const viewport = (entry.terminal as any)._core?._viewport
@@ -177,13 +189,13 @@ export function AgentRunTerminal({
   }, [queueViewportSync, scheduleFitAndRefresh])
 
   useEffect(() => {
-    const liveRunIds = new Set<number>()
-    for (const tab of tabs) {
-      if (!tab.run) continue
-      liveRunIds.add(tab.run.id)
-      if (terminalEntriesRef.current.has(tab.run.id)) continue
+    const mountedRunIds = new Set<number>()
+    for (const mountedRun of mountedRuns) {
+      const runId = mountedRun.run.id
+      mountedRunIds.add(runId)
+      if (terminalEntriesRef.current.has(runId)) continue
 
-      const host = hostRefs.current.get(tab.run.id)
+      const host = hostRefs.current.get(runId)
       if (!host) continue
 
       const terminal = new Terminal({
@@ -201,17 +213,17 @@ export function AgentRunTerminal({
       const fit = new FitAddon()
       terminal.loadAddon(fit)
       terminal.open(host)
-      const resizeObserver = new ResizeObserver(() => scheduleFitAndRefresh(tab.run!.id))
+      const resizeObserver = new ResizeObserver(() => scheduleFitAndRefresh(runId))
       resizeObserver.observe(host)
 
       const dataDisposable = terminal.onData((data) => {
-        const target = runsByIdRef.current.get(tab.run!.id)
+        const target = runsByIdRef.current.get(runId)
         if (target?.run.status === 'running' && target.runLive) {
-          void window.effortless.writeAgentRun(tab.run!.id, data)
+          void window.effortless.writeAgentRun(runId, data)
         }
       })
       const writeParsedDisposable = terminal.onWriteParsed(() => {
-        refreshTerminalPaint(tab.run!.id)
+        refreshTerminalPaint(runId)
       })
 
       const entry: TerminalEntry = {
@@ -224,28 +236,16 @@ export function AgentRunTerminal({
           terminal.dispose()
         },
       }
-      terminalEntriesRef.current.set(tab.run.id, entry)
-
-      void (async () => {
-        const snapshot = await window.effortless.getAgentRunOutput(tab.run!.id)
-        const current = terminalEntriesRef.current.get(tab.run!.id)
-        if (!current || current.terminal !== terminal) return
-        terminal.write(snapshot, () => {
-          if (terminalEntriesRef.current.get(tab.run!.id)?.terminal !== terminal) return
-          scheduleFitAndRefresh(tab.run!.id)
-          if (tab.run!.id === activeRun?.id) {
-            terminal.scrollToBottom()
-          }
-        })
-      })()
+      terminalEntriesRef.current.set(runId, entry)
+      scheduleFitAndRefresh(runId)
     }
 
     for (const [runId, entry] of terminalEntriesRef.current.entries()) {
-      if (liveRunIds.has(runId)) continue
+      if (mountedRunIds.has(runId)) continue
       entry.dispose()
       terminalEntriesRef.current.delete(runId)
     }
-  }, [tabs, activeRun?.id, refreshTerminalPaint, scheduleFitAndRefresh])
+  }, [mountedRuns, refreshTerminalPaint, scheduleFitAndRefresh])
 
   useEffect(() => {
     const handleWindowResize = () => scheduleFitAndRefresh()
@@ -455,18 +455,18 @@ export function AgentRunTerminal({
         </div>
       </div>
       <div className={styles['terminal-stack']}>
-        {tabs.map((tab) =>
-          tab.run ? (
+        {mountedRuns.map(({ run }) =>
+          run ? (
             <div
-              key={tab.run.id}
+              key={run.id}
               ref={(node) => {
                 if (node) {
-                  hostRefs.current.set(tab.run!.id, node)
+                  hostRefs.current.set(run.id, node)
                 } else {
-                  hostRefs.current.delete(tab.run!.id)
+                  hostRefs.current.delete(run.id)
                 }
               }}
-              className={`${styles['terminal-host']} ${tab.run.id === activeRun?.id ? styles.active : styles.hidden}`}
+              className={`${styles['terminal-host']} ${run.id === activeRun?.id ? styles.active : styles.hidden}`}
             />
           ) : null,
         )}
@@ -481,7 +481,7 @@ export function AgentRunTerminal({
     </section>
   )
 
-  function renderTerminalMenuRow(tab: NonNullable<AgentRunTerminalProps['tabs']>[number], tabIndex: number) {
+  function renderTerminalMenuRow(tab: TerminalTab, tabIndex: number) {
     const status = resolveRunStatus(tab.run, Boolean(tab.runLive))
     const canResume = Boolean(tab.run?.providerSessionId) && !tab.runLive && !isStarting
     const canStop = Boolean(tab.run && tab.runLive && !isStarting)

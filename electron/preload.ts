@@ -177,8 +177,6 @@ contextBridge.exposeInMainWorld('effortless', {
     ipcRenderer.invoke('agentRuns:activeIds') as Promise<number[]>,
   listActiveProviderRunIds: () =>
     ipcRenderer.invoke('agentRuns:activeProviderIds') as Promise<number[]>,
-  getAgentRunOutput: (runId: number) =>
-    ipcRenderer.invoke('agentRuns:output', runId) as Promise<string>,
   startAgentRun: (runId: number, size: { cols: number; rows: number }) =>
     ipcRenderer.invoke('agentRuns:start', runId, size) as Promise<void>,
   writeAgentRun: (runId: number, data: string) =>

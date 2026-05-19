@@ -44,7 +44,7 @@ import { useRepoMutations } from './hooks/useRepoMutations'
 import { useReviewMutations } from './hooks/useReviewMutations'
 import { useTaskMutations } from './hooks/useTaskMutations'
 import { useNotifications } from './hooks/useNotifications'
-import type { Reference, Task } from '../core/types'
+import type { AgentRun, Reference, Task } from '../core/types'
 import type { PendingNotification } from '../core/notifications'
 import './App.css'
 
@@ -238,6 +238,11 @@ function App() {
     enabled: Boolean(selectedEffort),
   })
 
+  const allRunsQuery = useQuery({
+    queryKey: ['agent-runs', 'all'],
+    queryFn: () => window.effortless.listAgentRuns(),
+  })
+
   const activeProviderRunIdsQuery = useQuery({
     queryKey: ['agent-runs', 'active-provider-ids'],
     queryFn: () => window.effortless.listActiveProviderRunIds(),
@@ -298,6 +303,18 @@ function App() {
     return tab?.run ?? null
   }, [activeTerminalTabKey, terminalTabs])
   const activeTerminalRunLive = activeTerminalRun ? activeProviderRunIds.has(activeTerminalRun.id) : false
+  const mountedTerminalRuns = useMemo(() => {
+    const mounted = new Map<number, { run: AgentRun; runLive: boolean }>()
+    for (const tab of terminalTabs) {
+      if (!tab.run) continue
+      mounted.set(tab.run.id, { run: tab.run, runLive: Boolean(tab.runLive) })
+    }
+    for (const run of allRunsQuery.data ?? []) {
+      if (!activeProviderRunIds.has(run.id)) continue
+      mounted.set(run.id, { run, runLive: true })
+    }
+    return Array.from(mounted.values())
+  }, [terminalTabs, allRunsQuery.data, activeProviderRunIds])
   const mainTerminalTab = terminalTabs.find((tab) => tab.key === 'main') ?? null
   const mainTerminalProfile = mainTerminalTab?.run
     ? agentProfilesQuery.data?.find((profile) => profile.id === mainTerminalTab.run?.profileId) ?? null
@@ -903,6 +920,7 @@ function App() {
                   activeRun={activeTerminalRun}
                   activeRunLive={activeTerminalRunLive}
                   tabs={terminalTabs}
+                  mountedRuns={mountedTerminalRuns}
                   activeTabKey={activeTerminalTabKey}
                   isStarting={startEffortRun.isPending || resumeAgentRun.isPending || forkMainRun.isPending}
                   emptyLabel="ready for effort"

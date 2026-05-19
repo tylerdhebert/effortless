@@ -233,7 +233,6 @@ ipcMain.handle('agentRuns:markFailed', (_event, runId: number, error: string) =>
 ipcMain.handle('agentRuns:ptyStatus', () => getPtyRuntimeStatus())
 ipcMain.handle('agentRuns:activeIds', () => runManager.activeRunIds())
 ipcMain.handle('agentRuns:activeProviderIds', () => runManager.activeProviderRunIds())
-ipcMain.handle('agentRuns:output', (_event, runId: number) => runManager.getOutput(runId))
 ipcMain.handle('agentRuns:start', (_event, runId: number, size: { cols: number; rows: number }) =>
   runManager.start(runId, size),
 )
