@@ -50,6 +50,9 @@ import './App.css'
 
 type EffortRailDrawer = 'description' | 'references' | 'inputs' | 'plan' | 'tasks'
 
+const DEFAULT_TERMINAL_SIZE = { cols: 100, rows: 24 }
+const FORK_MAIN_PROMPT = 'Continue from main as a forked Effortless session. Keep scope tight and update durable state with efl.'
+
 function App() {
   const queryClient = useQueryClient()
   const [surfaceMode, setSurfaceMode] = useState<'effort' | 'manage'>('effort')
@@ -307,6 +310,13 @@ function App() {
         ? 'profile has no fork command'
         : null
 
+  async function refreshAgentRunState(tabKey?: string | null) {
+    setActiveTerminalTabKey(tabKey ?? 'main')
+    await queryClient.invalidateQueries({ queryKey: ['agent-runs'] })
+    await queryClient.invalidateQueries({ queryKey: ['agent-runs', 'active-provider-ids'] })
+    await queryClient.invalidateQueries({ queryKey: ['app-state'] })
+  }
+
   const commitsQuery = useQuery({
     queryKey: ['task-commits', selectedTask?.id],
     queryFn: () => window.effortless.getTaskCommits(selectedTask!.id),
@@ -391,28 +401,22 @@ function App() {
   const startEffortRun = useMutation({
     mutationFn: async (effortId: number) => {
       const prepared = await window.effortless.prepareEffortRun({ effortId, purpose: 'main' })
-      await window.effortless.startAgentRun(prepared.run.id, { cols: 100, rows: 24 })
+      await window.effortless.startAgentRun(prepared.run.id, DEFAULT_TERMINAL_SIZE)
       return prepared
     },
     onSuccess: async (prepared) => {
-      setActiveTerminalTabKey(prepared.run.terminalTabKey ?? 'main')
-      await queryClient.invalidateQueries({ queryKey: ['agent-runs'] })
-      await queryClient.invalidateQueries({ queryKey: ['agent-runs', 'active-provider-ids'] })
-      await queryClient.invalidateQueries({ queryKey: ['app-state'] })
+      await refreshAgentRunState(prepared.run.terminalTabKey)
     },
   })
 
   const resumeAgentRun = useMutation({
     mutationFn: async (runId: number) => {
       const prepared = await window.effortless.prepareResumeRun({ runId })
-      await window.effortless.startAgentRun(prepared.run.id, { cols: 100, rows: 24 })
+      await window.effortless.startAgentRun(prepared.run.id, DEFAULT_TERMINAL_SIZE)
       return prepared
     },
     onSuccess: async (prepared) => {
-      setActiveTerminalTabKey(prepared.run.terminalTabKey ?? 'main')
-      await queryClient.invalidateQueries({ queryKey: ['agent-runs'] })
-      await queryClient.invalidateQueries({ queryKey: ['agent-runs', 'active-provider-ids'] })
-      await queryClient.invalidateQueries({ queryKey: ['app-state'] })
+      await refreshAgentRunState(prepared.run.terminalTabKey)
     },
   })
 
@@ -424,16 +428,13 @@ function App() {
       }
       const prepared = await window.effortless.prepareForkRun({
         sourceRunId: sourceRun.id,
-        prompt: 'Continue from main as a forked Effortless session. Keep scope tight and update durable state with efl.',
+        prompt: FORK_MAIN_PROMPT,
       })
-      await window.effortless.startAgentRun(prepared.run.id, { cols: 100, rows: 24 })
+      await window.effortless.startAgentRun(prepared.run.id, DEFAULT_TERMINAL_SIZE)
       return prepared
     },
     onSuccess: async (prepared) => {
-      setActiveTerminalTabKey(prepared.run.terminalTabKey ?? 'main')
-      await queryClient.invalidateQueries({ queryKey: ['agent-runs'] })
-      await queryClient.invalidateQueries({ queryKey: ['agent-runs', 'active-provider-ids'] })
-      await queryClient.invalidateQueries({ queryKey: ['app-state'] })
+      await refreshAgentRunState(prepared.run.terminalTabKey)
     },
   })
 
@@ -458,14 +459,14 @@ function App() {
 
       if (latestMainRun?.providerSessionId) {
         const prepared = await window.effortless.prepareResumeRun({ runId: latestMainRun.id })
-        await window.effortless.startAgentRun(prepared.run.id, { cols: 100, rows: 24 })
+        await window.effortless.startAgentRun(prepared.run.id, DEFAULT_TERMINAL_SIZE)
         await delay(650)
         await window.effortless.writeAgentRun(prepared.run.id, `${prompt}\r`)
         return prepared.run
       }
 
       const prepared = await window.effortless.prepareEffortRun({ effortId: selectedEffort.id, purpose: 'main' })
-      await window.effortless.startAgentRun(prepared.run.id, { cols: 100, rows: 24 })
+      await window.effortless.startAgentRun(prepared.run.id, DEFAULT_TERMINAL_SIZE)
       await delay(650)
       await window.effortless.writeAgentRun(prepared.run.id, `${prompt}\r`)
       return prepared.run

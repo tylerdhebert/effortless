@@ -1,6 +1,12 @@
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
 import { Plus } from 'lucide-react'
-import type { AgentProfile, CreateAgentProfileInput, UpdateAgentProfileInput } from '../../../core/types'
+import {
+  DEFAULT_AGENT_COMMAND_TEMPLATE,
+  DEFAULT_FORK_COMMAND_TEMPLATE,
+  type AgentProfile,
+  type CreateAgentProfileInput,
+  type UpdateAgentProfileInput,
+} from '../../../core/types'
 import { PathPicker } from '../ui/PathPicker'
 import styles from './AgentProfileTab.module.css'
 
@@ -21,8 +27,8 @@ export function AgentProfileTab({
 }: AgentProfileTabProps) {
   const [selectedProfileKey, setSelectedProfileKey] = useState<string>('new')
   const [name, setName] = useState('')
-  const [commandTemplate, setCommandTemplate] = useState('codex {prompt}')
-  const [forkCommandTemplate, setForkCommandTemplate] = useState('codex resume {provider_session_id} {prompt}')
+  const [commandTemplate, setCommandTemplate] = useState(DEFAULT_AGENT_COMMAND_TEMPLATE)
+  const [forkCommandTemplate, setForkCommandTemplate] = useState(DEFAULT_FORK_COMMAND_TEMPLATE)
   const [environment, setEnvironment] = useState<'windows' | 'wsl'>('windows')
   const [wslDistro, setWslDistro] = useState('')
   const [defaultCwdKind, setDefaultCwdKind] = useState<AgentProfile['defaultCwdKind']>('task_worktree')
@@ -38,8 +44,8 @@ export function AgentProfileTab({
   useEffect(() => {
     if (selectedProfileKey === 'new') {
       setName('')
-      setCommandTemplate('codex {prompt}')
-      setForkCommandTemplate('codex resume {provider_session_id} {prompt}')
+      setCommandTemplate(DEFAULT_AGENT_COMMAND_TEMPLATE)
+      setForkCommandTemplate(DEFAULT_FORK_COMMAND_TEMPLATE)
       setEnvironment('windows')
       setWslDistro('')
       setDefaultCwdKind('task_worktree')
@@ -73,8 +79,8 @@ export function AgentProfileTab({
       }
     : {
         name: '',
-        commandTemplate: 'codex {prompt}',
-        forkCommandTemplate: 'codex resume {provider_session_id} {prompt}',
+        commandTemplate: DEFAULT_AGENT_COMMAND_TEMPLATE,
+        forkCommandTemplate: DEFAULT_FORK_COMMAND_TEMPLATE,
         environment: 'windows',
         wslDistro: '',
         defaultCwdKind: 'task_worktree',
@@ -223,7 +229,7 @@ export function AgentProfileTab({
 
         <label className={styles.field}>
           <span>command template</span>
-          <input value={commandTemplate} onChange={(event) => setCommandTemplate(event.target.value)} placeholder="codex {prompt}" />
+          <input value={commandTemplate} onChange={(event) => setCommandTemplate(event.target.value)} placeholder={DEFAULT_AGENT_COMMAND_TEMPLATE} />
           {unknownVariables.length > 0 ? (
             <small className={styles.error}>unknown variable: {unknownVariables.join(', ')}</small>
           ) : null}
@@ -234,7 +240,7 @@ export function AgentProfileTab({
           <input
             value={forkCommandTemplate}
             onChange={(event) => setForkCommandTemplate(event.target.value)}
-            placeholder="codex resume {provider_session_id} {prompt}"
+            placeholder={DEFAULT_FORK_COMMAND_TEMPLATE}
           />
           {unknownForkVariables.length > 0 ? (
             <small className={styles.error}>unknown variable: {unknownForkVariables.join(', ')}</small>

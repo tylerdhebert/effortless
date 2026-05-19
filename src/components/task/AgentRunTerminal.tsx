@@ -12,14 +12,6 @@ type TerminalEntry = {
   dispose: () => void
 }
 
-type TerminalWithViewport = Terminal & {
-  _core?: {
-    _viewport?: {
-      queueSync?: () => void
-    }
-  }
-}
-
 type AgentRunTerminalProps = {
   activeRun: AgentRun | null
   tabs?: Array<{
@@ -108,7 +100,7 @@ export function AgentRunTerminal({
   }, [tabs])
 
   const queueViewportSync = useCallback((entry: TerminalEntry) => {
-    const viewport = (entry.terminal as TerminalWithViewport)._core?._viewport
+    const viewport = (entry.terminal as any)._core?._viewport
     viewport?.queueSync?.()
   }, [])
 

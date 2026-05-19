@@ -1,5 +1,8 @@
 export type EffortTemplate = 'bugfix' | 'delivery' | 'investigation'
 
+export const DEFAULT_AGENT_COMMAND_TEMPLATE = 'codex {prompt}'
+export const DEFAULT_FORK_COMMAND_TEMPLATE = 'codex resume {provider_session_id} {prompt}'
+
 export type EffortStatus = 'active' | 'complete' | 'archived'
 
 export type TaskStatus =
