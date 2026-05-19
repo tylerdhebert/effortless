@@ -270,6 +270,7 @@ function App() {
           ? profiles.find((profile) => profile.id === run.profileId)?.name ?? `profile-${run.profileId}`
           : null,
         taskId: run?.taskId ?? null,
+        purpose: run?.purpose ?? null,
         branchLabel: run?.taskId
           ? tasks.find((task) => task.id === run.taskId)?.branchName ?? 'no branch'
           : 'effort',
@@ -294,6 +295,17 @@ function App() {
     return tab?.run ?? null
   }, [activeTerminalTabKey, terminalTabs])
   const activeTerminalRunLive = activeTerminalRun ? activeProviderRunIds.has(activeTerminalRun.id) : false
+  const mainTerminalTab = terminalTabs.find((tab) => tab.key === 'main') ?? null
+  const mainTerminalProfile = mainTerminalTab?.run
+    ? agentProfilesQuery.data?.find((profile) => profile.id === mainTerminalTab.run?.profileId) ?? null
+    : null
+  const forkMainDisabledReason = !mainTerminalTab?.run
+    ? 'start main before forking'
+    : !mainTerminalTab.run.providerSessionId
+      ? 'main has no provider session id yet'
+      : !mainTerminalProfile?.forkCommandTemplate
+        ? 'profile has no fork command'
+        : null
 
   const commitsQuery = useQuery({
     queryKey: ['task-commits', selectedTask?.id],
@@ -393,6 +405,27 @@ function App() {
   const resumeAgentRun = useMutation({
     mutationFn: async (runId: number) => {
       const prepared = await window.effortless.prepareResumeRun({ runId })
+      await window.effortless.startAgentRun(prepared.run.id, { cols: 100, rows: 24 })
+      return prepared
+    },
+    onSuccess: async (prepared) => {
+      setActiveTerminalTabKey(prepared.run.terminalTabKey ?? 'main')
+      await queryClient.invalidateQueries({ queryKey: ['agent-runs'] })
+      await queryClient.invalidateQueries({ queryKey: ['agent-runs', 'active-provider-ids'] })
+      await queryClient.invalidateQueries({ queryKey: ['app-state'] })
+    },
+  })
+
+  const forkMainRun = useMutation({
+    mutationFn: async () => {
+      const sourceRun = mainTerminalTab?.run
+      if (!sourceRun) {
+        throw new Error('Start main before forking.')
+      }
+      const prepared = await window.effortless.prepareForkRun({
+        sourceRunId: sourceRun.id,
+        prompt: 'Continue from main as a forked Effortless session. Keep scope tight and update durable state with efl.',
+      })
       await window.effortless.startAgentRun(prepared.run.id, { cols: 100, rows: 24 })
       return prepared
     },
@@ -870,12 +903,13 @@ function App() {
                   activeRunLive={activeTerminalRunLive}
                   tabs={terminalTabs}
                   activeTabKey={activeTerminalTabKey}
-                  isStarting={startEffortRun.isPending || resumeAgentRun.isPending}
+                  isStarting={startEffortRun.isPending || resumeAgentRun.isPending || forkMainRun.isPending}
                   emptyLabel="ready for effort"
                   menuOpen={terminalMenuOpen}
                   onStart={() => {
                     startEffortRun.mutate(selectedEffort.id)
                   }}
+                  onForkMain={() => forkMainRun.mutate()}
                   onResume={(runId) => resumeAgentRun.mutate(runId)}
                   onSelectTab={(key) => {
                     setActiveTerminalTabKey(key)
@@ -888,6 +922,7 @@ function App() {
                   onStop={(runId) => taskMutations.stopAgentRun.mutate(runId)}
                   onToggleMenu={setTerminalMenuOpen}
                   drawerClosedAt={drawerClosedAt}
+                  forkMainDisabledReason={forkMainRun.isPending ? 'fork is starting' : forkMainDisabledReason}
                 />
               </div>
               <aside className="effort-rail" aria-label="effort views">

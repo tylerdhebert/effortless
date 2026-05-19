@@ -13,6 +13,7 @@ import type {
   AgentRunStatus,
   PrepareTaskRunInput,
   PrepareEffortRunInput,
+  PrepareForkRunInput,
   PrepareResumeRunInput,
   RunEnvironment,
   Task,
@@ -249,6 +250,71 @@ export async function prepareResumeRun(db: AppDatabase, input: PrepareResumeRunI
         updated_at = ?
     WHERE id = ?
   `).run(shortRef, command, sourceRun.providerSessionId, new Date().toISOString(), id)
+
+  bumpAppState(db)
+
+  return {
+    run: getAgentRun(db, id),
+    profile,
+    env: buildAgentRunEnvironment(db, id),
+  }
+}
+
+export async function prepareForkRun(db: AppDatabase, input: PrepareForkRunInput): Promise<PreparedResumeRun> {
+  const sourceRun = getAgentRun(db, input.sourceRunId)
+  if (!sourceRun.providerSessionId) {
+    throw new Error(`Run ${sourceRun.shortRef} does not have a provider session id`)
+  }
+
+  const profile = getAgentProfile(db, sourceRun.profileId)
+  if (!profile.forkCommandTemplate?.trim()) {
+    throw new Error(`${profile.name} does not define a fork command`)
+  }
+  if (!profile.forkCommandTemplate.includes('{provider_session_id}')) {
+    throw new Error(`${profile.name} fork command needs {provider_session_id}`)
+  }
+  if (!profile.forkCommandTemplate.includes('{prompt}')) {
+    throw new Error(`${profile.name} fork command needs {prompt}`)
+  }
+
+  const effort = getEffort(db, sourceRun.effortId)
+  const task = input.taskId ? getTask(db, input.taskId) : sourceRun.taskId ? getTask(db, sourceRun.taskId) : null
+  const now = new Date().toISOString()
+  const label = input.label?.trim() || `fork-${sourceRun.shortRef}-${Date.now()}`
+  const result = insertPreparedAgentRun(db, {
+    effortId: sourceRun.effortId,
+    taskId: task?.id ?? null,
+    profileId: profile.id,
+    purpose: 'fork',
+    label,
+    environment: sourceRun.environment,
+    cwd: sourceRun.cwd,
+    terminalTabKey: 'pending',
+    now,
+  })
+
+  const id = Number(result.lastInsertRowid)
+  const shortRef = `run-${id}`
+  const command = expandCommand(profile.forkCommandTemplate, {
+    provider_session_id: shellQuote(sourceRun.providerSessionId, profile.environment),
+    prompt: shellQuote(input.prompt, profile.environment),
+    effort_ref: effort.shortRef,
+    task_ref: task?.shortRef ?? '',
+    plan_ref: '',
+    review_ref: '',
+    worktree_path: commandPath(task?.worktreePath ?? '', profile.environment),
+    repo_path: commandPath(task?.repoId ? getRepo(db, task.repoId).path : sourceRun.cwd, profile.environment),
+  })
+
+  db.prepare(`
+    UPDATE agent_runs
+    SET short_ref = ?,
+        command = ?,
+        provider_session_id = ?,
+        terminal_tab_key = ?,
+        updated_at = ?
+    WHERE id = ?
+  `).run(shortRef, command, sourceRun.providerSessionId, `fork-${shortRef}`, new Date().toISOString(), id)
 
   bumpAppState(db)
 

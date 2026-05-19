@@ -18,6 +18,8 @@ type RunSession = {
   terminal: pty.IPty
 }
 
+const MAX_RUN_OUTPUT_CHARS = 1_000_000
+
 type TerminalEventSink = (event: {
   kind: 'data' | 'exit' | 'error'
   runId: number
@@ -37,6 +39,7 @@ export class RunManager {
   private readonly providerRunIds = new Set<number>()
   private readonly completedRunIds = new Set<number>()
   private readonly stoppingRunIds = new Set<number>()
+  private readonly outputByRunId = new Map<number, string>()
 
   constructor(
     private readonly db: AppDatabase,
@@ -72,6 +75,7 @@ export class RunManager {
       this.sessions.set(runId, { runId, terminal })
       this.providerRunIds.add(runId)
       this.completedRunIds.delete(runId)
+      this.outputByRunId.set(runId, '')
       markAgentRunStarted(this.db, runId)
 
       terminal.onData((body) => {
@@ -79,6 +83,7 @@ export class RunManager {
         if (exitCode != null && !this.completedRunIds.has(runId)) {
           const visibleBody = stripProviderExitSentinel(body, runId)
           if (visibleBody) {
+            this.appendOutput(runId, visibleBody)
             this.emit({ kind: 'data', runId, body: visibleBody })
           }
           this.providerRunIds.delete(runId)
@@ -87,6 +92,7 @@ export class RunManager {
           this.emit({ kind: 'exit', runId, exitCode })
           return
         }
+        this.appendOutput(runId, body)
         this.emit({ kind: 'data', runId, body })
       })
 
@@ -138,6 +144,10 @@ export class RunManager {
     return [...this.providerRunIds]
   }
 
+  getOutput(runId: number): string {
+    return this.outputByRunId.get(runId) ?? ''
+  }
+
   stop(runId: number): void {
     const session = this.sessions.get(runId)
     if (!session) return
@@ -156,6 +166,14 @@ export class RunManager {
       session.terminal.kill()
     }
     this.sessions.clear()
+  }
+
+  private appendOutput(runId: number, chunk: string): void {
+    const next = `${this.outputByRunId.get(runId) ?? ''}${chunk}`
+    this.outputByRunId.set(
+      runId,
+      next.length > MAX_RUN_OUTPUT_CHARS ? next.slice(-MAX_RUN_OUTPUT_CHARS) : next,
+    )
   }
 }
 

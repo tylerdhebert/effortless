@@ -243,7 +243,7 @@ export type UpdateRepoInput = {
 export type WorkSurface = 'effort' | 'plan' | 'task' | 'review' | 'run'
 export type MandateSourceType = 'body' | 'file'
 export type RunEnvironment = 'windows' | 'wsl'
-export type AgentRunPurpose = 'main' | 'side-investigation' | 'implementation' | 'review'
+export type AgentRunPurpose = 'main' | 'fork' | 'side' | 'side-investigation' | 'implementation' | 'review'
 export type AgentRunStatus = 'prepared' | 'running' | 'exited' | 'failed' | 'cancelled'
 
 export type Mandate = {
@@ -290,6 +290,7 @@ export type AgentProfile = {
   shortRef: string
   name: string
   commandTemplate: string
+  forkCommandTemplate: string | null
   environment: RunEnvironment
   wslDistro: string | null
   defaultCwdKind: 'task_worktree' | 'repo_root' | 'custom'
@@ -302,6 +303,7 @@ export type AgentProfile = {
 export type CreateAgentProfileInput = {
   name: string
   commandTemplate: string
+  forkCommandTemplate?: string | null
   environment?: RunEnvironment
   wslDistro?: string | null
   defaultCwdKind?: AgentProfile['defaultCwdKind']
@@ -351,6 +353,13 @@ export type PrepareEffortRunInput = {
 
 export type PrepareResumeRunInput = {
   runId: number
+}
+
+export type PrepareForkRunInput = {
+  sourceRunId: number
+  prompt: string
+  taskId?: number | null
+  label?: string | null
 }
 
 export type ReferenceOwnerType = 'effort' | 'plan' | 'task' | 'review'

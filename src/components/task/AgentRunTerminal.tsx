@@ -1,10 +1,24 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { FitAddon } from '@xterm/addon-fit'
 import { Terminal } from '@xterm/xterm'
 import '@xterm/xterm/css/xterm.css'
-import { ChevronDown, ExternalLink, Play, RotateCcw, Square, SquareTerminal } from 'lucide-react'
+import { ChevronDown, ExternalLink, Play, Plus, RotateCcw, Square, SquareTerminal } from 'lucide-react'
 import type { AgentRun } from '../../../core/types'
 import styles from './AgentRunTerminal.module.css'
+
+type TerminalEntry = {
+  terminal: Terminal
+  fit: FitAddon
+  dispose: () => void
+}
+
+type TerminalWithViewport = Terminal & {
+  _core?: {
+    _viewport?: {
+      queueSync?: () => void
+    }
+  }
+}
 
 type AgentRunTerminalProps = {
   activeRun: AgentRun | null
@@ -16,6 +30,7 @@ type AgentRunTerminalProps = {
     profileLabel?: string | null
     branchLabel?: string | null
     taskId?: number | null
+    purpose?: AgentRun['purpose'] | null
   }>
   activeTabKey?: string
   isStarting: boolean
@@ -24,12 +39,14 @@ type AgentRunTerminalProps = {
   emptyLabel?: string
   menuOpen?: boolean
   onStart?: () => void
+  onForkMain?: () => void
   onResume?: (runId: number) => void
   onSelectTab?: (tabKey: string) => void
   onOpenTask?: (taskId: number) => void
   onStop: (runId: number) => void
   onToggleMenu?: (open: boolean) => void
   drawerClosedAt?: number
+  forkMainDisabledReason?: string | null
 }
 
 export function AgentRunTerminal({
@@ -42,21 +59,22 @@ export function AgentRunTerminal({
   emptyLabel = 'ready',
   menuOpen: menuOpenProp,
   onStart,
+  onForkMain,
   onResume,
   onSelectTab,
   onOpenTask,
   onStop,
   onToggleMenu,
   drawerClosedAt,
+  forkMainDisabledReason,
 }: AgentRunTerminalProps) {
-  const hostRef = useRef<HTMLDivElement | null>(null)
-  const terminalRef = useRef<Terminal | null>(null)
-  const fitRef = useRef<FitAddon | null>(null)
-  const activeRunRef = useRef<AgentRun | null>(activeRun)
-  const activeRunLiveRef = useRef(activeRunLive)
+  const hostRefs = useRef(new Map<number, HTMLDivElement>())
+  const terminalEntriesRef = useRef(new Map<number, TerminalEntry>())
+  const runsByIdRef = useRef(new Map<number, { run: AgentRun; runLive: boolean }>())
   const menuRef = useRef<HTMLDivElement | null>(null)
   const menuRowRefs = useRef<Array<HTMLButtonElement | null>>([])
-  const [terminalReady, setTerminalReady] = useState(false)
+  const fitFrameRef = useRef<number | null>(null)
+  const secondFitFrameRef = useRef<number | null>(null)
   const [menuOpenInternal, setMenuOpenInternal] = useState(false)
   const [focusedMenuIndex, setFocusedMenuIndex] = useState(-1)
 
@@ -80,71 +98,181 @@ export function AgentRunTerminal({
   }
 
   useEffect(() => {
-    activeRunRef.current = activeRun
-  }, [activeRun])
-
-  useEffect(() => {
-    activeRunLiveRef.current = activeRunLive
-  }, [activeRunLive])
-
-  useEffect(() => {
-    if (!hostRef.current) return
-
-    const terminal = new Terminal({
-      cursorBlink: true,
-      convertEol: true,
-      fontFamily: '"Cascadia Code", Consolas, "Courier New", monospace',
-      fontSize: 12,
-      theme: {
-        background: '#10120e',
-        foreground: '#d5dccd',
-        cursor: '#d5dccd',
-        selectionBackground: '#435038',
-      },
-    })
-    const fit = new FitAddon()
-    terminal.loadAddon(fit)
-    terminal.open(hostRef.current)
-    fit.fit()
-    terminal.focus()
-    terminalRef.current = terminal
-    fitRef.current = fit
-    setTerminalReady(true)
-
-    const consumeWheel = (event: WheelEvent) => {
-      event.preventDefault()
-      event.stopPropagation()
-    }
-    hostRef.current.addEventListener('wheel', consumeWheel, { passive: false })
-
-    terminal.onData((data) => {
-      const run = activeRunRef.current
-      if (run?.status === 'running' && activeRunLiveRef.current) {
-        void window.effortless.writeAgentRun(run.id, data)
+    const next = new Map<number, { run: AgentRun; runLive: boolean }>()
+    for (const tab of tabs) {
+      if (tab.run) {
+        next.set(tab.run.id, { run: tab.run, runLive: Boolean(tab.runLive) })
       }
-    })
+    }
+    runsByIdRef.current = next
+  }, [tabs])
 
-    const resizeObserver = new ResizeObserver(() => {
-      fit.fit()
-      const run = activeRunRef.current
-      if (run?.status === 'running' && activeRunLiveRef.current) {
-        void window.effortless.resizeAgentRun(run.id, {
-          cols: terminal.cols,
-          rows: terminal.rows,
+  const queueViewportSync = useCallback((entry: TerminalEntry) => {
+    const viewport = (entry.terminal as TerminalWithViewport)._core?._viewport
+    viewport?.queueSync?.()
+  }, [])
+
+  const fitAndRefreshTerminal = useCallback((runId?: number) => {
+    const targets = runId == null
+      ? [...terminalEntriesRef.current.entries()]
+      : (() => {
+          const entry = terminalEntriesRef.current.get(runId)
+          return entry ? [[runId, entry] as const] : []
+        })()
+
+    for (const [targetRunId, entry] of targets) {
+      entry.fit.fit()
+      entry.terminal.refresh(0, Math.max(0, entry.terminal.rows - 1))
+      queueViewportSync(entry)
+
+      const target = runsByIdRef.current.get(targetRunId)
+      if (target?.run.status === 'running' && target.runLive) {
+        void window.effortless.resizeAgentRun(targetRunId, {
+          cols: entry.terminal.cols,
+          rows: entry.terminal.rows,
         })
       }
+    }
+  }, [queueViewportSync])
+
+  const scheduleFitAndRefresh = useCallback((runId?: number) => {
+    if (fitFrameRef.current != null) {
+      window.cancelAnimationFrame(fitFrameRef.current)
+    }
+    if (secondFitFrameRef.current != null) {
+      window.cancelAnimationFrame(secondFitFrameRef.current)
+    }
+
+    fitFrameRef.current = window.requestAnimationFrame(() => {
+      fitFrameRef.current = null
+      fitAndRefreshTerminal(runId)
+      secondFitFrameRef.current = window.requestAnimationFrame(() => {
+        secondFitFrameRef.current = null
+        fitAndRefreshTerminal(runId)
+      })
     })
-    resizeObserver.observe(hostRef.current)
+  }, [fitAndRefreshTerminal])
+
+  const nudgeTerminalHost = useCallback((runId: number) => {
+    const host = hostRefs.current.get(runId)
+    if (!host) return
+
+    host.style.height = 'calc(100% - 1px)'
+    window.requestAnimationFrame(() => {
+      const currentHost = hostRefs.current.get(runId)
+      if (!currentHost) return
+      currentHost.style.height = ''
+      scheduleFitAndRefresh(runId)
+    })
+  }, [scheduleFitAndRefresh])
+
+  const refreshTerminalPaint = useCallback((runId: number) => {
+    const entry = terminalEntriesRef.current.get(runId)
+    if (!entry) return
+
+    const scrollable = entry.terminal.element?.querySelector('.xterm-scrollable-element') as HTMLElement | null
+
+    entry.terminal.refresh(0, Math.max(0, entry.terminal.rows - 1))
+    queueViewportSync(entry)
+
+    if (
+      scrollable &&
+      entry.terminal.buffer.active.length > entry.terminal.rows &&
+      scrollable.scrollHeight <= scrollable.clientHeight
+    ) {
+      scheduleFitAndRefresh(runId)
+    }
+  }, [queueViewportSync, scheduleFitAndRefresh])
+
+  useEffect(() => {
+    const liveRunIds = new Set<number>()
+    for (const tab of tabs) {
+      if (!tab.run) continue
+      liveRunIds.add(tab.run.id)
+      if (terminalEntriesRef.current.has(tab.run.id)) continue
+
+      const host = hostRefs.current.get(tab.run.id)
+      if (!host) continue
+
+      const terminal = new Terminal({
+        cursorBlink: true,
+        convertEol: true,
+        fontFamily: '"Cascadia Code", Consolas, "Courier New", monospace',
+        fontSize: 12,
+        theme: {
+          background: '#10120e',
+          foreground: '#d5dccd',
+          cursor: '#d5dccd',
+          selectionBackground: '#435038',
+        },
+      })
+      const fit = new FitAddon()
+      terminal.loadAddon(fit)
+      terminal.open(host)
+      const resizeObserver = new ResizeObserver(() => scheduleFitAndRefresh(tab.run!.id))
+      resizeObserver.observe(host)
+
+      const dataDisposable = terminal.onData((data) => {
+        const target = runsByIdRef.current.get(tab.run!.id)
+        if (target?.run.status === 'running' && target.runLive) {
+          void window.effortless.writeAgentRun(tab.run!.id, data)
+        }
+      })
+      const writeParsedDisposable = terminal.onWriteParsed(() => {
+        refreshTerminalPaint(tab.run!.id)
+      })
+
+      const entry: TerminalEntry = {
+        terminal,
+        fit,
+        dispose: () => {
+          resizeObserver.disconnect()
+          writeParsedDisposable.dispose()
+          dataDisposable.dispose()
+          terminal.dispose()
+        },
+      }
+      terminalEntriesRef.current.set(tab.run.id, entry)
+
+      void (async () => {
+        const snapshot = await window.effortless.getAgentRunOutput(tab.run!.id)
+        const current = terminalEntriesRef.current.get(tab.run!.id)
+        if (!current || current.terminal !== terminal) return
+        terminal.write(snapshot, () => {
+          if (terminalEntriesRef.current.get(tab.run!.id)?.terminal !== terminal) return
+          scheduleFitAndRefresh(tab.run!.id)
+          if (tab.run!.id === activeRun?.id) {
+            terminal.scrollToBottom()
+          }
+        })
+      })()
+    }
+
+    for (const [runId, entry] of terminalEntriesRef.current.entries()) {
+      if (liveRunIds.has(runId)) continue
+      entry.dispose()
+      terminalEntriesRef.current.delete(runId)
+    }
+  }, [tabs, activeRun?.id, refreshTerminalPaint, scheduleFitAndRefresh])
+
+  useEffect(() => {
+    const handleWindowResize = () => scheduleFitAndRefresh()
+    window.addEventListener('resize', handleWindowResize)
 
     return () => {
-      hostRef.current?.removeEventListener('wheel', consumeWheel)
-      resizeObserver.disconnect()
-      terminal.dispose()
-      terminalRef.current = null
-      fitRef.current = null
-      setTerminalReady(false)
+      if (fitFrameRef.current != null) {
+        window.cancelAnimationFrame(fitFrameRef.current)
+      }
+      if (secondFitFrameRef.current != null) {
+        window.cancelAnimationFrame(secondFitFrameRef.current)
+      }
+      window.removeEventListener('resize', handleWindowResize)
+      for (const entry of terminalEntriesRef.current.values()) {
+        entry.dispose()
+      }
+      terminalEntriesRef.current.clear()
     }
-  }, [])
+  }, [scheduleFitAndRefresh])
 
   useEffect(() => {
     if (!menuOpen) return
@@ -159,6 +287,15 @@ export function AgentRunTerminal({
     return () => window.removeEventListener('mousedown', handlePointerDown)
   }, [menuOpen])
 
+  const mainTab = tabs.find((tab) => tab.key === 'main') ?? null
+  const forkTabs = tabs.filter((tab) => tab.key !== 'main' && tab.purpose === 'fork')
+  const otherTabs = tabs.filter((tab) => tab.key !== 'main' && tab.purpose !== 'fork')
+  const orderedMenuTabs = [
+    ...(mainTab ? [mainTab] : []),
+    ...forkTabs,
+    ...otherTabs,
+  ]
+
   useEffect(() => {
     if (!menuOpen) return
 
@@ -167,13 +304,15 @@ export function AgentRunTerminal({
         event.preventDefault()
         event.stopPropagation()
         closeMenu()
-        terminalRef.current?.focus()
+        if (activeRun) {
+          terminalEntriesRef.current.get(activeRun.id)?.terminal.focus()
+        }
         return
       }
 
       if (event.key === 'ArrowDown') {
         event.preventDefault()
-        setFocusedMenuIndex((i) => Math.min(i + 1, tabs.length - 1))
+        setFocusedMenuIndex((i) => Math.min(i + 1, orderedMenuTabs.length - 1))
         return
       }
 
@@ -185,7 +324,7 @@ export function AgentRunTerminal({
 
       if (event.key === 'Enter' && focusedMenuIndex >= 0) {
         event.preventDefault()
-        const tab = tabs[focusedMenuIndex]
+        const tab = orderedMenuTabs[focusedMenuIndex]
         if (tab) {
           onSelectTab?.(tab.key)
           closeMenu()
@@ -196,7 +335,7 @@ export function AgentRunTerminal({
 
     window.addEventListener('keydown', handleMenuKeydown, true)
     return () => window.removeEventListener('keydown', handleMenuKeydown, true)
-  }, [menuOpen, focusedMenuIndex, tabs, onSelectTab])
+  }, [menuOpen, focusedMenuIndex, orderedMenuTabs, onSelectTab])
 
   useEffect(() => {
     if (focusedMenuIndex >= 0) {
@@ -206,45 +345,46 @@ export function AgentRunTerminal({
 
   useEffect(() => {
     if (drawerClosedAt) {
-      terminalRef.current?.focus()
+      scheduleFitAndRefresh()
+      if (activeRun) {
+        terminalEntriesRef.current.get(activeRun.id)?.terminal.focus()
+      }
     }
-  }, [drawerClosedAt])
+  }, [drawerClosedAt, scheduleFitAndRefresh, activeRun])
+
+  useEffect(() => {
+    scheduleFitAndRefresh()
+  }, [menuOpen, scheduleFitAndRefresh])
 
   const displayStatus =
     activeRun?.status === 'running' && !activeRunLive ? 'stale' : activeRun?.status
 
   useEffect(() => {
     return window.effortless.onAgentRunTerminalEvent((event) => {
-      const run = activeRunRef.current
-      if (!run || event.runId !== run.id) return
+      const entry = terminalEntriesRef.current.get(event.runId)
+      if (!entry) return
       if (event.kind === 'data' && event.body) {
-        terminalRef.current?.write(event.body)
+        entry.terminal.write(event.body)
       }
       if (event.kind === 'exit') {
-        terminalRef.current?.writeln(`\r\n[run exited with code ${event.exitCode ?? 'unknown'}]`)
+        entry.terminal.writeln(`\r\n[run exited with code ${event.exitCode ?? 'unknown'}]`)
       }
       if (event.kind === 'error') {
-        terminalRef.current?.writeln(`\r\n[run error] ${event.body ?? 'unknown error'}`)
+        entry.terminal.writeln(`\r\n[run error] ${event.body ?? 'unknown error'}`)
       }
     })
   }, [])
 
   useEffect(() => {
-    if (!activeRun || !terminalReady) return
-    terminalRef.current?.clear()
-    terminalRef.current?.writeln(`${activeRun.shortRef} ${activeRun.status} ${activeRun.label}`)
-    terminalRef.current?.writeln(activeRun.cwd)
-    terminalRef.current?.writeln('')
-    terminalRef.current?.focus()
-  }, [activeRun?.id, terminalReady])
-
-  useEffect(() => {
-    fitRef.current?.fit()
-    terminalRef.current?.focus()
-  }, [])
+    if (!activeRun) return
+    scheduleFitAndRefresh(activeRun.id)
+    nudgeTerminalHost(activeRun.id)
+    terminalEntriesRef.current.get(activeRun.id)?.terminal.focus()
+  }, [activeRun?.id, activeRunLive, scheduleFitAndRefresh, nudgeTerminalHost])
 
   const attachmentsWithRuns = tabs.filter((tab) => tab.run).length
   const activeTab = tabs.find((tab) => tab.key === activeTabKey) ?? null
+  const canForkMain = Boolean(onForkMain) && !forkMainDisabledReason && !isStarting
 
   return (
     <section className={styles['terminal-section']}>
@@ -269,19 +409,99 @@ export function AgentRunTerminal({
           </button>
           {menuOpen ? (
             <div className={styles['terminal-menu']} role="menu">
-              {tabs.map((tab, tabIndex) => {
-                const status = resolveRunStatus(tab.run, Boolean(tab.runLive))
-                const canResume = Boolean(tab.run?.providerSessionId) && !tab.runLive && !isStarting
-                const canStop = Boolean(tab.run && tab.runLive && !isStarting)
-                const canStartMain = tab.key === 'main' && Boolean(onStart) && !isStarting && !startDisabled
-                const canOpenTask = tab.key !== 'main' && tab.taskId != null && Boolean(onOpenTask)
-                const resumeTitle = resumeDisabledTitle(tab.run, Boolean(tab.runLive), isStarting)
-                const stopTitle = tab.run
-                  ? !canStop
-                    ? 'run is not currently live'
-                    : 'stop'
-                  : ''
-                return (
+              {mainTab ? renderTerminalMenuRow(mainTab, 0) : null}
+
+              <TerminalMenuSeparator label="forks" />
+              <div className={styles['terminal-menu-section']}>
+                {forkTabs.length > 0 ? (
+                  forkTabs.map((tab, tabIndex) => renderTerminalMenuRow(tab, tabIndex + 1))
+                ) : (
+                  <p className={styles['terminal-menu-empty']}>no forks yet</p>
+                )}
+              </div>
+              <button
+                type="button"
+                className={styles['terminal-menu-sticky-action']}
+                disabled={!canForkMain}
+                title={forkMainDisabledReason ?? 'fork main'}
+                onClick={() => {
+                  onForkMain?.()
+                  closeMenu()
+                }}
+              >
+                <Plus size={13} aria-hidden="true" />
+                <span>fork main</span>
+              </button>
+
+              <TerminalMenuSeparator label="others" />
+              <div className={styles['terminal-menu-section']}>
+                {otherTabs.length > 0 ? (
+                  otherTabs.map((tab, tabIndex) => renderTerminalMenuRow(tab, tabIndex + 1 + forkTabs.length))
+                ) : (
+                  <p className={styles['terminal-menu-empty']}>no other terminals</p>
+                )}
+              </div>
+              <button
+                type="button"
+                className={`${styles['terminal-menu-sticky-action']} ${styles.secondary}`}
+                disabled
+                title="add terminal is coming next"
+              >
+                <Plus size={13} aria-hidden="true" />
+                <span>add terminal</span>
+              </button>
+            </div>
+          ) : null}
+        </div>
+        <div className={styles['terminal-title']}>
+          <h4>terminal</h4>
+          <span>
+            {activeRun
+              ? `${activeTab?.label ?? 'run'} - ${activeRun.shortRef} - ${displayStatus}`
+              : emptyLabel}
+          </span>
+        </div>
+      </div>
+      <div className={styles['terminal-stack']}>
+        {tabs.map((tab) =>
+          tab.run ? (
+            <div
+              key={tab.run.id}
+              ref={(node) => {
+                if (node) {
+                  hostRefs.current.set(tab.run!.id, node)
+                } else {
+                  hostRefs.current.delete(tab.run!.id)
+                }
+              }}
+              className={`${styles['terminal-host']} ${tab.run.id === activeRun?.id ? styles.active : styles.hidden}`}
+            />
+          ) : null,
+        )}
+      </div>
+      {!activeRun ? (
+        <div className={styles['terminal-empty']}>
+          <SquareTerminal size={32} aria-hidden="true" />
+          <span>no active run</span>
+          <p>open the run menu to start or resume a session</p>
+        </div>
+      ) : null}
+    </section>
+  )
+
+  function renderTerminalMenuRow(tab: NonNullable<AgentRunTerminalProps['tabs']>[number], tabIndex: number) {
+    const status = resolveRunStatus(tab.run, Boolean(tab.runLive))
+    const canResume = Boolean(tab.run?.providerSessionId) && !tab.runLive && !isStarting
+    const canStop = Boolean(tab.run && tab.runLive && !isStarting)
+    const canStartMain = tab.key === 'main' && Boolean(onStart) && !isStarting && !startDisabled
+    const canOpenTask = tab.key !== 'main' && tab.taskId != null && Boolean(onOpenTask)
+    const resumeTitle = resumeDisabledTitle(tab.run, Boolean(tab.runLive), isStarting)
+    const stopTitle = tab.run
+      ? !canStop
+        ? 'run is not currently live'
+        : 'stop'
+      : ''
+    return (
                   <div
                     key={tab.key}
                     className={`${styles['terminal-menu-row']} ${tab.key === activeTabKey ? styles.active : ''}`}
@@ -374,30 +594,17 @@ export function AgentRunTerminal({
                       )}
                     </div>
                   </div>
-                )
-              })}
-            </div>
-          ) : null}
-        </div>
-        <div className={styles['terminal-title']}>
-          <h4>terminal</h4>
-          <span>
-            {activeRun
-              ? `${activeTab?.label ?? 'run'} · ${activeRun.shortRef} · ${displayStatus}`
-              : emptyLabel}
-          </span>
-        </div>
-      </div>
-      <div ref={hostRef} className={styles['terminal-host']}>
-        {!activeRun ? (
-          <div className={styles['terminal-empty']}>
-            <SquareTerminal size={32} aria-hidden="true" />
-            <span>no active run</span>
-            <p>open the run menu to start or resume a session</p>
-          </div>
-        ) : null}
-      </div>
-    </section>
+    )
+  }
+}
+
+function TerminalMenuSeparator({ label }: { label: string }) {
+  return (
+    <div className={styles['terminal-menu-separator']}>
+      <span />
+      <strong>{label}</strong>
+      <span />
+    </div>
   )
 }
 

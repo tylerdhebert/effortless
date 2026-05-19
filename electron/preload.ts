@@ -37,6 +37,7 @@ import type {
   TaskDiffView,
   TemplatePlaybook,
   PrepareEffortRunInput,
+  PrepareForkRunInput,
   PrepareResumeRunInput,
   UpdateAgentProfileInput,
   UpdateMandateInput,
@@ -158,6 +159,12 @@ contextBridge.exposeInMainWorld('effortless', {
       profile: AgentProfile
       env: Record<string, string>
     }>,
+  prepareForkRun: (input: PrepareForkRunInput) =>
+    ipcRenderer.invoke('agentRuns:prepareFork', input) as Promise<{
+      run: AgentRun
+      profile: AgentProfile
+      env: Record<string, string>
+    }>,
   markAgentRunStarted: (runId: number) =>
     ipcRenderer.invoke('agentRuns:markStarted', runId) as Promise<AgentRun>,
   markAgentRunExited: (runId: number, exitCode: number) =>
@@ -170,6 +177,8 @@ contextBridge.exposeInMainWorld('effortless', {
     ipcRenderer.invoke('agentRuns:activeIds') as Promise<number[]>,
   listActiveProviderRunIds: () =>
     ipcRenderer.invoke('agentRuns:activeProviderIds') as Promise<number[]>,
+  getAgentRunOutput: (runId: number) =>
+    ipcRenderer.invoke('agentRuns:output', runId) as Promise<string>,
   startAgentRun: (runId: number, size: { cols: number; rows: number }) =>
     ipcRenderer.invoke('agentRuns:start', runId, size) as Promise<void>,
   writeAgentRun: (runId: number, data: string) =>

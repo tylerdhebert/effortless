@@ -4,7 +4,7 @@ import { createHash } from 'node:crypto'
 import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { createAgentProfile, listAgentProfiles, updateAgentProfile } from '../core/agentProfiles'
-import { listAgentRuns, markAgentRunExited, markAgentRunFailed, markAgentRunStarted, prepareEffortRun, prepareResumeRun } from '../core/agentRuns'
+import { listAgentRuns, markAgentRunExited, markAgentRunFailed, markAgentRunStarted, prepareEffortRun, prepareForkRun, prepareResumeRun } from '../core/agentRuns'
 import { getLatestTaskBuild, runTaskBuild } from '../core/builds'
 import { getPtyRuntimeStatus, RunManager } from './runManager'
 import { startCliCommandServer, type CliCommandServer } from './cliCommandServer'
@@ -78,6 +78,7 @@ import type {
   RequestPlanChangesInput,
   RequestReviewChangesInput,
   RequestTaskChangesInput,
+  PrepareForkRunInput,
   PrepareResumeRunInput,
   SubmitReviewInput,
   UpdateAgentProfileInput,
@@ -223,12 +224,16 @@ ipcMain.handle('agentRuns:prepareEffort', (_event, input: { effortId: number; pr
 ipcMain.handle('agentRuns:prepareResume', (_event, input: PrepareResumeRunInput) =>
   prepareResumeRun(db, input),
 )
+ipcMain.handle('agentRuns:prepareFork', (_event, input: PrepareForkRunInput) =>
+  prepareForkRun(db, input),
+)
 ipcMain.handle('agentRuns:markStarted', (_event, runId: number) => markAgentRunStarted(db, runId))
 ipcMain.handle('agentRuns:markExited', (_event, runId: number, exitCode: number) => markAgentRunExited(db, runId, exitCode))
 ipcMain.handle('agentRuns:markFailed', (_event, runId: number, error: string) => markAgentRunFailed(db, runId, error))
 ipcMain.handle('agentRuns:ptyStatus', () => getPtyRuntimeStatus())
 ipcMain.handle('agentRuns:activeIds', () => runManager.activeRunIds())
 ipcMain.handle('agentRuns:activeProviderIds', () => runManager.activeProviderRunIds())
+ipcMain.handle('agentRuns:output', (_event, runId: number) => runManager.getOutput(runId))
 ipcMain.handle('agentRuns:start', (_event, runId: number, size: { cols: number; rows: number }) =>
   runManager.start(runId, size),
 )

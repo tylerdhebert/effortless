@@ -12,6 +12,7 @@ type AgentProfileRow = {
   short_ref: string
   name: string
   command_template: string
+  fork_command_template: string | null
   environment: RunEnvironment
   wsl_distro: string | null
   default_cwd_kind: AgentProfile['defaultCwdKind']
@@ -53,12 +54,13 @@ export function createAgentProfile(db: AppDatabase, input: CreateAgentProfileInp
   const now = new Date().toISOString()
   const result = db.prepare(`
     INSERT INTO agent_profiles (
-      short_ref, name, command_template, environment, wsl_distro, default_cwd_kind, custom_cwd, env_json, created_at, updated_at
+      short_ref, name, command_template, fork_command_template, environment, wsl_distro, default_cwd_kind, custom_cwd, env_json, created_at, updated_at
     )
-    VALUES (NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     input.name.trim(),
     input.commandTemplate.trim(),
+    input.forkCommandTemplate?.trim() || null,
     input.environment ?? 'windows',
     input.wslDistro?.trim() || null,
     input.defaultCwdKind ?? 'task_worktree',
@@ -79,6 +81,7 @@ export function updateAgentProfile(db: AppDatabase, input: UpdateAgentProfileInp
     UPDATE agent_profiles
     SET name = ?,
         command_template = ?,
+        fork_command_template = ?,
         environment = ?,
         wsl_distro = ?,
         default_cwd_kind = ?,
@@ -89,6 +92,7 @@ export function updateAgentProfile(db: AppDatabase, input: UpdateAgentProfileInp
   `).run(
     input.name.trim(),
     input.commandTemplate.trim(),
+    input.forkCommandTemplate?.trim() || null,
     input.environment ?? 'windows',
     input.wslDistro?.trim() || null,
     input.defaultCwdKind ?? 'task_worktree',
@@ -108,9 +112,9 @@ function ensureDefaultAgentProfile(db: AppDatabase): void {
   const now = new Date().toISOString()
   const result = db.prepare(`
     INSERT INTO agent_profiles (
-      short_ref, name, command_template, environment, wsl_distro, default_cwd_kind, custom_cwd, env_json, created_at, updated_at
+      short_ref, name, command_template, fork_command_template, environment, wsl_distro, default_cwd_kind, custom_cwd, env_json, created_at, updated_at
     )
-    VALUES (NULL, 'Codex', 'codex {prompt}', 'windows', NULL, 'task_worktree', NULL, '{}', ?, ?)
+    VALUES (NULL, 'Codex', 'codex {prompt}', 'codex resume {provider_session_id} {prompt}', 'windows', NULL, 'task_worktree', NULL, '{}', ?, ?)
   `).run(now, now)
   const id = Number(result.lastInsertRowid)
   db.prepare(`UPDATE agent_profiles SET short_ref = ? WHERE id = ?`).run(`profile-${id}`, id)
@@ -122,6 +126,7 @@ function mapAgentProfile(row: AgentProfileRow): AgentProfile {
     shortRef: row.short_ref,
     name: row.name,
     commandTemplate: row.command_template,
+    forkCommandTemplate: row.fork_command_template,
     environment: row.environment,
     wslDistro: row.wsl_distro,
     defaultCwdKind: row.default_cwd_kind,

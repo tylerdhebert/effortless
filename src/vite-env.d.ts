@@ -38,6 +38,7 @@ import type {
   TaskDiffView,
   TemplatePlaybook,
   PrepareEffortRunInput,
+  PrepareForkRunInput,
   PrepareResumeRunInput,
   UpdateAgentProfileInput,
   UpdateMandateInput,
@@ -128,12 +129,18 @@ interface Window {
         profile: AgentProfile
         env: Record<string, string>
       }>
+      prepareForkRun: (input: PrepareForkRunInput) => Promise<{
+        run: AgentRun
+        profile: AgentProfile
+        env: Record<string, string>
+      }>
       markAgentRunStarted: (runId: number) => Promise<AgentRun>
       markAgentRunExited: (runId: number, exitCode: number) => Promise<AgentRun>
       markAgentRunFailed: (runId: number, error: string) => Promise<AgentRun>
       getPtyRuntimeStatus: () => Promise<{ available: boolean; platform: NodeJS.Platform }>
       listActiveAgentRunIds: () => Promise<number[]>
       listActiveProviderRunIds: () => Promise<number[]>
+      getAgentRunOutput: (runId: number) => Promise<string>
       startAgentRun: (runId: number, size: { cols: number; rows: number }) => Promise<void>
       writeAgentRun: (runId: number, data: string) => Promise<void>
       resizeAgentRun: (runId: number, size: { cols: number; rows: number }) => Promise<void>

@@ -169,6 +169,7 @@ export function initializeSchema(db: AppDatabase): void {
       short_ref TEXT UNIQUE,
       name TEXT NOT NULL,
       command_template TEXT NOT NULL,
+      fork_command_template TEXT,
       environment TEXT NOT NULL,
       wsl_distro TEXT,
       default_cwd_kind TEXT NOT NULL,
@@ -213,8 +214,16 @@ export function initializeSchema(db: AppDatabase): void {
     );
   `)
 
+  ensureColumn(db, 'agent_profiles', 'fork_command_template', 'TEXT')
+
   seedDefaultGlobalMandates(db)
   seedDefaultTemplatePlaybooks(db)
+}
+
+function ensureColumn(db: AppDatabase, table: string, column: string, definition: string): void {
+  const columns = db.prepare<{ name: string }>(`PRAGMA table_info(${table})`).all()
+  if (columns.some((candidate) => candidate.name === column)) return
+  db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`)
 }
 
 function resetOldV2Schema(db: AppDatabase): void {
