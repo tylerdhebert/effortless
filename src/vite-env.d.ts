@@ -40,6 +40,7 @@ import type {
   PrepareEffortRunInput,
   PrepareForkRunInput,
   PrepareResumeRunInput,
+  PrepareTaskRunInput,
   UpdateAgentProfileInput,
   UpdateMandateInput,
   UpdateRepoInput,
@@ -88,6 +89,7 @@ interface Window {
       createEffort: (input: CreateEffortInput) => Promise<Effort>
       deleteEffort: (effortId: number) => Promise<void>
       updateEffortSummary: (effortId: number, summary: string) => Promise<Effort>
+      updateEffortDefaultProfile: (effortId: number, profileId: number | null) => Promise<Effort>
       listTasks: (effortId: number) => Promise<Task[]>
       listAllTasks: () => Promise<Task[]>
       createTask: (input: CreateTaskInput) => Promise<Task>
@@ -121,6 +123,12 @@ interface Window {
       listAgentRuns: (effortId?: number | null) => Promise<AgentRun[]>
       prepareEffortRun: (input: PrepareEffortRunInput) => Promise<{
         run: AgentRun
+        profile: AgentProfile
+        env: Record<string, string>
+      }>
+      prepareTaskRun: (input: PrepareTaskRunInput) => Promise<{
+        run: AgentRun
+        task: Task
         profile: AgentProfile
         env: Record<string, string>
       }>

@@ -76,7 +76,7 @@ The core loop is:
 - [x] Build verification: `bun run build`.
 - [x] Commit: `604f6a4 feat: show prepared task runs`.
 - [x] Build verification after file-open follow-up: `bun run build`.
-- [ ] Commit current runner/schema/UI batch.
+- [x] Commit current runner/schema/UI batch.
 
 ## Phase 2B.5: Schema Trim
 
@@ -100,6 +100,12 @@ The core loop is:
 - [x] Create profile form.
 - [x] Edit profile form.
 - [ ] Delete profile support only after handling runs that reference the profile.
+- [x] Let an effort choose its default profile.
+- [x] Show the selected effort profile in the effort header.
+- [x] Use the effort default profile when starting the main effort run.
+- [x] Let a task choose terminal target and profile before launch.
+- [x] Let a task start a dedicated task run with the chosen profile.
+- [x] Let a task send context into the main effort terminal while still choosing the profile used for new launches.
 - [x] Choose environment: `windows` or `wsl`.
 - [x] Configure WSL distro.
 - [x] Configure cwd mode: task worktree, repo root, custom.
@@ -171,6 +177,7 @@ The core loop is:
 - [x] Start a new task run.
 - [x] Start a main effort run from the effort terminal.
 - [x] Stop running run.
+- [x] Let the effort surface choose the profile before starting main.
 - [ ] Rerun from existing task context by preparing a new run.
 - [ ] Keep task detail layout stable on narrow screens.
 - [ ] Build verification: `bun run build`.
@@ -344,7 +351,7 @@ The core loop is:
 
 ## Current Open Work
 
-- [ ] Commit the run-row file-open follow-up.
+- [x] Commit the run-row file-open follow-up.
 - [x] Implement profile management UI.
 - [x] Add PTY dependencies and prove Electron packaging.
 - [x] Build Electron run manager.

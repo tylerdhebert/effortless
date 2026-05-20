@@ -37,6 +37,7 @@ export type Effort = {
   title: string
   description: string
   template: EffortTemplate
+  defaultProfileId: number | null
   acceptedPlanId: number | null
   status: EffortStatus
   summary: string | null
@@ -145,6 +146,7 @@ export type CreateEffortInput = {
   title: string
   description: string
   template: EffortTemplate
+  defaultProfileId?: number | null
 }
 
 export type CreateTaskInput = {

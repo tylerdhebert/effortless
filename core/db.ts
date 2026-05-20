@@ -53,6 +53,7 @@ export function initializeSchema(db: AppDatabase): void {
       title TEXT NOT NULL,
       description TEXT NOT NULL,
       template TEXT NOT NULL,
+      default_profile_id INTEGER REFERENCES agent_profiles(id),
       accepted_plan_id INTEGER,
       status TEXT NOT NULL,
       summary TEXT,
@@ -214,6 +215,7 @@ export function initializeSchema(db: AppDatabase): void {
     );
   `)
 
+  ensureColumn(db, 'efforts', 'default_profile_id', 'INTEGER')
   ensureColumn(db, 'agent_profiles', 'fork_command_template', 'TEXT')
 
   seedDefaultGlobalMandates(db)

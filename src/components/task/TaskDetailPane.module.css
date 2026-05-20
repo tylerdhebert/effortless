@@ -33,6 +33,43 @@
   justify-content: flex-end;
 }
 
+.task-launch-controls {
+  display: inline-flex;
+  align-items: end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.task-launch-field {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.task-launch-field span {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: lowercase;
+  padding-left: .45em;
+}
+
+.task-launch-field select {
+  min-height: 36px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: var(--button);
+  color: var(--text);
+  padding: 0 10px;
+}
+
+.task-launch-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.74rem;
+}
+
 .task-detail-header-copy {
   display: grid;
   gap: 8px;
@@ -525,6 +562,14 @@
   .task-header-controls {
     width: 100%;
     justify-content: stretch;
+  }
+
+  .task-launch-controls {
+    width: 100%;
+  }
+
+  .task-launch-field {
+    flex: 1 1 180px;
   }
 
   .task-header-controls :global(.pill-switcher) {

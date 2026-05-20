@@ -68,6 +68,7 @@ type AgentRunTerminalProps = {
   onOpenTask?: (taskId: number) => void
   onStop: (runId: number) => void
   onToggleMenu?: (open: boolean) => void
+  onTerminalSizeChange?: (size: { cols: number; rows: number }) => void
   drawerClosedAt?: number
   forkMainDisabledReason?: string | null
 }
@@ -89,6 +90,7 @@ export function AgentRunTerminal({
   onOpenTask,
   onStop,
   onToggleMenu,
+  onTerminalSizeChange,
   drawerClosedAt,
   forkMainDisabledReason,
 }: AgentRunTerminalProps) {
@@ -101,6 +103,7 @@ export function AgentRunTerminal({
   const menuRowRefs = useRef<Array<HTMLButtonElement | null>>([])
   const fitFrameRef = useRef<number | null>(null)
   const secondFitFrameRef = useRef<number | null>(null)
+  const settleTimerRefs = useRef<number[]>([])
   const scheduleFitAndRefreshRef = useRef<(runId?: number) => void>(() => {})
   const [menuOpenInternal, setMenuOpenInternal] = useState(false)
   const [focusedMenuIndex, setFocusedMenuIndex] = useState(-1)
@@ -153,8 +156,12 @@ export function AgentRunTerminal({
     if (!entry) return
     const palette = applyTerminalPalette(entry.terminal, idleHostRef.current, undefined)
     entry.fit.fit()
+    onTerminalSizeChange?.({
+      cols: entry.terminal.cols,
+      rows: entry.terminal.rows,
+    })
     drawIdleWordmark(entry.terminal, palette.idleArt)
-  }, [applyTerminalPalette])
+  }, [applyTerminalPalette, onTerminalSizeChange])
 
   const fitAndRefreshTerminal = useCallback((runId?: number) => {
     const targets = runId == null
@@ -171,6 +178,12 @@ export function AgentRunTerminal({
 
       const target = runsByIdRef.current.get(targetRunId)
       if (target?.run.status === 'running' && target.runLive) {
+        if (targetRunId === activeRun?.id) {
+          onTerminalSizeChange?.({
+            cols: entry.terminal.cols,
+            rows: entry.terminal.rows,
+          })
+        }
         void window.effortless.resizeAgentRun(targetRunId, {
           cols: entry.terminal.cols,
           rows: entry.terminal.rows,
@@ -181,7 +194,7 @@ export function AgentRunTerminal({
     if (runId == null && !activeRunLive) {
       renderIdleTerminal()
     }
-  }, [queueViewportSync, activeRunLive, renderIdleTerminal])
+  }, [queueViewportSync, activeRun?.id, activeRunLive, renderIdleTerminal, onTerminalSizeChange])
 
   const scheduleFitAndRefresh = useCallback((runId?: number) => {
     if (fitFrameRef.current != null) {
@@ -285,7 +298,6 @@ export function AgentRunTerminal({
 
       const terminal = new Terminal({
         cursorBlink: true,
-        convertEol: true,
         fontFamily: '"Cascadia Code", Consolas, "Courier New", monospace',
         fontSize: 12,
         theme: deriveTerminalPalette(host, undefined).theme,
@@ -363,6 +375,10 @@ export function AgentRunTerminal({
       window.removeEventListener('resize', handleWindowResize)
       idleEntryRef.current?.dispose()
       idleEntryRef.current = null
+      for (const timer of settleTimerRefs.current) {
+        window.clearTimeout(timer)
+      }
+      settleTimerRefs.current = []
       for (const entry of terminalEntriesRef.current.values()) {
         entry.dispose()
       }
@@ -473,12 +489,30 @@ export function AgentRunTerminal({
 
   useEffect(() => {
     if (!activeRun || !activeRunLive) {
+      for (const timer of settleTimerRefs.current) {
+        window.clearTimeout(timer)
+      }
+      settleTimerRefs.current = []
       renderIdleTerminal()
       return
     }
     scheduleFitAndRefresh(activeRun.id)
     nudgeTerminalHost(activeRun.id)
     terminalEntriesRef.current.get(activeRun.id)?.terminal.focus()
+    for (const timer of settleTimerRefs.current) {
+      window.clearTimeout(timer)
+    }
+    settleTimerRefs.current = [40, 120, 260, 520].map((delayMs) =>
+      window.setTimeout(() => {
+        scheduleFitAndRefreshRef.current(activeRun.id)
+      }, delayMs),
+    )
+    return () => {
+      for (const timer of settleTimerRefs.current) {
+        window.clearTimeout(timer)
+      }
+      settleTimerRefs.current = []
+    }
   }, [activeRun?.id, activeRunLive, scheduleFitAndRefresh, nudgeTerminalHost, renderIdleTerminal])
 
   const attachmentsWithRuns = tabs.filter((tab) => tab.run).length

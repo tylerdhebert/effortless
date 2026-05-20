@@ -84,12 +84,17 @@ export function getAgentRun(db: AppDatabase, runId: number): AgentRun {
 }
 
 export async function prepareTaskRun(db: AppDatabase, input: PrepareTaskRunInput): Promise<PreparedTaskRun> {
-  const profile = input.profileId ? getAgentProfile(db, input.profileId) : getDefaultAgentProfile(db)
   let task = getTask(db, input.taskId)
   if (task.repoId) {
     task = await ensureTaskWorktree(db, task.id)
   }
   const effort = getEffort(db, task.effortId)
+  const profile =
+    input.profileId != null
+      ? getAgentProfile(db, input.profileId)
+      : effort.defaultProfileId != null
+        ? getAgentProfile(db, effort.defaultProfileId)
+        : getDefaultAgentProfile(db)
   const cwd = resolveTaskRunCwd(db, task, profile)
   const now = new Date().toISOString()
   const purpose = input.purpose ?? 'implementation'
@@ -153,8 +158,13 @@ export async function prepareTaskRun(db: AppDatabase, input: PrepareTaskRunInput
 }
 
 export async function prepareEffortRun(db: AppDatabase, input: PrepareEffortRunInput): Promise<PreparedEffortRun> {
-  const profile = input.profileId ? getAgentProfile(db, input.profileId) : getDefaultAgentProfile(db)
   const effort = getEffort(db, input.effortId)
+  const profile =
+    input.profileId != null
+      ? getAgentProfile(db, input.profileId)
+      : effort.defaultProfileId != null
+        ? getAgentProfile(db, effort.defaultProfileId)
+        : getDefaultAgentProfile(db)
   const cwd = resolveEffortRunCwd(db, effort.id, profile)
   const now = new Date().toISOString()
   const purpose = input.purpose ?? 'main'

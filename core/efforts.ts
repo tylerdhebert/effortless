@@ -1,5 +1,6 @@
 import type { AppDatabase } from './db'
 import { bumpAppState } from './db'
+import { getAgentProfile } from './agentProfiles'
 import type { CreateEffortInput, Effort, EffortTemplate } from './types'
 
 const EFFORT_TEMPLATES: EffortTemplate[] = ['bugfix', 'delivery', 'investigation']
@@ -10,6 +11,7 @@ type EffortRow = {
   title: string
   description: string
   template: Effort['template']
+  default_profile_id: number | null
   accepted_plan_id: number | null
   status: Effort['status']
   summary: string | null
@@ -28,17 +30,21 @@ export function listEfforts(db: AppDatabase): Effort[] {
 
 export function createEffort(db: AppDatabase, input: CreateEffortInput): Effort {
   const template = parseEffortTemplate(input.template)
+  const defaultProfileId = input.defaultProfileId ?? null
+  if (defaultProfileId != null) {
+    getAgentProfile(db, defaultProfileId)
+  }
   const now = new Date().toISOString()
   const result = db
     .prepare(
       `
       INSERT INTO efforts (
-        title, description, template, accepted_plan_id, status, created_at, updated_at
+        title, description, template, default_profile_id, accepted_plan_id, status, created_at, updated_at
       )
-      VALUES (?, ?, ?, NULL, 'active', ?, ?)
+      VALUES (?, ?, ?, ?, NULL, 'active', ?, ?)
     `,
     )
-    .run(input.title.trim(), input.description.trim(), template, now, now)
+    .run(input.title.trim(), input.description.trim(), template, defaultProfileId, now, now)
 
   const id = Number(result.lastInsertRowid)
   const shortRef = `eff-${id}`
@@ -100,6 +106,19 @@ export function updateEffortSummary(db: AppDatabase, effortId: number, summary: 
   return getEffort(db, effortId)
 }
 
+export function updateEffortDefaultProfile(db: AppDatabase, effortId: number, profileId: number | null): Effort {
+  if (profileId != null) {
+    getAgentProfile(db, profileId)
+  }
+  db.prepare(`UPDATE efforts SET default_profile_id = ?, updated_at = ? WHERE id = ?`).run(
+    profileId,
+    new Date().toISOString(),
+    effortId,
+  )
+  bumpAppState(db)
+  return getEffort(db, effortId)
+}
+
 export function deleteEffort(db: AppDatabase, effortId: number): void {
   const existing = db.prepare<{ id: number }>(`SELECT id FROM efforts WHERE id = ?`).get(effortId)
   if (!existing) {
@@ -145,6 +164,7 @@ function mapEffort(row: EffortRow): Effort {
     title: row.title,
     description: row.description,
     template: row.template,
+    defaultProfileId: row.default_profile_id,
     acceptedPlanId: row.accepted_plan_id,
     status: row.status,
     summary: row.summary,

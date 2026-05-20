@@ -4,14 +4,14 @@ import { createHash } from 'node:crypto'
 import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { createAgentProfile, listAgentProfiles, updateAgentProfile } from '../core/agentProfiles'
-import { listAgentRuns, markAgentRunExited, markAgentRunFailed, markAgentRunStarted, prepareEffortRun, prepareForkRun, prepareResumeRun } from '../core/agentRuns'
+import { listAgentRuns, markAgentRunExited, markAgentRunFailed, markAgentRunStarted, prepareEffortRun, prepareForkRun, prepareResumeRun, prepareTaskRun } from '../core/agentRuns'
 import { getLatestTaskBuild, runTaskBuild } from '../core/builds'
 import { getPtyRuntimeStatus, RunManager } from './runManager'
 import { startCliCommandServer, type CliCommandServer } from './cliCommandServer'
 import { getAppState, openDatabase, updateNotificationSettings } from '../core/db'
 import type { NotificationSettings } from '../core/db'
 import { getCustomThemeState, updateCustomThemeState } from '../core/themeConfig'
-import { listEfforts, createEffort, deleteEffort, updateEffortSummary } from '../core/efforts'
+import { listEfforts, createEffort, deleteEffort, updateEffortDefaultProfile, updateEffortSummary } from '../core/efforts'
 import { browsePath } from '../core/filesystem'
 import {
   answerInputRequest,
@@ -176,6 +176,9 @@ ipcMain.handle('efforts:delete', (_event, effortId: number) =>
 ipcMain.handle('efforts:updateSummary', (_event, effortId: number, summary: string) =>
   updateEffortSummary(db, effortId, summary),
 )
+ipcMain.handle('efforts:updateDefaultProfile', (_event, effortId: number, profileId: number | null) =>
+  updateEffortDefaultProfile(db, effortId, profileId),
+)
 ipcMain.handle('tasks:list', (_event, effortId: number) => listTasks(db, effortId))
 ipcMain.handle('tasks:listAll', () => listAllTasks(db))
 ipcMain.handle('tasks:create', (_event, input: CreateTaskInput) => createTask(db, input))
@@ -220,6 +223,9 @@ ipcMain.handle('agentProfiles:update', (_event, input: UpdateAgentProfileInput) 
 ipcMain.handle('agentRuns:list', (_event, effortId?: number | null) => listAgentRuns(db, effortId ?? null))
 ipcMain.handle('agentRuns:prepareEffort', (_event, input: { effortId: number; profileId?: number | null; purpose?: 'main' | 'side-investigation' | 'implementation' | 'review'; label?: string }) =>
   prepareEffortRun(db, input),
+)
+ipcMain.handle('agentRuns:prepareTask', (_event, input: { taskId: number; profileId?: number | null; purpose?: 'main' | 'side-investigation' | 'implementation' | 'review'; label?: string }) =>
+  prepareTaskRun(db, input),
 )
 ipcMain.handle('agentRuns:prepareResume', (_event, input: PrepareResumeRunInput) =>
   prepareResumeRun(db, input),

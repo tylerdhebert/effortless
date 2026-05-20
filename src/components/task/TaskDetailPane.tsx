@@ -6,6 +6,7 @@ import 'react-diff-view/style/index.css'
 import { refractor as rawRefractor } from 'refractor'
 import { Play, Send } from 'lucide-react'
 import type {
+  AgentProfile,
   Task,
   ActivityEvent,
   Repo,
@@ -25,18 +26,22 @@ import styles from './TaskDetailPane.module.css'
 type TaskDetailPaneProps = {
   task: Task | null
   repos: Repo[]
+  profiles: AgentProfile[]
+  defaultProfileId: number | null
+  mainRunLive: boolean
   reviews: Review[]
   comments: ActivityEvent[]
   latestBuild: TaskBuildResult | null
   commitView: TaskCommitView | null
   conflictView: TaskConflictView | null
   onRunBuild: (taskId: number) => void
-  onWorkOnTask: (task: Task) => void
+  onWorkOnTask: (input: { task: Task; profileId: number | null }) => void
+  onStartTaskRun: (input: { task: Task; profileId: number | null }) => void
   onMergeTask: (taskId: number) => void
   onApplyReview: (reviewId: number) => void
   onRequestReviewChanges: (input: { reviewId: number; body: string }) => void
   isRunningBuild: boolean
-  isSendingTaskToTerminal: boolean
+  isLaunchingTask: boolean
   isMergingTask: boolean
   isApplyingReview: boolean
   isRequestingReviewChanges: boolean
@@ -45,6 +50,9 @@ type TaskDetailPaneProps = {
 export function TaskDetailPane({
   task,
   repos,
+  profiles,
+  defaultProfileId,
+  mainRunLive,
   reviews,
   comments,
   latestBuild,
@@ -52,11 +60,12 @@ export function TaskDetailPane({
   conflictView,
   onRunBuild,
   onWorkOnTask,
+  onStartTaskRun,
   onMergeTask,
   onApplyReview,
   onRequestReviewChanges,
   isRunningBuild,
-  isSendingTaskToTerminal,
+  isLaunchingTask,
   isMergingTask,
   isApplyingReview,
   isRequestingReviewChanges,
@@ -66,10 +75,17 @@ export function TaskDetailPane({
   const [diffType, setDiffType] = useState<'uncommitted' | 'branch' | 'combined'>('combined')
   const [diffViewType, setDiffViewType] = useState<ViewType>('unified')
   const [activeFilePath, setActiveFilePath] = useState<string | null>(null)
+  const [launchTarget, setLaunchTarget] = useState<'main' | 'task'>('main')
+  const [launchProfileId, setLaunchProfileId] = useState<number | null>(defaultProfileId)
 
   useEffect(() => {
     setSurfaceMode('meta')
   }, [task?.id])
+
+  useEffect(() => {
+    setLaunchTarget('main')
+    setLaunchProfileId(defaultProfileId ?? profiles[0]?.id ?? null)
+  }, [task?.id, defaultProfileId, profiles])
 
   const taskRepo = repos.find((repo) => repo.id === (task?.repoId ?? null)) ?? null
   const latestReview = reviews[0] ?? null
@@ -135,6 +151,10 @@ export function TaskDetailPane({
     }
     return fileEntries.find((entry) => entry.path === activeFilePath) ?? fileEntries[0] ?? null
   }, [activeFilePath, fileEntries])
+  const selectedProfile = useMemo(
+    () => profiles.find((profile) => profile.id === launchProfileId) ?? null,
+    [profiles, launchProfileId],
+  )
 
   if (!task) {
     return (
@@ -181,6 +201,32 @@ export function TaskDetailPane({
             </div>
           </div>
           <div className={styles['task-header-controls']}>
+            <div className={styles['task-launch-controls']}>
+              <label className={styles['task-launch-field']}>
+                <span>terminal</span>
+                <select
+                  aria-label="task launch terminal"
+                  value={launchTarget}
+                  onChange={(event) => setLaunchTarget(event.target.value as 'main' | 'task')}
+                >
+                  <option value="main">main effort terminal</option>
+                  <option value="task">task terminal</option>
+                </select>
+              </label>
+              <label className={styles['task-launch-field']}>
+                <span>profile</span>
+                <select
+                  aria-label="task launch profile"
+                  value={launchProfileId == null ? '' : String(launchProfileId)}
+                  onChange={(event) => setLaunchProfileId(event.target.value ? Number(event.target.value) : null)}
+                  disabled={profiles.length === 0}
+                >
+                  {profiles.map((profile) => (
+                    <option key={profile.id} value={profile.id}>{profile.name}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
             <PillSwitcher
               ariaLabel="task detail mode"
               options={[
@@ -193,12 +239,23 @@ export function TaskDetailPane({
             <button
               type="button"
               className={styles['task-header-action']}
-              title="send task context to the main effort terminal"
-              onClick={() => onWorkOnTask(task)}
-              disabled={isSendingTaskToTerminal}
+              title={launchTarget === 'task' ? 'start a dedicated task terminal run' : 'send task context to the main effort terminal'}
+              onClick={() => {
+                const profileId = selectedProfile?.id ?? defaultProfileId ?? null
+                if (launchTarget === 'task') {
+                  onStartTaskRun({ task, profileId })
+                } else {
+                  onWorkOnTask({ task, profileId })
+                }
+              }}
+              disabled={isLaunchingTask || (launchTarget === 'task' && profiles.length === 0)}
             >
-              <Send size={14} aria-hidden="true" />
-              <span>{isSendingTaskToTerminal ? 'sending' : 'work on this'}</span>
+              {launchTarget === 'task' ? <Play size={14} aria-hidden="true" /> : <Send size={14} aria-hidden="true" />}
+              <span>
+                {isLaunchingTask
+                  ? launchTarget === 'task' ? 'starting' : 'sending'
+                  : launchTarget === 'task' ? 'start task run' : 'work on this'}
+              </span>
             </button>
             <button
               type="button"
@@ -221,6 +278,11 @@ export function TaskDetailPane({
             </button>
           </div>
         </div>
+        {launchTarget === 'main' && mainRunLive ? (
+          <p className={styles['task-launch-note']}>
+            main is already live, so this sends context into the current session without changing its profile.
+          </p>
+        ) : null}
       </div>
 
       {surfaceMode === 'meta' ? (

@@ -39,6 +39,7 @@ import type {
   PrepareEffortRunInput,
   PrepareForkRunInput,
   PrepareResumeRunInput,
+  PrepareTaskRunInput,
   UpdateAgentProfileInput,
   UpdateMandateInput,
   UpdateRepoInput,
@@ -98,6 +99,8 @@ contextBridge.exposeInMainWorld('effortless', {
     ipcRenderer.invoke('efforts:delete', effortId) as Promise<void>,
   updateEffortSummary: (effortId: number, summary: string) =>
     ipcRenderer.invoke('efforts:updateSummary', effortId, summary) as Promise<Effort>,
+  updateEffortDefaultProfile: (effortId: number, profileId: number | null) =>
+    ipcRenderer.invoke('efforts:updateDefaultProfile', effortId, profileId) as Promise<Effort>,
   listTasks: (effortId: number) => ipcRenderer.invoke('tasks:list', effortId) as Promise<Task[]>,
   listAllTasks: () => ipcRenderer.invoke('tasks:listAll') as Promise<Task[]>,
   createTask: (input: CreateTaskInput) => ipcRenderer.invoke('tasks:create', input) as Promise<Task>,
@@ -150,6 +153,13 @@ contextBridge.exposeInMainWorld('effortless', {
   prepareEffortRun: (input: PrepareEffortRunInput) =>
     ipcRenderer.invoke('agentRuns:prepareEffort', input) as Promise<{
       run: AgentRun
+      profile: AgentProfile
+      env: Record<string, string>
+    }>,
+  prepareTaskRun: (input: PrepareTaskRunInput) =>
+    ipcRenderer.invoke('agentRuns:prepareTask', input) as Promise<{
+      run: AgentRun
+      task: Task
       profile: AgentProfile
       env: Record<string, string>
     }>,

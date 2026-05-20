@@ -256,6 +256,18 @@
   padding: 8px 10px;
 }
 
+.effort-profile-chip select {
+  min-height: 33px;
+  border: 1px solid color-mix(in srgb, var(--line) 82%, transparent);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.028);
+  color: var(--text);
+  font-size: 0.76rem;
+  font-weight: 650;
+  line-height: 1;
+  padding: 0 10px;
+}
+
 .effort-header-actions {
   display: inline-flex;
   align-items: center;

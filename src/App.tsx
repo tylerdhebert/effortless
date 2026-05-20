@@ -73,6 +73,7 @@ function App() {
   const [observedAppVersion, setObservedAppVersion] = useState<number | null>(null)
   const [customThemePalette, setCustomThemePalette] = useState<ThemePalette | null>(null)
   const [customThemeActive, setCustomThemeActive] = useState(false)
+  const [terminalStartSize, setTerminalStartSize] = useState(DEFAULT_TERMINAL_SIZE)
   const preserveSelectionOnEffortChangeRef = useRef(false)
 
   const effortsQuery = useQuery({
@@ -315,6 +316,9 @@ function App() {
   const mainTerminalProfile = mainTerminalTab?.run
     ? agentProfilesQuery.data?.find((profile) => profile.id === mainTerminalTab.run?.profileId) ?? null
     : null
+  const effortDefaultProfile = selectedEffort?.defaultProfileId != null
+    ? agentProfilesQuery.data?.find((profile) => profile.id === selectedEffort.defaultProfileId) ?? null
+    : null
   const forkMainDisabledReason = !mainTerminalTab?.run
     ? 'start main before forking'
     : !mainTerminalTab.run.providerSessionId
@@ -411,10 +415,21 @@ function App() {
     },
   })
 
+  const updateEffortDefaultProfile = useMutation({
+    mutationFn: ({ effortId, profileId }: { effortId: number; profileId: number | null }) =>
+      window.effortless.updateEffortDefaultProfile(effortId, profileId),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['efforts'] }),
+        queryClient.invalidateQueries({ queryKey: ['app-state'] }),
+      ])
+    },
+  })
+
   const startEffortRun = useMutation({
-    mutationFn: async (effortId: number) => {
-      const prepared = await window.effortless.prepareEffortRun({ effortId, purpose: 'main' })
-      await window.effortless.startAgentRun(prepared.run.id, DEFAULT_TERMINAL_SIZE)
+    mutationFn: async ({ effortId, profileId }: { effortId: number; profileId: number | null }) => {
+      const prepared = await window.effortless.prepareEffortRun({ effortId, profileId, purpose: 'main' })
+      await window.effortless.startAgentRun(prepared.run.id, terminalStartSize)
       return prepared
     },
     onSuccess: async (prepared) => {
@@ -425,7 +440,7 @@ function App() {
   const resumeAgentRun = useMutation({
     mutationFn: async (runId: number) => {
       const prepared = await window.effortless.prepareResumeRun({ runId })
-      await window.effortless.startAgentRun(prepared.run.id, DEFAULT_TERMINAL_SIZE)
+      await window.effortless.startAgentRun(prepared.run.id, terminalStartSize)
       return prepared
     },
     onSuccess: async (prepared) => {
@@ -443,7 +458,7 @@ function App() {
         sourceRunId: sourceRun.id,
         prompt: FORK_MAIN_PROMPT,
       })
-      await window.effortless.startAgentRun(prepared.run.id, DEFAULT_TERMINAL_SIZE)
+      await window.effortless.startAgentRun(prepared.run.id, terminalStartSize)
       return prepared
     },
     onSuccess: async (prepared) => {
@@ -451,8 +466,24 @@ function App() {
     },
   })
 
+  const startTaskRun = useMutation({
+    mutationFn: async ({ task, profileId }: { task: Task; profileId: number | null }) => {
+      const prepared = await window.effortless.prepareTaskRun({
+        taskId: task.id,
+        profileId,
+        purpose: 'implementation',
+      })
+      await window.effortless.startAgentRun(prepared.run.id, terminalStartSize)
+      return prepared
+    },
+    onSuccess: async (prepared) => {
+      setActiveEffortDrawer(null)
+      await refreshAgentRunState(prepared.run.terminalTabKey)
+    },
+  })
+
   const sendTaskToEffortSession = useMutation({
-    mutationFn: async (task: Task) => {
+    mutationFn: async ({ task, profileId }: { task: Task; profileId: number | null }) => {
       if (!selectedEffort) {
         throw new Error('Select an effort before sending task context.')
       }
@@ -464,22 +495,27 @@ function App() {
         mainRuns.find((run) => activeProviderRunIds.has(run.id)) ?? null
       const latestMainRun = mainRuns[0] ?? null
       const prompt = buildTaskWorkPrompt(task)
+      const requestedProfileId = profileId ?? selectedEffort.defaultProfileId ?? null
 
       if (liveMainRun) {
         await window.effortless.writeAgentRun(liveMainRun.id, `${prompt}\r`)
         return liveMainRun
       }
 
-      if (latestMainRun?.providerSessionId) {
+      if (latestMainRun?.providerSessionId && (requestedProfileId == null || latestMainRun.profileId === requestedProfileId)) {
         const prepared = await window.effortless.prepareResumeRun({ runId: latestMainRun.id })
-        await window.effortless.startAgentRun(prepared.run.id, DEFAULT_TERMINAL_SIZE)
+        await window.effortless.startAgentRun(prepared.run.id, terminalStartSize)
         await delay(650)
         await window.effortless.writeAgentRun(prepared.run.id, `${prompt}\r`)
         return prepared.run
       }
 
-      const prepared = await window.effortless.prepareEffortRun({ effortId: selectedEffort.id, purpose: 'main' })
-      await window.effortless.startAgentRun(prepared.run.id, DEFAULT_TERMINAL_SIZE)
+      const prepared = await window.effortless.prepareEffortRun({
+        effortId: selectedEffort.id,
+        profileId: requestedProfileId,
+        purpose: 'main',
+      })
+      await window.effortless.startAgentRun(prepared.run.id, terminalStartSize)
       await delay(650)
       await window.effortless.writeAgentRun(prepared.run.id, `${prompt}\r`)
       return prepared.run
@@ -896,6 +932,25 @@ function App() {
                         <small>status</small>
                         <span style={{ borderColor: effortStatusColor(selectedEffort.status), boxShadow: `0 0 8px ${effortStatusColor(selectedEffort.status)}` }}>{selectedEffort.status}</span>
                       </div>
+                      <label className="chip-group effort-profile-chip">
+                        <small>profile</small>
+                        <select
+                          aria-label="effort default profile"
+                          value={selectedEffort.defaultProfileId == null ? '' : String(selectedEffort.defaultProfileId)}
+                          onChange={(event) => {
+                            updateEffortDefaultProfile.mutate({
+                              effortId: selectedEffort.id,
+                              profileId: event.target.value ? Number(event.target.value) : null,
+                            })
+                          }}
+                          disabled={updateEffortDefaultProfile.isPending || (agentProfilesQuery.data?.length ?? 0) === 0}
+                        >
+                          <option value="">app default</option>
+                          {(agentProfilesQuery.data ?? []).map((profile) => (
+                            <option key={profile.id} value={profile.id}>{profile.name}</option>
+                          ))}
+                        </select>
+                      </label>
                     </div>
                   </div>
                 </div>
@@ -924,7 +979,10 @@ function App() {
                   emptyLabel="ready for effort"
                   menuOpen={terminalMenuOpen}
                   onStart={() => {
-                    startEffortRun.mutate(selectedEffort.id)
+                    startEffortRun.mutate({
+                      effortId: selectedEffort.id,
+                      profileId: selectedEffort.defaultProfileId ?? effortDefaultProfile?.id ?? null,
+                    })
                   }}
                   onForkMain={() => forkMainRun.mutate()}
                   onResume={(runId) => resumeAgentRun.mutate(runId)}
@@ -938,6 +996,7 @@ function App() {
                   }}
                   onStop={(runId) => taskMutations.stopAgentRun.mutate(runId)}
                   onToggleMenu={setTerminalMenuOpen}
+                  onTerminalSizeChange={setTerminalStartSize}
                   drawerClosedAt={drawerClosedAt}
                   forkMainDisabledReason={forkMainRun.isPending ? 'fork is starting' : forkMainDisabledReason}
                 />
@@ -1121,18 +1180,22 @@ function App() {
                             <TaskDetailPane
                               task={selectedTask}
                               repos={reposQuery.data ?? []}
+                              profiles={agentProfilesQuery.data ?? []}
+                              defaultProfileId={selectedEffort.defaultProfileId ?? effortDefaultProfile?.id ?? null}
+                              mainRunLive={Boolean(mainTerminalTab?.run && activeProviderRunIds.has(mainTerminalTab.run.id))}
                               reviews={reviewsQuery.data ?? []}
                               comments={commentsQuery.data ?? []}
                               latestBuild={buildQuery.data ?? null}
                               commitView={commitsQuery.data ?? null}
                               conflictView={conflictsQuery.data ?? null}
                               onRunBuild={(taskId) => taskMutations.runBuild.mutate(taskId)}
-                              onWorkOnTask={(task) => sendTaskToEffortSession.mutate(task)}
+                              onWorkOnTask={(input) => sendTaskToEffortSession.mutate(input)}
+                              onStartTaskRun={(input) => startTaskRun.mutate(input)}
                               onMergeTask={(taskId) => taskMutations.mergeTask.mutate(taskId)}
                               onApplyReview={(reviewId) => reviewMutations.applyReview.mutate({ reviewId })}
                               onRequestReviewChanges={(input) => reviewMutations.requestReviewChanges.mutate(input)}
                               isRunningBuild={taskMutations.runBuild.isPending}
-                              isSendingTaskToTerminal={sendTaskToEffortSession.isPending}
+                              isLaunchingTask={sendTaskToEffortSession.isPending || startTaskRun.isPending}
                               isMergingTask={taskMutations.mergeTask.isPending}
                               isApplyingReview={reviewMutations.applyReview.isPending}
                               isRequestingReviewChanges={reviewMutations.requestReviewChanges.isPending}
