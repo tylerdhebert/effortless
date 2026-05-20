@@ -305,16 +305,12 @@ function App() {
   const activeTerminalRunLive = activeTerminalRun ? activeProviderRunIds.has(activeTerminalRun.id) : false
   const mountedTerminalRuns = useMemo(() => {
     const mounted = new Map<number, { run: AgentRun; runLive: boolean }>()
-    for (const tab of terminalTabs) {
-      if (!tab.run) continue
-      mounted.set(tab.run.id, { run: tab.run, runLive: Boolean(tab.runLive) })
-    }
     for (const run of allRunsQuery.data ?? []) {
       if (!activeProviderRunIds.has(run.id)) continue
       mounted.set(run.id, { run, runLive: true })
     }
     return Array.from(mounted.values())
-  }, [terminalTabs, allRunsQuery.data, activeProviderRunIds])
+  }, [allRunsQuery.data, activeProviderRunIds])
   const mainTerminalTab = terminalTabs.find((tab) => tab.key === 'main') ?? null
   const mainTerminalProfile = mainTerminalTab?.run
     ? agentProfilesQuery.data?.find((profile) => profile.id === mainTerminalTab.run?.profileId) ?? null
@@ -822,7 +818,7 @@ function App() {
           bannerNotificationsEnabled={appStateQuery.data?.bannerNotificationsEnabled ?? true}
         />
 
-        {surfaceMode === 'manage' ? (
+        <div className={`surface-panel ${surfaceMode === 'manage' ? 'active' : 'hidden'}`}>
           <ManageSurface
             repos={reposQuery.data ?? []}
             agentProfiles={agentProfilesQuery.data ?? []}
@@ -878,8 +874,10 @@ function App() {
             onActivateCustomTheme={handleActivateCustomTheme}
             onUpdateCustomTheme={handleUpdateCustomTheme}
           />
-        ) : selectedEffort ? (
-          <>
+        </div>
+
+        {selectedEffort ? (
+          <div className={`surface-panel surface-panel--effort ${surfaceMode === 'effort' ? 'active' : 'hidden'}`}>
             <header className="effort-header">
               <div className="effort-header-copy">
                 <div className="effort-title-row">
@@ -1149,22 +1147,24 @@ function App() {
                 </section>
               ) : null}
             </div>
-          </>
+          </div>
         ) : (
-          <section className="no-effort-state">
-            <div className="no-effort-state-content">
-              <Home size={28} aria-hidden="true" />
-              <span>no effort selected</span>
-              <p>select an effort from the sidebar or create a new one</p>
-              <button
-                type="button"
-                onClick={() => setCreateEffortOpen(true)}
-              >
-                <Plus size={14} />
-                <span>new effort</span>
-              </button>
-            </div>
-          </section>
+          <div className={`surface-panel surface-panel--effort ${surfaceMode === 'effort' ? 'active' : 'hidden'}`}>
+            <section className="no-effort-state">
+              <div className="no-effort-state-content">
+                <Home size={28} aria-hidden="true" />
+                <span>no effort selected</span>
+                <p>select an effort from the sidebar or create a new one</p>
+                <button
+                  type="button"
+                  onClick={() => setCreateEffortOpen(true)}
+                >
+                  <Plus size={14} />
+                  <span>new effort</span>
+                </button>
+              </div>
+            </section>
+          </div>
         )}
       </section>
 

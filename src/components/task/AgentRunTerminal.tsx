@@ -12,6 +12,29 @@ type TerminalEntry = {
   dispose: () => void
 }
 
+type IdleTerminalEntry = {
+  terminal: Terminal
+  fit: FitAddon
+  dispose: () => void
+}
+
+type TerminalPalette = {
+  theme: {
+    background: string
+    foreground: string
+    cursor: string
+    selectionBackground: string
+  }
+  idleArt: {
+    top: string
+    upper: string
+    lower: string
+    base: string
+    label: string
+    helper: string
+  }
+}
+
 type TerminalTab = {
   key: string
   label: string
@@ -71,11 +94,14 @@ export function AgentRunTerminal({
 }: AgentRunTerminalProps) {
   const hostRefs = useRef(new Map<number, HTMLDivElement>())
   const terminalEntriesRef = useRef(new Map<number, TerminalEntry>())
+  const idleHostRef = useRef<HTMLDivElement | null>(null)
+  const idleEntryRef = useRef<IdleTerminalEntry | null>(null)
   const runsByIdRef = useRef(new Map<number, { run: AgentRun; runLive: boolean }>())
   const menuRef = useRef<HTMLDivElement | null>(null)
   const menuRowRefs = useRef<Array<HTMLButtonElement | null>>([])
   const fitFrameRef = useRef<number | null>(null)
   const secondFitFrameRef = useRef<number | null>(null)
+  const scheduleFitAndRefreshRef = useRef<(runId?: number) => void>(() => {})
   const [menuOpenInternal, setMenuOpenInternal] = useState(false)
   const [focusedMenuIndex, setFocusedMenuIndex] = useState(-1)
 
@@ -116,6 +142,20 @@ export function AgentRunTerminal({
     viewport?.queueSync?.()
   }, [])
 
+  const applyTerminalPalette = useCallback((terminal: Terminal, host: HTMLElement | null, cursorColor?: string) => {
+    const palette = deriveTerminalPalette(host, cursorColor)
+    terminal.options.theme = palette.theme
+    return palette
+  }, [])
+
+  const renderIdleTerminal = useCallback(() => {
+    const entry = idleEntryRef.current
+    if (!entry) return
+    const palette = applyTerminalPalette(entry.terminal, idleHostRef.current, undefined)
+    entry.fit.fit()
+    drawIdleWordmark(entry.terminal, palette.idleArt)
+  }, [applyTerminalPalette])
+
   const fitAndRefreshTerminal = useCallback((runId?: number) => {
     const targets = runId == null
       ? [...terminalEntriesRef.current.entries()]
@@ -137,7 +177,11 @@ export function AgentRunTerminal({
         })
       }
     }
-  }, [queueViewportSync])
+
+    if (runId == null && !activeRunLive) {
+      renderIdleTerminal()
+    }
+  }, [queueViewportSync, activeRunLive, renderIdleTerminal])
 
   const scheduleFitAndRefresh = useCallback((runId?: number) => {
     if (fitFrameRef.current != null) {
@@ -156,6 +200,10 @@ export function AgentRunTerminal({
       })
     })
   }, [fitAndRefreshTerminal])
+
+  useEffect(() => {
+    scheduleFitAndRefreshRef.current = scheduleFitAndRefresh
+  }, [scheduleFitAndRefresh])
 
   const nudgeTerminalHost = useCallback((runId: number) => {
     const host = hostRefs.current.get(runId)
@@ -189,6 +237,43 @@ export function AgentRunTerminal({
   }, [queueViewportSync, scheduleFitAndRefresh])
 
   useEffect(() => {
+    if (activeRunLive || !idleHostRef.current) {
+      idleEntryRef.current?.dispose()
+      idleEntryRef.current = null
+      return
+    }
+    if (idleEntryRef.current) {
+      renderIdleTerminal()
+      return
+    }
+
+    const terminal = new Terminal({
+      cursorBlink: false,
+      disableStdin: true,
+      convertEol: true,
+      fontFamily: '"Cascadia Code", Consolas, "Courier New", monospace',
+      fontSize: 12,
+      theme: deriveTerminalPalette(idleHostRef.current).theme,
+    })
+    const fit = new FitAddon()
+    terminal.loadAddon(fit)
+    terminal.open(idleHostRef.current)
+    const resizeObserver = new ResizeObserver(() => renderIdleTerminal())
+    resizeObserver.observe(idleHostRef.current)
+
+    idleEntryRef.current = {
+      terminal,
+      fit,
+      dispose: () => {
+        resizeObserver.disconnect()
+        terminal.dispose()
+      },
+    }
+
+    renderIdleTerminal()
+  }, [activeRunLive, renderIdleTerminal])
+
+  useEffect(() => {
     const mountedRunIds = new Set<number>()
     for (const mountedRun of mountedRuns) {
       const runId = mountedRun.run.id
@@ -203,12 +288,7 @@ export function AgentRunTerminal({
         convertEol: true,
         fontFamily: '"Cascadia Code", Consolas, "Courier New", monospace',
         fontSize: 12,
-        theme: {
-          background: '#10120e',
-          foreground: '#d5dccd',
-          cursor: '#d5dccd',
-          selectionBackground: '#435038',
-        },
+        theme: deriveTerminalPalette(host, undefined).theme,
       })
       const fit = new FitAddon()
       terminal.loadAddon(fit)
@@ -237,6 +317,7 @@ export function AgentRunTerminal({
         },
       }
       terminalEntriesRef.current.set(runId, entry)
+      applyTerminalPalette(terminal, host, undefined)
       scheduleFitAndRefresh(runId)
     }
 
@@ -248,7 +329,28 @@ export function AgentRunTerminal({
   }, [mountedRuns, refreshTerminalPaint, scheduleFitAndRefresh])
 
   useEffect(() => {
-    const handleWindowResize = () => scheduleFitAndRefresh()
+    const root = document.documentElement
+    const syncThemes = () => {
+      const idleEntry = idleEntryRef.current
+      if (idleEntry) {
+        renderIdleTerminal()
+      }
+
+      for (const [runId, entry] of terminalEntriesRef.current.entries()) {
+        applyTerminalPalette(entry.terminal, hostRefs.current.get(runId) ?? null)
+        entry.terminal.refresh(0, Math.max(0, entry.terminal.rows - 1))
+      }
+    }
+
+    const observer = new MutationObserver(syncThemes)
+    observer.observe(root, { attributes: true, attributeFilter: ['style'] })
+    syncThemes()
+
+    return () => observer.disconnect()
+  }, [applyTerminalPalette, renderIdleTerminal])
+
+  useEffect(() => {
+    const handleWindowResize = () => scheduleFitAndRefreshRef.current()
     window.addEventListener('resize', handleWindowResize)
 
     return () => {
@@ -259,12 +361,14 @@ export function AgentRunTerminal({
         window.cancelAnimationFrame(secondFitFrameRef.current)
       }
       window.removeEventListener('resize', handleWindowResize)
+      idleEntryRef.current?.dispose()
+      idleEntryRef.current = null
       for (const entry of terminalEntriesRef.current.values()) {
         entry.dispose()
       }
       terminalEntriesRef.current.clear()
     }
-  }, [scheduleFitAndRefresh])
+  }, [])
 
   useEffect(() => {
     if (!menuOpen) return
@@ -338,11 +442,11 @@ export function AgentRunTerminal({
   useEffect(() => {
     if (drawerClosedAt) {
       scheduleFitAndRefresh()
-      if (activeRun) {
+      if (activeRun && activeRunLive) {
         terminalEntriesRef.current.get(activeRun.id)?.terminal.focus()
       }
     }
-  }, [drawerClosedAt, scheduleFitAndRefresh, activeRun])
+  }, [drawerClosedAt, scheduleFitAndRefresh, activeRun, activeRunLive])
 
   useEffect(() => {
     scheduleFitAndRefresh()
@@ -368,11 +472,14 @@ export function AgentRunTerminal({
   }, [])
 
   useEffect(() => {
-    if (!activeRun) return
+    if (!activeRun || !activeRunLive) {
+      renderIdleTerminal()
+      return
+    }
     scheduleFitAndRefresh(activeRun.id)
     nudgeTerminalHost(activeRun.id)
     terminalEntriesRef.current.get(activeRun.id)?.terminal.focus()
-  }, [activeRun?.id, activeRunLive, scheduleFitAndRefresh, nudgeTerminalHost])
+  }, [activeRun?.id, activeRunLive, scheduleFitAndRefresh, nudgeTerminalHost, renderIdleTerminal])
 
   const attachmentsWithRuns = tabs.filter((tab) => tab.run).length
   const activeTab = tabs.find((tab) => tab.key === activeTabKey) ?? null
@@ -455,29 +562,34 @@ export function AgentRunTerminal({
         </div>
       </div>
       <div className={styles['terminal-stack']}>
+        {!activeRunLive ? (
+          <div className={`${styles['terminal-host']} ${styles.active}`}>
+            <div
+              ref={idleHostRef}
+              className={styles['terminal-shell']}
+            />
+          </div>
+        ) : null}
         {mountedRuns.map(({ run }) =>
           run ? (
             <div
               key={run.id}
-              ref={(node) => {
-                if (node) {
-                  hostRefs.current.set(run.id, node)
-                } else {
-                  hostRefs.current.delete(run.id)
-                }
-              }}
-              className={`${styles['terminal-host']} ${run.id === activeRun?.id ? styles.active : styles.hidden}`}
-            />
+              className={`${styles['terminal-host']} ${run.id === activeRun?.id && activeRunLive ? styles.active : styles.hidden}`}
+            >
+              <div
+                ref={(node) => {
+                  if (node) {
+                    hostRefs.current.set(run.id, node)
+                  } else {
+                    hostRefs.current.delete(run.id)
+                  }
+                }}
+                className={styles['terminal-shell']}
+              />
+            </div>
           ) : null,
         )}
       </div>
-      {!activeRun ? (
-        <div className={styles['terminal-empty']}>
-          <SquareTerminal size={32} aria-hidden="true" />
-          <span>no active run</span>
-          <p>open the run menu to start or resume a session</p>
-        </div>
-      ) : null}
     </section>
   )
 
@@ -623,4 +735,148 @@ function resumeDisabledTitle(run: AgentRun | null, runLive: boolean | undefined,
   if (!run.providerSessionId) return 'no provider session - start a new run and let the agent register its session'
   if (runLive) return 'run is currently live - stop before resuming'
   return 'resume'
+}
+
+function drawIdleWordmark(terminal: Terminal, palette: TerminalPalette['idleArt']): void {
+  const art = terminal.cols >= 56
+    ? [
+        ['e', 'f', 'f', 'o', 'r', 't', 'l', 'e', 's', 's'].join(' '),
+        ['ee', 'ff', 'ff', 'oo', 'rr', 'tt', 'll', 'ee', 'ss', 'ss'].join(' '),
+        ['eee', 'fff', 'fff', 'ooo', 'rrr', 'ttt', 'lll', 'eee', 'sss', 'sss'].join(' '),
+        ['eeee', 'ffff', 'ffff', 'oooo', 'rrrr', 'tttt', 'llll', 'eeee', 'ssss', 'ssss'].join(' '),
+      ]
+    : terminal.cols >= 28
+      ? [
+          'effortless',
+          'effortless',
+          'effortless',
+        ]
+      : [
+          'effortless',
+        ]
+
+  const body = [
+    '',
+    ansiText(palette.top, centerLine(terminal.cols, art[0])),
+    ...(art[1]
+      ? [ansiText(palette.upper, centerLine(terminal.cols, art[1]))]
+      : []),
+    ...(art[2]
+      ? [ansiText(palette.lower, centerLine(terminal.cols, art[2]), true)]
+      : []),
+    ...(art[3]
+      ? [ansiText(palette.base, centerLine(terminal.cols, art[3]), true)]
+      : []),
+    '',
+    ansiText(palette.label, centerLine(terminal.cols, 'no live run')),
+    ansiText(palette.helper, centerLine(terminal.cols, 'open the run menu to start or resume a session')),
+  ]
+
+  const topPad = Math.max(0, Math.floor((terminal.rows - body.length) / 2))
+  const lines = [
+    ...Array.from({ length: topPad }, () => ''),
+    ...body,
+  ]
+
+  terminal.write('\x1b[?25l\x1b[2J\x1b[3J\x1b[H' + lines.join('\r\n'))
+}
+
+function centerLine(width: number, line: string): string {
+  const padding = Math.max(0, Math.floor((width - line.length) / 2))
+  return `${' '.repeat(padding)}${line}`
+}
+
+function deriveTerminalPalette(host: HTMLElement | null, cursorColor?: string): TerminalPalette {
+  const rootStyles = window.getComputedStyle(document.documentElement)
+  const hostStyles = host ? window.getComputedStyle(host) : rootStyles
+  const background = resolveTerminalBackground(hostStyles, rootStyles)
+  const foreground = readCssVar(rootStyles, '--text', '#d5dccd')
+  const strong = readCssVar(rootStyles, '--text-strong', foreground)
+  const muted = readCssVar(rootStyles, '--muted', foreground)
+  const accent = readCssVar(rootStyles, '--accent', strong)
+  const selectionBackground = rgbaString(mixColors(accent, strong, 0.28), 0.26)
+
+  return {
+    theme: {
+      background,
+      foreground,
+      cursor: cursorColor ?? strong,
+      selectionBackground,
+    },
+    idleArt: {
+      top: mixColors(muted, foreground, 0.34),
+      upper: foreground,
+      lower: mixColors(accent, foreground, 0.34),
+      base: accent,
+      label: strong,
+      helper: muted,
+    },
+  }
+}
+
+function readCssVar(styles: CSSStyleDeclaration, name: string, fallback: string): string {
+  const value = styles.getPropertyValue(name).trim()
+  return value || fallback
+}
+
+function resolveTerminalBackground(
+  hostStyles: CSSStyleDeclaration,
+  rootStyles: CSSStyleDeclaration,
+): string {
+  const hostBackground = hostStyles.backgroundColor.trim()
+  if (hostBackground && hostBackground !== 'transparent' && hostBackground !== 'rgba(0, 0, 0, 0)') {
+    return hostBackground
+  }
+  return readCssVar(rootStyles, '--field', '#10120e')
+}
+
+function ansiText(color: string, text: string, bold = false): string {
+  const [r, g, b] = parseColor(color)
+  const prefix = bold ? '\x1b[1;' : '\x1b['
+  return `${prefix}38;2;${r};${g};${b}m${text}\x1b[0m`
+}
+
+function mixColors(left: string, right: string, amount: number): string {
+  const [lr, lg, lb] = parseColor(left)
+  const [rr, rg, rb] = parseColor(right)
+  const weight = Math.min(1, Math.max(0, amount))
+  const inverse = 1 - weight
+  return `rgb(${Math.round(lr * inverse + rr * weight)} ${Math.round(lg * inverse + rg * weight)} ${Math.round(lb * inverse + rb * weight)})`
+}
+
+function rgbaString(color: string, alpha: number): string {
+  const [r, g, b] = parseColor(color)
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`
+}
+
+function parseColor(color: string): [number, number, number] {
+  const value = color.trim()
+  if (value.startsWith('#')) {
+    const hex = value.slice(1)
+    if (hex.length === 3) {
+      return [
+        Number.parseInt(hex[0] + hex[0], 16),
+        Number.parseInt(hex[1] + hex[1], 16),
+        Number.parseInt(hex[2] + hex[2], 16),
+      ]
+    }
+    if (hex.length >= 6) {
+      return [
+        Number.parseInt(hex.slice(0, 2), 16),
+        Number.parseInt(hex.slice(2, 4), 16),
+        Number.parseInt(hex.slice(4, 6), 16),
+      ]
+    }
+  }
+
+  const match = value.match(/rgba?\((\d+)[,\s]+(\d+)[,\s]+(\d+)/i)
+  if (match) {
+    return [
+      Number.parseInt(match[1], 10),
+      Number.parseInt(match[2], 10),
+      Number.parseInt(match[3], 10),
+    ]
+  }
+
+  return [213, 220, 205]
 }

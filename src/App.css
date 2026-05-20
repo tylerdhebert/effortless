@@ -141,6 +141,39 @@
 }
 
 .effort-surface {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.surface-panel {
+  position: absolute;
+  inset: 0;
+  min-width: 0;
+  min-height: 0;
+  display: none;
+}
+
+.surface-panel.active {
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.surface-panel.hidden {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.surface-panel:not(.active) {
+  display: none;
+}
+
+.surface-panel.active:not(.surface-panel--effort) {
+  display: block;
+}
+
+.surface-panel--effort {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   min-width: 0;

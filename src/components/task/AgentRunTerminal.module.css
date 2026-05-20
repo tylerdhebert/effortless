@@ -325,9 +325,18 @@
   overscroll-behavior: contain;
   border: 0;
   border-radius: 0;
-  background: #10120e;
-  padding: 10px 30px 12px;
+  background: var(--field);
   transition: height 160ms ease, padding 160ms ease;
+}
+
+.terminal-shell {
+  position: absolute;
+  top: 10px;
+  right: 0;
+  bottom: 12px;
+  left: 18px;
+  min-height: 0;
+  background: var(--field);
 }
 
 .terminal-stack {
@@ -355,39 +364,37 @@
 }
 
 .terminal-host :global(.xterm-viewport) {
+  background: var(--field);
+}
+
+.terminal-host :global(.xterm-scrollable-element) {
   overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color:
+    color-mix(in srgb, var(--accent) 44%, var(--text))
+    color-mix(in srgb, var(--line) 72%, transparent);
 }
 
-.terminal-empty {
-  position: absolute;
-  inset: 39px 0 0 0;
-  display: grid;
-  place-items: center;
-  align-content: center;
-  gap: 10px;
-  min-height: 0;
-  color: var(--muted);
-  background: #10120e;
-  user-select: none;
-  padding: 20px;
-  pointer-events: none;
+.terminal-host :global(.xterm-scrollable-element::-webkit-scrollbar) {
+  width: 7px;
 }
 
-.terminal-empty svg {
-  opacity: 0.48;
+.terminal-host :global(.xterm-scrollable-element::-webkit-scrollbar-track) {
+  background: color-mix(in srgb, var(--line) 70%, transparent);
+  border-left: 1px solid color-mix(in srgb, var(--accent) 10%, transparent);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 7%, transparent);
 }
 
-.terminal-empty span {
-  font-size: 0.82rem;
-  font-weight: 650;
-  color: var(--muted);
+.terminal-host :global(.xterm-scrollable-element::-webkit-scrollbar-thumb) {
+  background: color-mix(in srgb, var(--accent) 44%, var(--text));
+  border: 1px solid color-mix(in srgb, var(--surface) 58%, transparent);
+  border-radius: 999px;
+  box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 12%, transparent);
 }
 
-.terminal-empty p {
-  margin: 0;
-  font-size: 0.72rem;
-  color: var(--muted);
-  opacity: 0.7;
+.terminal-host :global(.xterm-scrollable-element::-webkit-scrollbar-thumb:hover) {
+  background: color-mix(in srgb, var(--accent) 56%, var(--text-strong));
 }
 
 @media (max-width: 960px) {
@@ -419,7 +426,5 @@
 
   .terminal-host {
     height: 460px;
-    padding-right: 18px;
-    padding-left: 18px;
   }
 }
