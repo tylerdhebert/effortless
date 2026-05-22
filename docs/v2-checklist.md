@@ -306,17 +306,18 @@ The core loop is:
 
 ## Phase 2O: Runner Reliability
 
-- [ ] Survive renderer reload while run process continues.
-- [ ] Reattach UI to running process after renderer reload.
-- [ ] Recover run list after app restart.
-- [ ] Mark orphaned running runs clearly on app start.
-- [ ] Add context file overwrite behavior for reruns.
-- [ ] Handle missing worktree paths.
-- [ ] Build verification: `bun run build`.
+- [x] Survive renderer reload while run process continues.
+- [x] Reattach UI to running process after renderer reload.
+- [x] Recover run list after app restart.
+- [x] Mark orphaned running runs clearly on app start.
+- [x] Add context file overwrite behavior for reruns.
+- [x] Handle missing worktree paths.
+- [x] Build verification: `bun run build`.
+- [x] Commit: `cbd443f feat: improve runner reliability across reloads and restarts`.
 
 ## Phase 2P: Documentation
 
-- [ ] Update README with single-agent runner workflow.
+- [x] Update README with single-agent runner workflow.
 - [ ] Document run profiles.
 - [ ] Document Windows profile setup.
 - [ ] Document WSL profile setup.
