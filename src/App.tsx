@@ -44,7 +44,7 @@ import { useRepoMutations } from './hooks/useRepoMutations'
 import { useReviewMutations } from './hooks/useReviewMutations'
 import { useTaskMutations } from './hooks/useTaskMutations'
 import { useNotifications } from './hooks/useNotifications'
-import type { AgentRun, Reference, Task } from '../core/types'
+import type { AgentRun, LiveAgentRunSession, Reference, Task } from '../core/types'
 import type { PendingNotification } from '../core/notifications'
 import './App.css'
 
@@ -75,6 +75,7 @@ function App() {
   const [customThemeActive, setCustomThemeActive] = useState(false)
   const [terminalStartSize, setTerminalStartSize] = useState(DEFAULT_TERMINAL_SIZE)
   const preserveSelectionOnEffortChangeRef = useRef(false)
+  const bootstrapLiveAttachmentIdsRef = useRef<Set<string> | null>(null)
 
   const effortsQuery = useQuery({
     queryKey: ['efforts'],
@@ -244,16 +245,31 @@ function App() {
     queryFn: () => window.effortless.listAgentRuns(),
   })
 
-  const activeProviderRunIdsQuery = useQuery({
-    queryKey: ['agent-runs', 'active-provider-ids'],
-    queryFn: () => window.effortless.listActiveProviderRunIds(),
+  const liveSessionsQuery = useQuery({
+    queryKey: ['agent-runs', 'live-sessions'],
+    queryFn: () => window.effortless.listLiveAgentRunSessions(),
     refetchInterval: 1000,
   })
 
-  const activeProviderRunIds = useMemo(
-    () => new Set(activeProviderRunIdsQuery.data ?? []),
-    [activeProviderRunIdsQuery.data],
+  const liveSessions = liveSessionsQuery.data ?? []
+  const liveSessionIds = useMemo(() => new Set(liveSessions.map((session) => session.runId)), [liveSessions])
+  const providerLiveRunIds = useMemo(
+    () => new Set(liveSessions.filter((session) => session.providerLive).map((session) => session.runId)),
+    [liveSessions],
   )
+  const liveSessionByRunId = useMemo(() => {
+    const byRunId = new Map<number, LiveAgentRunSession>()
+    for (const session of liveSessions) {
+      byRunId.set(session.runId, session)
+    }
+    return byRunId
+  }, [liveSessions])
+
+  useEffect(() => {
+    if (bootstrapLiveAttachmentIdsRef.current !== null) return
+    if (!liveSessionsQuery.isFetched) return
+    bootstrapLiveAttachmentIdsRef.current = new Set(liveSessions.map((session) => session.attachmentId))
+  }, [liveSessions, liveSessionsQuery.isFetched])
 
   const terminalTabs = useMemo(() => {
     const runs = effortRunsQuery.data ?? []
@@ -267,14 +283,16 @@ function App() {
     return Array.from(tabKeys).map((key) => {
       const tabRuns = runs.filter((run) => (run.terminalTabKey ?? 'main') === key)
       const run =
-        tabRuns.find((candidate) => activeProviderRunIds.has(candidate.id)) ??
+        tabRuns.find((candidate) => providerLiveRunIds.has(candidate.id)) ??
+        tabRuns.find((candidate) => liveSessionIds.has(candidate.id)) ??
         tabRuns[0] ??
         null
       return {
         key,
         label: terminalTabLabel(key),
         run,
-        runLive: run ? activeProviderRunIds.has(run.id) : false,
+        hasLiveSession: run ? liveSessionIds.has(run.id) : false,
+        providerLive: run ? providerLiveRunIds.has(run.id) : false,
         profileLabel: run
           ? profiles.find((profile) => profile.id === run.profileId)?.name ?? `profile-${run.profileId}`
           : null,
@@ -286,10 +304,11 @@ function App() {
       }
     })
   }, [
-    activeProviderRunIds,
     activeTerminalTabKey,
     effortRunsQuery.data,
     agentProfilesQuery.data,
+    liveSessionIds,
+    providerLiveRunIds,
     tasksQuery.data,
   ])
 
@@ -303,15 +322,29 @@ function App() {
     const tab = terminalTabs.find((candidate) => candidate.key === activeTerminalTabKey)
     return tab?.run ?? null
   }, [activeTerminalTabKey, terminalTabs])
-  const activeTerminalRunLive = activeTerminalRun ? activeProviderRunIds.has(activeTerminalRun.id) : false
+  const activeTerminalRunHasLiveSession = activeTerminalRun ? liveSessionIds.has(activeTerminalRun.id) : false
+  const activeTerminalRunProviderLive = activeTerminalRun ? providerLiveRunIds.has(activeTerminalRun.id) : false
   const mountedTerminalRuns = useMemo(() => {
-    const mounted = new Map<number, { run: AgentRun; runLive: boolean }>()
+    const mounted = new Map<number, {
+      run: AgentRun
+      hasLiveSession: boolean
+      providerLive: boolean
+      reattached: boolean
+      liveSession: LiveAgentRunSession | null
+    }>()
     for (const run of allRunsQuery.data ?? []) {
-      if (!activeProviderRunIds.has(run.id)) continue
-      mounted.set(run.id, { run, runLive: true })
+      const liveSession = liveSessionByRunId.get(run.id) ?? null
+      if (!liveSession) continue
+      mounted.set(run.id, {
+        run,
+        hasLiveSession: true,
+        providerLive: liveSession.providerLive,
+        reattached: Boolean(bootstrapLiveAttachmentIdsRef.current?.has(liveSession.attachmentId)),
+        liveSession,
+      })
     }
     return Array.from(mounted.values())
-  }, [allRunsQuery.data, activeProviderRunIds])
+  }, [allRunsQuery.data, liveSessionByRunId])
   const mainTerminalTab = terminalTabs.find((tab) => tab.key === 'main') ?? null
   const mainTerminalProfile = mainTerminalTab?.run
     ? agentProfilesQuery.data?.find((profile) => profile.id === mainTerminalTab.run?.profileId) ?? null
@@ -330,7 +363,7 @@ function App() {
   async function refreshAgentRunState(tabKey?: string | null) {
     setActiveTerminalTabKey(tabKey ?? 'main')
     await queryClient.invalidateQueries({ queryKey: ['agent-runs'] })
-    await queryClient.invalidateQueries({ queryKey: ['agent-runs', 'active-provider-ids'] })
+    await queryClient.invalidateQueries({ queryKey: ['agent-runs', 'live-sessions'] })
     await queryClient.invalidateQueries({ queryKey: ['app-state'] })
   }
 
@@ -492,7 +525,7 @@ function App() {
         (run) => (run.terminalTabKey ?? 'main') === 'main',
       )
       const liveMainRun =
-        mainRuns.find((run) => activeProviderRunIds.has(run.id)) ?? null
+        mainRuns.find((run) => providerLiveRunIds.has(run.id)) ?? null
       const latestMainRun = mainRuns[0] ?? null
       const prompt = buildTaskWorkPrompt(task)
       const requestedProfileId = profileId ?? selectedEffort.defaultProfileId ?? null
@@ -524,7 +557,7 @@ function App() {
       setActiveTerminalTabKey(run.terminalTabKey ?? 'main')
       setActiveEffortDrawer(null)
       await queryClient.invalidateQueries({ queryKey: ['agent-runs'] })
-      await queryClient.invalidateQueries({ queryKey: ['agent-runs', 'active-provider-ids'] })
+      await queryClient.invalidateQueries({ queryKey: ['agent-runs', 'live-sessions'] })
       await queryClient.invalidateQueries({ queryKey: ['app-state'] })
     },
   })
@@ -566,7 +599,7 @@ function App() {
     return window.effortless.onAgentRunTerminalEvent((event) => {
       if (event.kind !== 'exit' && event.kind !== 'error') return
       void queryClient.invalidateQueries({ queryKey: ['agent-runs'] })
-      void queryClient.invalidateQueries({ queryKey: ['agent-runs', 'active-provider-ids'] })
+      void queryClient.invalidateQueries({ queryKey: ['agent-runs', 'live-sessions'] })
       void queryClient.invalidateQueries({ queryKey: ['app-state'] })
       if (selectedEffort?.id) {
         void queryClient.invalidateQueries({ queryKey: ['tasks', selectedEffort.id] })
@@ -971,7 +1004,8 @@ function App() {
               <div className="terminal-first-canvas">
                 <AgentRunTerminal
                   activeRun={activeTerminalRun}
-                  activeRunLive={activeTerminalRunLive}
+                  activeRunHasLiveSession={activeTerminalRunHasLiveSession}
+                  activeRunProviderLive={activeTerminalRunProviderLive}
                   tabs={terminalTabs}
                   mountedRuns={mountedTerminalRuns}
                   activeTabKey={activeTerminalTabKey}
@@ -1182,7 +1216,7 @@ function App() {
                               repos={reposQuery.data ?? []}
                               profiles={agentProfilesQuery.data ?? []}
                               defaultProfileId={selectedEffort.defaultProfileId ?? effortDefaultProfile?.id ?? null}
-                              mainRunLive={Boolean(mainTerminalTab?.run && activeProviderRunIds.has(mainTerminalTab.run.id))}
+                              mainRunLive={Boolean(mainTerminalTab?.run && providerLiveRunIds.has(mainTerminalTab.run.id))}
                               reviews={reviewsQuery.data ?? []}
                               comments={commentsQuery.data ?? []}
                               latestBuild={buildQuery.data ?? null}

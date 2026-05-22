@@ -249,7 +249,21 @@ export type WorkSurface = 'effort' | 'plan' | 'task' | 'review' | 'run'
 export type MandateSourceType = 'body' | 'file'
 export type RunEnvironment = 'windows' | 'wsl'
 export type AgentRunPurpose = 'main' | 'fork' | 'side' | 'side-investigation' | 'implementation' | 'review'
-export type AgentRunStatus = 'prepared' | 'running' | 'exited' | 'failed' | 'cancelled'
+export type AgentRunStatus = 'prepared' | 'running' | 'orphaned' | 'exited' | 'failed' | 'cancelled'
+export type LiveAgentRunSession = {
+  attachmentId: string
+  runId: number
+  effortId: number
+  taskId: number | null
+  profileId: number
+  purpose: AgentRunPurpose
+  terminalTabKey: string | null
+  cwd: string
+  providerSessionId: string | null
+  providerLive: boolean
+  cols: number
+  rows: number
+}
 
 export type Mandate = {
   id: number

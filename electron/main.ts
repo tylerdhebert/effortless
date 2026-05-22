@@ -123,6 +123,12 @@ const runManager = new RunManager(db, (event) => {
 })
 let cliCommandServer: CliCommandServer | null = null
 
+function bootstrapRunManager(): void {
+  // This runs once on cold main-process startup before any BrowserWindow is created,
+  // so renderer reloads do not retrigger persisted-run reconciliation.
+  runManager.reconcilePersistedRunsOnStartup()
+}
+
 async function getRendererAppState() {
   const appState = getAppState(db)
   const customThemeState = await getCustomThemeState()
@@ -239,6 +245,7 @@ ipcMain.handle('agentRuns:markFailed', (_event, runId: number, error: string) =>
 ipcMain.handle('agentRuns:ptyStatus', () => getPtyRuntimeStatus())
 ipcMain.handle('agentRuns:activeIds', () => runManager.activeRunIds())
 ipcMain.handle('agentRuns:activeProviderIds', () => runManager.activeProviderRunIds())
+ipcMain.handle('agentRuns:liveSessions', () => runManager.liveSessions())
 ipcMain.handle('agentRuns:start', (_event, runId: number, size: { cols: number; rows: number }) =>
   runManager.start(runId, size),
 )
@@ -380,6 +387,7 @@ app.on('activate', () => {
 })
 
 app.whenReady().then(async () => {
+  bootstrapRunManager()
   cliCommandServer = await startCliCommandServer(db)
   createWindow()
 })

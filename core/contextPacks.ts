@@ -23,9 +23,8 @@ export async function writeTaskRunContext(
   task: Task,
   profile: AgentProfile,
 ): Promise<PreparedTaskRunContext> {
-  const paths = getRunPaths(run.shortRef)
+  const paths = await ensureRunDirectory(run.shortRef)
   const prompt = renderTaskBootstrap(db, run, task, profile)
-  await mkdir(paths.runDir, { recursive: true })
   return { ...paths, prompt }
 }
 
@@ -34,9 +33,8 @@ export async function writeEffortRunContext(
   run: AgentRun,
   profile: AgentProfile,
 ): Promise<PreparedTaskRunContext> {
-  const paths = getRunPaths(run.shortRef)
+  const paths = await ensureRunDirectory(run.shortRef)
   const prompt = renderEffortBootstrap(db, run, profile)
-  await mkdir(paths.runDir, { recursive: true })
   return { ...paths, prompt }
 }
 
@@ -45,6 +43,14 @@ export function getRunPaths(runRef: string): TaskRunPaths {
   return {
     runDir,
   }
+}
+
+// Each run gets its own run-n directory, so reruns keep isolated helper state.
+// This helper only ensures the directory exists, and later helper files should overwrite rather than append.
+async function ensureRunDirectory(runRef: string): Promise<TaskRunPaths> {
+  const paths = getRunPaths(runRef)
+  await mkdir(paths.runDir, { recursive: true })
+  return paths
 }
 
 function renderTaskContext(db: AppDatabase, task: Task): string {

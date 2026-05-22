@@ -20,6 +20,7 @@ import type {
   Effort,
   EffortTemplate,
   InputRequest,
+  LiveAgentRunSession,
   Mandate,
   Plan,
   ActivityEvent,
@@ -148,6 +149,7 @@ interface Window {
       getPtyRuntimeStatus: () => Promise<{ available: boolean; platform: NodeJS.Platform }>
       listActiveAgentRunIds: () => Promise<number[]>
       listActiveProviderRunIds: () => Promise<number[]>
+      listLiveAgentRunSessions: () => Promise<LiveAgentRunSession[]>
       startAgentRun: (runId: number, size: { cols: number; rows: number }) => Promise<void>
       writeAgentRun: (runId: number, data: string) => Promise<void>
       resizeAgentRun: (runId: number, size: { cols: number; rows: number }) => Promise<void>

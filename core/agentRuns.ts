@@ -75,6 +75,13 @@ export function listTaskRuns(db: AppDatabase, taskId: number): AgentRun[] {
     .map(mapAgentRun)
 }
 
+export function listRunningAgentRuns(db: AppDatabase): AgentRun[] {
+  return db
+    .prepare<AgentRunRow>(`SELECT * FROM agent_runs WHERE status = 'running' ORDER BY id DESC`)
+    .all()
+    .map(mapAgentRun)
+}
+
 export function getAgentRun(db: AppDatabase, runId: number): AgentRun {
   const row = db.prepare<AgentRunRow>(`SELECT * FROM agent_runs WHERE id = ?`).get(runId)
   if (!row) {
@@ -377,6 +384,26 @@ export function markAgentRunFailed(db: AppDatabase, runId: number, error: string
     WHERE id = ?
   `).run(error, now, now, runId)
   bumpAppState(db)
+  return getAgentRun(db, runId)
+}
+
+const ORPHANED_RUN_REASON =
+  'Run was marked running before app startup, but no live PTY session was restored.'
+
+export function markAgentRunOrphaned(db: AppDatabase, runId: number, reason = ORPHANED_RUN_REASON): AgentRun {
+  const now = new Date().toISOString()
+  const result = db.prepare(`
+    UPDATE agent_runs
+    SET status = 'orphaned',
+        error = ?,
+        completed_at = COALESCE(completed_at, ?),
+        updated_at = ?
+    WHERE id = ?
+      AND status = 'running'
+  `).run(reason, now, now, runId)
+  if (result.changes > 0) {
+    bumpAppState(db)
+  }
   return getAgentRun(db, runId)
 }
 

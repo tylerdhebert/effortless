@@ -3,12 +3,14 @@ import { FitAddon } from '@xterm/addon-fit'
 import { Terminal } from '@xterm/xterm'
 import '@xterm/xterm/css/xterm.css'
 import { ChevronDown, ExternalLink, Play, Plus, RotateCcw, Square, SquareTerminal } from 'lucide-react'
-import type { AgentRun } from '../../../core/types'
+import type { AgentRun, LiveAgentRunSession } from '../../../core/types'
 import styles from './AgentRunTerminal.module.css'
 
 type TerminalEntry = {
   terminal: Terminal
   fit: FitAddon
+  lastLiveSession: LiveAgentRunSession | null
+  reattachComplete: boolean
   dispose: () => void
 }
 
@@ -39,7 +41,8 @@ type TerminalTab = {
   key: string
   label: string
   run: AgentRun | null
-  runLive?: boolean
+  hasLiveSession?: boolean
+  providerLive?: boolean
   profileLabel?: string | null
   branchLabel?: string | null
   taskId?: number | null
@@ -48,7 +51,10 @@ type TerminalTab = {
 
 type MountedTerminalRun = {
   run: AgentRun
-  runLive: boolean
+  hasLiveSession: boolean
+  providerLive: boolean
+  reattached: boolean
+  liveSession: LiveAgentRunSession | null
 }
 
 type AgentRunTerminalProps = {
@@ -57,7 +63,8 @@ type AgentRunTerminalProps = {
   mountedRuns?: MountedTerminalRun[]
   activeTabKey?: string
   isStarting: boolean
-  activeRunLive?: boolean
+  activeRunHasLiveSession?: boolean
+  activeRunProviderLive?: boolean
   startDisabled?: boolean
   emptyLabel?: string
   menuOpen?: boolean
@@ -79,7 +86,8 @@ export function AgentRunTerminal({
   mountedRuns = [],
   activeTabKey,
   isStarting,
-  activeRunLive = false,
+  activeRunHasLiveSession = false,
+  activeRunProviderLive = false,
   startDisabled = false,
   emptyLabel = 'ready',
   menuOpen: menuOpenProp,
@@ -98,7 +106,12 @@ export function AgentRunTerminal({
   const terminalEntriesRef = useRef(new Map<number, TerminalEntry>())
   const idleHostRef = useRef<HTMLDivElement | null>(null)
   const idleEntryRef = useRef<IdleTerminalEntry | null>(null)
-  const runsByIdRef = useRef(new Map<number, { run: AgentRun; runLive: boolean }>())
+  const runsByIdRef = useRef(new Map<number, {
+    run: AgentRun
+    hasLiveSession: boolean
+    providerLive: boolean
+    liveSession: LiveAgentRunSession | null
+  }>())
   const menuRef = useRef<HTMLDivElement | null>(null)
   const menuRowRefs = useRef<Array<HTMLButtonElement | null>>([])
   const fitFrameRef = useRef<number | null>(null)
@@ -128,13 +141,23 @@ export function AgentRunTerminal({
   }
 
   useEffect(() => {
-    const next = new Map<number, { run: AgentRun; runLive: boolean }>()
+    const next = new Map<number, {
+      run: AgentRun
+      hasLiveSession: boolean
+      providerLive: boolean
+      liveSession: LiveAgentRunSession | null
+    }>()
     for (const mountedRun of mountedRuns) {
       next.set(mountedRun.run.id, mountedRun)
     }
     for (const tab of tabs) {
       if (tab.run) {
-        next.set(tab.run.id, { run: tab.run, runLive: Boolean(tab.runLive) })
+        next.set(tab.run.id, {
+          run: tab.run,
+          hasLiveSession: Boolean(tab.hasLiveSession),
+          providerLive: Boolean(tab.providerLive),
+          liveSession: next.get(tab.run.id)?.liveSession ?? null,
+        })
       }
     }
     runsByIdRef.current = next
@@ -177,7 +200,7 @@ export function AgentRunTerminal({
       queueViewportSync(entry)
 
       const target = runsByIdRef.current.get(targetRunId)
-      if (target?.run.status === 'running' && target.runLive) {
+      if (target?.hasLiveSession) {
         if (targetRunId === activeRun?.id) {
           onTerminalSizeChange?.({
             cols: entry.terminal.cols,
@@ -191,10 +214,10 @@ export function AgentRunTerminal({
       }
     }
 
-    if (runId == null && !activeRunLive) {
+    if (runId == null && !activeRunHasLiveSession) {
       renderIdleTerminal()
     }
-  }, [queueViewportSync, activeRun?.id, activeRunLive, renderIdleTerminal, onTerminalSizeChange])
+  }, [queueViewportSync, activeRun?.id, activeRunHasLiveSession, renderIdleTerminal, onTerminalSizeChange])
 
   const scheduleFitAndRefresh = useCallback((runId?: number) => {
     if (fitFrameRef.current != null) {
@@ -231,6 +254,33 @@ export function AgentRunTerminal({
     })
   }, [scheduleFitAndRefresh])
 
+  const triggerReattachPulse = useCallback((
+    runId: number,
+    entry: TerminalEntry,
+    liveSession: LiveAgentRunSession | null,
+  ) => {
+    if (!liveSession || entry.reattachComplete) return
+    // A real size pulse nudges TUIs to repaint their current screen into a fresh xterm.
+    // This preserves live interactivity without pretending to restore historical scrollback.
+    window.requestAnimationFrame(() => {
+      const currentEntry = terminalEntriesRef.current.get(runId)
+      if (!currentEntry || currentEntry !== entry || currentEntry.reattachComplete) return
+      const cols = currentEntry.terminal.cols || liveSession.cols
+      const rows = currentEntry.terminal.rows || liveSession.rows
+      const pulseSize = computeReattachPulseSize(cols, rows)
+      void window.effortless.resizeAgentRun(runId, pulseSize)
+      window.requestAnimationFrame(() => {
+        const settledEntry = terminalEntriesRef.current.get(runId)
+        if (!settledEntry || settledEntry !== currentEntry || settledEntry.reattachComplete) return
+        void window.effortless.resizeAgentRun(runId, { cols, rows })
+        settledEntry.terminal.refresh(0, Math.max(0, settledEntry.terminal.rows - 1))
+        queueViewportSync(settledEntry)
+        settledEntry.reattachComplete = true
+        scheduleFitAndRefreshRef.current(runId)
+      })
+    })
+  }, [queueViewportSync])
+
   const refreshTerminalPaint = useCallback((runId: number) => {
     const entry = terminalEntriesRef.current.get(runId)
     if (!entry) return
@@ -250,7 +300,7 @@ export function AgentRunTerminal({
   }, [queueViewportSync, scheduleFitAndRefresh])
 
   useEffect(() => {
-    if (activeRunLive || !idleHostRef.current) {
+    if (activeRunHasLiveSession || !idleHostRef.current) {
       idleEntryRef.current?.dispose()
       idleEntryRef.current = null
       return
@@ -284,14 +334,25 @@ export function AgentRunTerminal({
     }
 
     renderIdleTerminal()
-  }, [activeRunLive, renderIdleTerminal])
+  }, [activeRunHasLiveSession, renderIdleTerminal])
 
   useEffect(() => {
     const mountedRunIds = new Set<number>()
     for (const mountedRun of mountedRuns) {
       const runId = mountedRun.run.id
       mountedRunIds.add(runId)
-      if (terminalEntriesRef.current.has(runId)) continue
+      const existingEntry = terminalEntriesRef.current.get(runId)
+      if (existingEntry) {
+        const previousLiveSession = existingEntry.lastLiveSession
+        if (mountedRun.reattached && mountedRun.liveSession && !sameLiveSession(previousLiveSession, mountedRun.liveSession)) {
+          existingEntry.reattachComplete = false
+        }
+        existingEntry.lastLiveSession = mountedRun.liveSession
+        if (mountedRun.reattached) {
+          triggerReattachPulse(runId, existingEntry, mountedRun.liveSession)
+        }
+        continue
+      }
 
       const host = hostRefs.current.get(runId)
       if (!host) continue
@@ -310,7 +371,7 @@ export function AgentRunTerminal({
 
       const dataDisposable = terminal.onData((data) => {
         const target = runsByIdRef.current.get(runId)
-        if (target?.run.status === 'running' && target.runLive) {
+        if (target?.hasLiveSession) {
           void window.effortless.writeAgentRun(runId, data)
         }
       })
@@ -321,6 +382,8 @@ export function AgentRunTerminal({
       const entry: TerminalEntry = {
         terminal,
         fit,
+        lastLiveSession: mountedRun.liveSession,
+        reattachComplete: false,
         dispose: () => {
           resizeObserver.disconnect()
           writeParsedDisposable.dispose()
@@ -331,6 +394,11 @@ export function AgentRunTerminal({
       terminalEntriesRef.current.set(runId, entry)
       applyTerminalPalette(terminal, host, undefined)
       scheduleFitAndRefresh(runId)
+      if (mountedRun.reattached) {
+        triggerReattachPulse(runId, entry, mountedRun.liveSession)
+      } else {
+        entry.reattachComplete = true
+      }
     }
 
     for (const [runId, entry] of terminalEntriesRef.current.entries()) {
@@ -338,7 +406,7 @@ export function AgentRunTerminal({
       entry.dispose()
       terminalEntriesRef.current.delete(runId)
     }
-  }, [mountedRuns, refreshTerminalPaint, scheduleFitAndRefresh])
+  }, [mountedRuns, refreshTerminalPaint, scheduleFitAndRefresh, triggerReattachPulse])
 
   useEffect(() => {
     const root = document.documentElement
@@ -458,18 +526,17 @@ export function AgentRunTerminal({
   useEffect(() => {
     if (drawerClosedAt) {
       scheduleFitAndRefresh()
-      if (activeRun && activeRunLive) {
+      if (activeRun && activeRunHasLiveSession) {
         terminalEntriesRef.current.get(activeRun.id)?.terminal.focus()
       }
     }
-  }, [drawerClosedAt, scheduleFitAndRefresh, activeRun, activeRunLive])
+  }, [drawerClosedAt, scheduleFitAndRefresh, activeRun, activeRunHasLiveSession])
 
   useEffect(() => {
     scheduleFitAndRefresh()
   }, [menuOpen, scheduleFitAndRefresh])
 
-  const displayStatus =
-    activeRun?.status === 'running' && !activeRunLive ? 'stale' : activeRun?.status
+  const displayStatus = resolveRunStatus(activeRun, activeRunHasLiveSession, activeRunProviderLive)
 
   useEffect(() => {
     return window.effortless.onAgentRunTerminalEvent((event) => {
@@ -488,7 +555,7 @@ export function AgentRunTerminal({
   }, [])
 
   useEffect(() => {
-    if (!activeRun || !activeRunLive) {
+    if (!activeRun || !activeRunHasLiveSession) {
       for (const timer of settleTimerRefs.current) {
         window.clearTimeout(timer)
       }
@@ -513,7 +580,7 @@ export function AgentRunTerminal({
       }
       settleTimerRefs.current = []
     }
-  }, [activeRun?.id, activeRunLive, scheduleFitAndRefresh, nudgeTerminalHost, renderIdleTerminal])
+  }, [activeRun?.id, activeRunHasLiveSession, scheduleFitAndRefresh, nudgeTerminalHost, renderIdleTerminal])
 
   const attachmentsWithRuns = tabs.filter((tab) => tab.run).length
   const activeTab = tabs.find((tab) => tab.key === activeTabKey) ?? null
@@ -596,7 +663,7 @@ export function AgentRunTerminal({
         </div>
       </div>
       <div className={styles['terminal-stack']}>
-        {!activeRunLive ? (
+        {!activeRunHasLiveSession ? (
           <div className={`${styles['terminal-host']} ${styles.active}`}>
             <div
               ref={idleHostRef}
@@ -608,7 +675,7 @@ export function AgentRunTerminal({
           run ? (
             <div
               key={run.id}
-              className={`${styles['terminal-host']} ${run.id === activeRun?.id && activeRunLive ? styles.active : styles.hidden}`}
+              className={`${styles['terminal-host']} ${run.id === activeRun?.id && activeRunHasLiveSession ? styles.active : styles.hidden}`}
             >
               <div
                 ref={(node) => {
@@ -628,15 +695,15 @@ export function AgentRunTerminal({
   )
 
   function renderTerminalMenuRow(tab: TerminalTab, tabIndex: number) {
-    const status = resolveRunStatus(tab.run, Boolean(tab.runLive))
-    const canResume = Boolean(tab.run?.providerSessionId) && !tab.runLive && !isStarting
-    const canStop = Boolean(tab.run && tab.runLive && !isStarting)
+    const status = resolveRunStatus(tab.run, Boolean(tab.hasLiveSession), Boolean(tab.providerLive))
+    const canResume = Boolean(tab.run?.providerSessionId) && !tab.providerLive && !tab.hasLiveSession && !isStarting
+    const canStop = Boolean(tab.run && tab.hasLiveSession && !isStarting)
     const canStartMain = tab.key === 'main' && Boolean(onStart) && !isStarting && !startDisabled
     const canOpenTask = tab.key !== 'main' && tab.taskId != null && Boolean(onOpenTask)
-    const resumeTitle = resumeDisabledTitle(tab.run, Boolean(tab.runLive), isStarting)
+    const resumeTitle = resumeDisabledTitle(tab.run, Boolean(tab.providerLive || tab.hasLiveSession), isStarting)
     const stopTitle = tab.run
       ? !canStop
-        ? 'run is not currently live'
+        ? 'terminal session is not currently attached'
         : 'stop'
       : ''
     return (
@@ -746,10 +813,14 @@ function TerminalMenuSeparator({ label }: { label: string }) {
   )
 }
 
-function resolveRunStatus(run: AgentRun | null, runLive: boolean): string {
+function resolveRunStatus(
+  run: AgentRun | null,
+  hasLiveSession: boolean,
+  providerLive: boolean,
+): string {
   if (!run) return 'ready'
-  if (run.status === 'running' && !runLive) return 'stale'
-  if (runLive) return 'running'
+  if (providerLive) return 'running'
+  if (hasLiveSession) return 'stale'
   return run.status
 }
 
@@ -769,6 +840,30 @@ function resumeDisabledTitle(run: AgentRun | null, runLive: boolean | undefined,
   if (!run.providerSessionId) return 'no provider session - start a new run and let the agent register its session'
   if (runLive) return 'run is currently live - stop before resuming'
   return 'resume'
+}
+
+function sameLiveSession(left: LiveAgentRunSession | null, right: LiveAgentRunSession | null): boolean {
+  if (!left || !right) return left === right
+  return (
+    left.runId === right.runId &&
+    left.attachmentId === right.attachmentId
+  )
+}
+
+function computeReattachPulseSize(cols: number, rows: number): { cols: number; rows: number } {
+  if (rows > 2) {
+    return { cols, rows: rows - 1 }
+  }
+  if (rows === 2) {
+    return { cols, rows: 1 }
+  }
+  if (cols > 2) {
+    return { cols: cols - 1, rows }
+  }
+  if (cols === 2) {
+    return { cols: 1, rows }
+  }
+  return { cols, rows }
 }
 
 function drawIdleWordmark(terminal: Terminal, palette: TerminalPalette['idleArt']): void {

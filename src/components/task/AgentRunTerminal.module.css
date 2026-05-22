@@ -219,6 +219,11 @@
   box-shadow: 0 0 6px rgba(212, 168, 67, 0.5);
 }
 
+.menu-status-dot.orphaned {
+  background: #c58d54;
+  box-shadow: 0 0 6px rgba(197, 141, 84, 0.45);
+}
+
 .menu-status-dot.cancelled {
   background: #d47b73;
 }
@@ -243,6 +248,10 @@
 
 .menu-status-label.stale {
   color: #d4a843;
+}
+
+.menu-status-label.orphaned {
+  color: #c58d54;
 }
 
 .menu-status-label.cancelled {
