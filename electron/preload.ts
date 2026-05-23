@@ -4,6 +4,7 @@ import type {
   ApplyReviewInput,
   ApproveTaskInput,
   AgentProfile,
+  AgentProvider,
   AgentRun,
   CheckpointTaskInput,
   ClaimTaskInput,
@@ -102,6 +103,8 @@ contextBridge.exposeInMainWorld('effortless', {
     ipcRenderer.invoke('efforts:updateSummary', effortId, summary) as Promise<Effort>,
   updateEffortDefaultProfile: (effortId: number, profileId: number | null) =>
     ipcRenderer.invoke('efforts:updateDefaultProfile', effortId, profileId) as Promise<Effort>,
+  updateEffortDefaultProvider: (effortId: number, provider: AgentProvider) =>
+    ipcRenderer.invoke('efforts:updateDefaultProvider', effortId, provider) as Promise<Effort>,
   listTasks: (effortId: number) => ipcRenderer.invoke('tasks:list', effortId) as Promise<Task[]>,
   listAllTasks: () => ipcRenderer.invoke('tasks:listAll') as Promise<Task[]>,
   createTask: (input: CreateTaskInput) => ipcRenderer.invoke('tasks:create', input) as Promise<Task>,
@@ -155,6 +158,7 @@ contextBridge.exposeInMainWorld('effortless', {
     ipcRenderer.invoke('agentRuns:prepareEffort', input) as Promise<{
       run: AgentRun
       profile: AgentProfile
+      provider: AgentProvider
       env: Record<string, string>
     }>,
   prepareTaskRun: (input: PrepareTaskRunInput) =>
@@ -162,18 +166,21 @@ contextBridge.exposeInMainWorld('effortless', {
       run: AgentRun
       task: Task
       profile: AgentProfile
+      provider: AgentProvider
       env: Record<string, string>
     }>,
   prepareResumeRun: (input: PrepareResumeRunInput) =>
     ipcRenderer.invoke('agentRuns:prepareResume', input) as Promise<{
       run: AgentRun
       profile: AgentProfile
+      provider: AgentProvider
       env: Record<string, string>
     }>,
   prepareForkRun: (input: PrepareForkRunInput) =>
     ipcRenderer.invoke('agentRuns:prepareFork', input) as Promise<{
       run: AgentRun
       profile: AgentProfile
+      provider: AgentProvider
       env: Record<string, string>
     }>,
   markAgentRunStarted: (runId: number) =>

@@ -1,9 +1,8 @@
 import { resolveRelevantEffortRun, setAgentRunProviderSessionId } from '../../../core/agentRuns'
-import { getAgentProfile } from '../../../core/agentProfiles'
 import { getEffortByRef } from '../../../core/efforts'
 import { option } from '../args'
 import { db, resolveRunRef } from '../context'
-import { inferProvider, resolveProvider, resolveSessionId } from '../provider'
+import { resolveProvider, resolveSessionId } from '../provider'
 import type { Provider } from '../provider'
 import type { AgentRun } from '../../../core/types'
 
@@ -29,12 +28,11 @@ export async function handleSession(surface: string, command: string): Promise<b
       run = resolveRelevantEffortRun(db, effort.id)
     }
 
-    const profile = getAgentProfile(db, run.profileId)
     const provider: Provider = providerLabel
       ? resolveProvider(providerLabel)
-      : inferProvider(profile)
+      : run.provider
 
-    const sessionId = resolveSessionId(provider, explicitId)
+    const sessionId = resolveSessionId(run, explicitId, providerLabel ? provider : null)
     setAgentRunProviderSessionId(db, run.id, sessionId)
 
     console.log(`${run.shortRef} ${provider} session set`)
@@ -58,10 +56,7 @@ export async function handleSession(surface: string, command: string): Promise<b
       run = resolveRelevantEffortRun(db, effort.id)
     }
 
-    const profile = getAgentProfile(db, run.profileId)
-    const provider = inferProvider(profile)
-
-    console.log(`${run.shortRef} ${provider}`)
+    console.log(`${run.shortRef} ${run.provider}`)
     if (run.providerSessionId) {
       console.log(run.providerSessionId)
     } else {

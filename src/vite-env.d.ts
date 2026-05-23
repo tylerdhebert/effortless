@@ -5,6 +5,7 @@ import type {
   ApplyReviewInput,
   ApproveTaskInput,
   AgentProfile,
+  AgentProvider,
   AgentRun,
   CheckpointTaskInput,
   ClaimTaskInput,
@@ -91,6 +92,7 @@ interface Window {
       deleteEffort: (effortId: number) => Promise<void>
       updateEffortSummary: (effortId: number, summary: string) => Promise<Effort>
       updateEffortDefaultProfile: (effortId: number, profileId: number | null) => Promise<Effort>
+      updateEffortDefaultProvider: (effortId: number, provider: AgentProvider) => Promise<Effort>
       listTasks: (effortId: number) => Promise<Task[]>
       listAllTasks: () => Promise<Task[]>
       createTask: (input: CreateTaskInput) => Promise<Task>
@@ -125,22 +127,26 @@ interface Window {
       prepareEffortRun: (input: PrepareEffortRunInput) => Promise<{
         run: AgentRun
         profile: AgentProfile
+        provider: AgentProvider
         env: Record<string, string>
       }>
       prepareTaskRun: (input: PrepareTaskRunInput) => Promise<{
         run: AgentRun
         task: Task
         profile: AgentProfile
+        provider: AgentProvider
         env: Record<string, string>
       }>
       prepareResumeRun: (input: PrepareResumeRunInput) => Promise<{
         run: AgentRun
         profile: AgentProfile
+        provider: AgentProvider
         env: Record<string, string>
       }>
       prepareForkRun: (input: PrepareForkRunInput) => Promise<{
         run: AgentRun
         profile: AgentProfile
+        provider: AgentProvider
         env: Record<string, string>
       }>
       markAgentRunStarted: (runId: number) => Promise<AgentRun>

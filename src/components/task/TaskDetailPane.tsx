@@ -7,6 +7,7 @@ import { refractor as rawRefractor } from 'refractor'
 import { Play, Send } from 'lucide-react'
 import type {
   AgentProfile,
+  AgentProvider,
   Task,
   ActivityEvent,
   Repo,
@@ -16,6 +17,7 @@ import type {
   TaskCommitView,
   TaskConflictView,
 } from '../../../core/types'
+import { listAgentProviders } from '../../../core/agentProviders'
 import { CommentStream } from './CommentStream'
 import { ReviewHistory } from './ReviewHistory'
 import { ReviewRecord } from './ReviewRecord'
@@ -27,6 +29,7 @@ type TaskDetailPaneProps = {
   task: Task | null
   repos: Repo[]
   profiles: AgentProfile[]
+  defaultProvider: AgentProvider
   defaultProfileId: number | null
   mainRunLive: boolean
   reviews: Review[]
@@ -35,8 +38,8 @@ type TaskDetailPaneProps = {
   commitView: TaskCommitView | null
   conflictView: TaskConflictView | null
   onRunBuild: (taskId: number) => void
-  onWorkOnTask: (input: { task: Task; profileId: number | null }) => void
-  onStartTaskRun: (input: { task: Task; profileId: number | null }) => void
+  onWorkOnTask: (input: { task: Task; provider: AgentProvider; profileId: number | null }) => void
+  onStartTaskRun: (input: { task: Task; provider: AgentProvider; profileId: number | null }) => void
   onMergeTask: (taskId: number) => void
   onApplyReview: (reviewId: number) => void
   onRequestReviewChanges: (input: { reviewId: number; body: string }) => void
@@ -51,6 +54,7 @@ export function TaskDetailPane({
   task,
   repos,
   profiles,
+  defaultProvider,
   defaultProfileId,
   mainRunLive,
   reviews,
@@ -76,7 +80,9 @@ export function TaskDetailPane({
   const [diffViewType, setDiffViewType] = useState<ViewType>('unified')
   const [activeFilePath, setActiveFilePath] = useState<string | null>(null)
   const [launchTarget, setLaunchTarget] = useState<'main' | 'task'>('main')
+  const [launchProvider, setLaunchProvider] = useState<AgentProvider>(defaultProvider)
   const [launchProfileId, setLaunchProfileId] = useState<number | null>(defaultProfileId)
+  const providers = useMemo(() => listAgentProviders(), [])
 
   useEffect(() => {
     setSurfaceMode('meta')
@@ -84,8 +90,9 @@ export function TaskDetailPane({
 
   useEffect(() => {
     setLaunchTarget('main')
+    setLaunchProvider(defaultProvider)
     setLaunchProfileId(defaultProfileId ?? profiles[0]?.id ?? null)
-  }, [task?.id, defaultProfileId, profiles])
+  }, [task?.id, defaultProvider, defaultProfileId, profiles])
 
   const taskRepo = repos.find((repo) => repo.id === (task?.repoId ?? null)) ?? null
   const latestReview = reviews[0] ?? null
@@ -214,6 +221,18 @@ export function TaskDetailPane({
                 </select>
               </label>
               <label className={styles['task-launch-field']}>
+                <span>provider</span>
+                <select
+                  aria-label="task launch provider"
+                  value={launchProvider}
+                  onChange={(event) => setLaunchProvider(event.target.value as AgentProvider)}
+                >
+                  {providers.map((provider) => (
+                    <option key={provider.key} value={provider.key}>{provider.name}</option>
+                  ))}
+                </select>
+              </label>
+              <label className={styles['task-launch-field']}>
                 <span>profile</span>
                 <select
                   aria-label="task launch profile"
@@ -243,9 +262,9 @@ export function TaskDetailPane({
               onClick={() => {
                 const profileId = selectedProfile?.id ?? defaultProfileId ?? null
                 if (launchTarget === 'task') {
-                  onStartTaskRun({ task, profileId })
+                  onStartTaskRun({ task, provider: launchProvider, profileId })
                 } else {
-                  onWorkOnTask({ task, profileId })
+                  onWorkOnTask({ task, provider: launchProvider, profileId })
                 }
               }}
               disabled={isLaunchingTask || (launchTarget === 'task' && profiles.length === 0)}
@@ -280,7 +299,7 @@ export function TaskDetailPane({
         </div>
         {launchTarget === 'main' && mainRunLive ? (
           <p className={styles['task-launch-note']}>
-            main is already live, so this sends context into the current session without changing its profile.
+            main is already live, so this sends context into the current session without changing provider or profile.
           </p>
         ) : null}
       </div>
@@ -545,7 +564,7 @@ const DiffFile = memo(function DiffFile({ file, viewType }: { file: FileData; vi
       }
       return undefined
     }
-  }, [file.hunks, lang])
+  }, [file.hunks, filePath, lang])
 
   return (
     <div className={styles['diff-file']}>

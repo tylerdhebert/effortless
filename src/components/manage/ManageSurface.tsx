@@ -316,7 +316,7 @@ export function ManageSurface({
             <section className={`${styles['manage-panel']} ${styles['manage-panel-wide']}`}>
               <div className={styles['manage-panel-header']}>
                 <div>
-                  <h3>agent profiles</h3>
+                  <h3>environment profiles</h3>
                 </div>
               </div>
               <AgentProfileTab

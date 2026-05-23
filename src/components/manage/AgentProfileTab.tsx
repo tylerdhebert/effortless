@@ -1,11 +1,9 @@
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
 import { Plus } from 'lucide-react'
-import {
-  DEFAULT_AGENT_COMMAND_TEMPLATE,
-  DEFAULT_FORK_COMMAND_TEMPLATE,
-  type AgentProfile,
-  type CreateAgentProfileInput,
-  type UpdateAgentProfileInput,
+import type {
+  AgentProfile,
+  CreateAgentProfileInput,
+  UpdateAgentProfileInput,
 } from '../../../core/types'
 import { PathPicker } from '../ui/PathPicker'
 import styles from './AgentProfileTab.module.css'
@@ -27,8 +25,6 @@ export function AgentProfileTab({
 }: AgentProfileTabProps) {
   const [selectedProfileKey, setSelectedProfileKey] = useState<string>('new')
   const [name, setName] = useState('')
-  const [commandTemplate, setCommandTemplate] = useState(DEFAULT_AGENT_COMMAND_TEMPLATE)
-  const [forkCommandTemplate, setForkCommandTemplate] = useState(DEFAULT_FORK_COMMAND_TEMPLATE)
   const [environment, setEnvironment] = useState<'windows' | 'wsl'>('windows')
   const [wslDistro, setWslDistro] = useState('')
   const [defaultCwdKind, setDefaultCwdKind] = useState<AgentProfile['defaultCwdKind']>('task_worktree')
@@ -44,8 +40,6 @@ export function AgentProfileTab({
   useEffect(() => {
     if (selectedProfileKey === 'new') {
       setName('')
-      setCommandTemplate(DEFAULT_AGENT_COMMAND_TEMPLATE)
-      setForkCommandTemplate(DEFAULT_FORK_COMMAND_TEMPLATE)
       setEnvironment('windows')
       setWslDistro('')
       setDefaultCwdKind('task_worktree')
@@ -57,8 +51,6 @@ export function AgentProfileTab({
     if (!selectedProfile) return
 
     setName(selectedProfile.name)
-    setCommandTemplate(selectedProfile.commandTemplate)
-    setForkCommandTemplate(selectedProfile.forkCommandTemplate ?? '')
     setEnvironment(selectedProfile.environment)
     setWslDistro(selectedProfile.wslDistro ?? '')
     setDefaultCwdKind(selectedProfile.defaultCwdKind)
@@ -69,8 +61,6 @@ export function AgentProfileTab({
   const baseline = selectedProfile
     ? {
         name: selectedProfile.name,
-        commandTemplate: selectedProfile.commandTemplate,
-        forkCommandTemplate: selectedProfile.forkCommandTemplate ?? '',
         environment: selectedProfile.environment,
         wslDistro: selectedProfile.wslDistro ?? '',
         defaultCwdKind: selectedProfile.defaultCwdKind,
@@ -79,8 +69,6 @@ export function AgentProfileTab({
       }
     : {
         name: '',
-        commandTemplate: DEFAULT_AGENT_COMMAND_TEMPLATE,
-        forkCommandTemplate: DEFAULT_FORK_COMMAND_TEMPLATE,
         environment: 'windows',
         wslDistro: '',
         defaultCwdKind: 'task_worktree',
@@ -88,27 +76,17 @@ export function AgentProfileTab({
         envText: '',
       }
 
+  const invalidEnvLines = findInvalidEnvLines(envText)
   const dirty =
     name !== baseline.name ||
-    commandTemplate !== baseline.commandTemplate ||
-    forkCommandTemplate !== baseline.forkCommandTemplate ||
     environment !== baseline.environment ||
     wslDistro !== baseline.wslDistro ||
     defaultCwdKind !== baseline.defaultCwdKind ||
     customCwd !== baseline.customCwd ||
     envText !== baseline.envText
-
-  const unknownVariables = findUnknownTemplateVariables(commandTemplate)
-  const unknownForkVariables = findUnknownForkTemplateVariables(forkCommandTemplate)
-  const invalidEnvLines = findInvalidEnvLines(envText)
   const ready =
     name.trim().length > 0 &&
-    commandTemplate.trim().length > 0 &&
     (defaultCwdKind !== 'custom' || customCwd.trim().length > 0) &&
-    unknownVariables.length === 0 &&
-    unknownForkVariables.length === 0 &&
-    (!forkCommandTemplate.trim() || forkCommandTemplate.includes('{provider_session_id}')) &&
-    (!forkCommandTemplate.trim() || forkCommandTemplate.includes('{prompt}')) &&
     invalidEnvLines.length === 0
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -117,8 +95,6 @@ export function AgentProfileTab({
 
     const input = {
       name,
-      commandTemplate,
-      forkCommandTemplate: forkCommandTemplate.trim() || null,
       environment,
       wslDistro: environment === 'wsl' ? wslDistro || null : null,
       defaultCwdKind,
@@ -138,26 +114,6 @@ export function AgentProfileTab({
   function validateProfileDraft() {
     if (!name.trim()) {
       setValidationMessage('profile name is required')
-      return
-    }
-    if (!commandTemplate.trim()) {
-      setValidationMessage('command template is required')
-      return
-    }
-    if (unknownVariables.length > 0) {
-      setValidationMessage(`unknown command variable: ${unknownVariables.join(', ')}`)
-      return
-    }
-    if (unknownForkVariables.length > 0) {
-      setValidationMessage(`unknown fork variable: ${unknownForkVariables.join(', ')}`)
-      return
-    }
-    if (forkCommandTemplate.trim() && !forkCommandTemplate.includes('{provider_session_id}')) {
-      setValidationMessage('fork command needs {provider_session_id}')
-      return
-    }
-    if (forkCommandTemplate.trim() && !forkCommandTemplate.includes('{prompt}')) {
-      setValidationMessage('fork command needs {prompt}')
       return
     }
     if (defaultCwdKind === 'custom' && !customCwd.trim()) {
@@ -192,7 +148,7 @@ export function AgentProfileTab({
               type="button"
               className={`${styles.profileButton} ${selectedProfile?.id === profile.id ? styles.selected : ''}`}
               onClick={() => setSelectedProfileKey(String(profile.id))}
-              title={profile.commandTemplate}
+              title={`${profile.environment} ${profile.defaultCwdKind}`}
             >
               <span>
                 <strong>{profile.name}</strong>
@@ -200,7 +156,7 @@ export function AgentProfileTab({
               </span>
               <small>{profile.environment}{profile.wslDistro ? `/${profile.wslDistro}` : ''}</small>
               <small>env {Object.keys(profile.env).length}</small>
-              <p>{profile.commandTemplate}</p>
+              <p>{profile.defaultCwdKind}{profile.customCwd ? ` / ${profile.customCwd}` : ''}</p>
             </button>
           ))}
         </div>
@@ -224,33 +180,7 @@ export function AgentProfileTab({
 
         <label className={styles.field}>
           <span>name</span>
-          <input value={name} onChange={(event) => setName(event.target.value)} placeholder="default agent" />
-        </label>
-
-        <label className={styles.field}>
-          <span>command template</span>
-          <input value={commandTemplate} onChange={(event) => setCommandTemplate(event.target.value)} placeholder={DEFAULT_AGENT_COMMAND_TEMPLATE} />
-          {unknownVariables.length > 0 ? (
-            <small className={styles.error}>unknown variable: {unknownVariables.join(', ')}</small>
-          ) : null}
-        </label>
-
-        <label className={styles.field}>
-          <span>fork command template</span>
-          <input
-            value={forkCommandTemplate}
-            onChange={(event) => setForkCommandTemplate(event.target.value)}
-            placeholder={DEFAULT_FORK_COMMAND_TEMPLATE}
-          />
-          {unknownForkVariables.length > 0 ? (
-            <small className={styles.error}>unknown variable: {unknownForkVariables.join(', ')}</small>
-          ) : null}
-          {forkCommandTemplate.trim() && !forkCommandTemplate.includes('{provider_session_id}') ? (
-            <small className={styles.error}>requires {'{provider_session_id}'}</small>
-          ) : null}
-          {forkCommandTemplate.trim() && !forkCommandTemplate.includes('{prompt}') ? (
-            <small className={styles.error}>requires {'{prompt}'}</small>
-          ) : null}
+          <input value={name} onChange={(event) => setName(event.target.value)} placeholder="default environment" />
         </label>
 
         <div className={styles.row}>
@@ -311,17 +241,9 @@ export function AgentProfileTab({
           ) : null}
         </label>
 
-        <div className={styles.variables}>
-          <span>template variables</span>
-          <code>{'{prompt}'}</code>
-          <code>{'{effort_ref}'}</code>
-          <code>{'{task_ref}'}</code>
-          <code>{'{plan_ref}'}</code>
-          <code>{'{review_ref}'}</code>
-          <code>{'{worktree_path}'}</code>
-          <code>{'{repo_path}'}</code>
-          <code>{'{provider_session_id}'}</code>
-        </div>
+        <p className={styles.validation}>
+          providers are built into effortless. profiles only control where and how a provider process launches.
+        </p>
 
         {validationMessage ? <p className={styles.validation}>{validationMessage}</p> : null}
       </form>
@@ -358,42 +280,4 @@ function findInvalidEnvLines(value: string): string[] {
     .map((line, index) => ({ line: line.trim(), index: index + 1 }))
     .filter(({ line }) => line.length > 0 && !/^[A-Za-z_][A-Za-z0-9_]*=.*/.test(line))
     .map(({ index }) => String(index))
-}
-
-const TEMPLATE_VARIABLES = new Set([
-  'prompt',
-  'effort_ref',
-  'task_ref',
-  'plan_ref',
-  'review_ref',
-  'worktree_path',
-  'repo_path',
-])
-
-const FORK_TEMPLATE_VARIABLES = new Set([
-  'provider_session_id',
-  'prompt',
-  'effort_ref',
-  'task_ref',
-  'plan_ref',
-  'review_ref',
-  'worktree_path',
-  'repo_path',
-])
-
-function findUnknownTemplateVariables(value: string): string[] {
-  return findUnknownVariables(value, TEMPLATE_VARIABLES)
-}
-
-function findUnknownForkTemplateVariables(value: string): string[] {
-  return findUnknownVariables(value, FORK_TEMPLATE_VARIABLES)
-}
-
-function findUnknownVariables(value: string, allowed: Set<string>): string[] {
-  const matches = value.matchAll(/\{([^}]+)\}/g)
-  return Array.from(new Set(
-    Array.from(matches)
-      .map((match) => match[1])
-      .filter((name) => !allowed.has(name)),
-  ))
 }

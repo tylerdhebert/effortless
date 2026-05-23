@@ -48,7 +48,7 @@ export function EffortCreationForm({ isPending, onSubmit }: EffortCreationFormPr
           <button
             key={option.value}
             type="button"
-            className={`${styles['template-option']} ${template === option.value ? styles.selected : !!template ? styles.deemphasized : ''}`}
+            className={`${styles['template-option']} ${template === option.value ? styles.selected : template ? styles.deemphasized : ''}`}
             onClick={() => {
               setTemplate(option.value)
             }}

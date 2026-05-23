@@ -255,7 +255,7 @@ export function PillSwitcher<T extends string>({
         handoffTimerRef.current = null
       }
     }
-  }, [idx, segmentWidth]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [idx, segmentWidth])
 
   function handlePillTransitionEnd(event: TransitionEvent<HTMLDivElement>) {
     if (event.target !== event.currentTarget || event.propertyName !== 'width') return

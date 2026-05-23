@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { FitAddon } from '@xterm/addon-fit'
 import { Terminal } from '@xterm/xterm'
 import '@xterm/xterm/css/xterm.css'
@@ -12,6 +12,14 @@ type TerminalEntry = {
   lastLiveSession: LiveAgentRunSession | null
   reattachComplete: boolean
   dispose: () => void
+}
+
+type XtermViewportInternals = {
+  _core?: {
+    _viewport?: {
+      queueSync?: () => void
+    }
+  }
 }
 
 type IdleTerminalEntry = {
@@ -123,14 +131,14 @@ export function AgentRunTerminal({
 
   const menuOpen = menuOpenProp ?? menuOpenInternal
 
-  function closeMenu() {
+  const closeMenu = useCallback(() => {
     if (menuOpenProp !== undefined) {
       onToggleMenu?.(false)
     } else {
       setMenuOpenInternal(false)
     }
     setFocusedMenuIndex(-1)
-  }
+  }, [menuOpenProp, onToggleMenu])
 
   function openMenu() {
     if (menuOpenProp !== undefined) {
@@ -164,7 +172,7 @@ export function AgentRunTerminal({
   }, [mountedRuns, tabs])
 
   const queueViewportSync = useCallback((entry: TerminalEntry) => {
-    const viewport = (entry.terminal as any)._core?._viewport
+    const viewport = (entry.terminal as unknown as XtermViewportInternals)._core?._viewport
     viewport?.queueSync?.()
   }, [])
 
@@ -406,7 +414,7 @@ export function AgentRunTerminal({
       entry.dispose()
       terminalEntriesRef.current.delete(runId)
     }
-  }, [mountedRuns, refreshTerminalPaint, scheduleFitAndRefresh, triggerReattachPulse])
+  }, [applyTerminalPalette, mountedRuns, refreshTerminalPaint, scheduleFitAndRefresh, triggerReattachPulse])
 
   useEffect(() => {
     const root = document.documentElement
@@ -430,6 +438,7 @@ export function AgentRunTerminal({
   }, [applyTerminalPalette, renderIdleTerminal])
 
   useEffect(() => {
+    const terminalEntries = terminalEntriesRef.current
     const handleWindowResize = () => scheduleFitAndRefreshRef.current()
     window.addEventListener('resize', handleWindowResize)
 
@@ -447,10 +456,10 @@ export function AgentRunTerminal({
         window.clearTimeout(timer)
       }
       settleTimerRefs.current = []
-      for (const entry of terminalEntriesRef.current.values()) {
+      for (const entry of terminalEntries.values()) {
         entry.dispose()
       }
-      terminalEntriesRef.current.clear()
+      terminalEntries.clear()
     }
   }, [])
 
@@ -465,16 +474,23 @@ export function AgentRunTerminal({
 
     window.addEventListener('mousedown', handlePointerDown)
     return () => window.removeEventListener('mousedown', handlePointerDown)
-  }, [menuOpen])
+  }, [closeMenu, menuOpen])
 
-  const mainTab = tabs.find((tab) => tab.key === 'main') ?? null
-  const forkTabs = tabs.filter((tab) => tab.key !== 'main' && tab.purpose === 'fork')
-  const otherTabs = tabs.filter((tab) => tab.key !== 'main' && tab.purpose !== 'fork')
-  const orderedMenuTabs = [
-    ...(mainTab ? [mainTab] : []),
-    ...forkTabs,
-    ...otherTabs,
-  ]
+  const { mainTab, forkTabs, otherTabs, orderedMenuTabs } = useMemo(() => {
+    const mainTab = tabs.find((tab) => tab.key === 'main') ?? null
+    const forkTabs = tabs.filter((tab) => tab.key !== 'main' && tab.purpose === 'fork')
+    const otherTabs = tabs.filter((tab) => tab.key !== 'main' && tab.purpose !== 'fork')
+    return {
+      mainTab,
+      forkTabs,
+      otherTabs,
+      orderedMenuTabs: [
+        ...(mainTab ? [mainTab] : []),
+        ...forkTabs,
+        ...otherTabs,
+      ],
+    }
+  }, [tabs])
 
   useEffect(() => {
     if (!menuOpen) return
@@ -515,7 +531,7 @@ export function AgentRunTerminal({
 
     window.addEventListener('keydown', handleMenuKeydown, true)
     return () => window.removeEventListener('keydown', handleMenuKeydown, true)
-  }, [menuOpen, focusedMenuIndex, orderedMenuTabs, onSelectTab])
+  }, [activeRun, closeMenu, focusedMenuIndex, menuOpen, orderedMenuTabs, onSelectTab])
 
   useEffect(() => {
     if (focusedMenuIndex >= 0) {
@@ -536,6 +552,7 @@ export function AgentRunTerminal({
     scheduleFitAndRefresh()
   }, [menuOpen, scheduleFitAndRefresh])
 
+  const activeRunId = activeRun?.id ?? null
   const displayStatus = resolveRunStatus(activeRun, activeRunHasLiveSession, activeRunProviderLive)
 
   useEffect(() => {
@@ -555,7 +572,7 @@ export function AgentRunTerminal({
   }, [])
 
   useEffect(() => {
-    if (!activeRun || !activeRunHasLiveSession) {
+    if (!activeRunId || !activeRunHasLiveSession) {
       for (const timer of settleTimerRefs.current) {
         window.clearTimeout(timer)
       }
@@ -563,15 +580,15 @@ export function AgentRunTerminal({
       renderIdleTerminal()
       return
     }
-    scheduleFitAndRefresh(activeRun.id)
-    nudgeTerminalHost(activeRun.id)
-    terminalEntriesRef.current.get(activeRun.id)?.terminal.focus()
+    scheduleFitAndRefresh(activeRunId)
+    nudgeTerminalHost(activeRunId)
+    terminalEntriesRef.current.get(activeRunId)?.terminal.focus()
     for (const timer of settleTimerRefs.current) {
       window.clearTimeout(timer)
     }
     settleTimerRefs.current = [40, 120, 260, 520].map((delayMs) =>
       window.setTimeout(() => {
-        scheduleFitAndRefreshRef.current(activeRun.id)
+        scheduleFitAndRefreshRef.current(activeRunId)
       }, delayMs),
     )
     return () => {
@@ -580,7 +597,7 @@ export function AgentRunTerminal({
       }
       settleTimerRefs.current = []
     }
-  }, [activeRun?.id, activeRunHasLiveSession, scheduleFitAndRefresh, nudgeTerminalHost, renderIdleTerminal])
+  }, [activeRunId, activeRunHasLiveSession, scheduleFitAndRefresh, nudgeTerminalHost, renderIdleTerminal])
 
   const attachmentsWithRuns = tabs.filter((tab) => tab.run).length
   const activeTab = tabs.find((tab) => tab.key === activeTabKey) ?? null

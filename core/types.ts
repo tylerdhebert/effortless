@@ -1,8 +1,5 @@
 export type EffortTemplate = 'bugfix' | 'delivery' | 'investigation'
 
-export const DEFAULT_AGENT_COMMAND_TEMPLATE = 'codex {prompt}'
-export const DEFAULT_FORK_COMMAND_TEMPLATE = 'codex resume {provider_session_id} {prompt}'
-
 export type EffortStatus = 'active' | 'complete' | 'archived'
 
 export type TaskStatus =
@@ -37,6 +34,7 @@ export type Effort = {
   title: string
   description: string
   template: EffortTemplate
+  defaultProvider: AgentProvider
   defaultProfileId: number | null
   acceptedPlanId: number | null
   status: EffortStatus
@@ -146,6 +144,7 @@ export type CreateEffortInput = {
   title: string
   description: string
   template: EffortTemplate
+  defaultProvider?: AgentProvider | null
   defaultProfileId?: number | null
 }
 
@@ -248,6 +247,7 @@ export type UpdateRepoInput = {
 export type WorkSurface = 'effort' | 'plan' | 'task' | 'review' | 'run'
 export type MandateSourceType = 'body' | 'file'
 export type RunEnvironment = 'windows' | 'wsl'
+export type AgentProvider = 'codex' | 'claude' | 'opencode' | 'cursor' | 'copilot'
 export type AgentRunPurpose = 'main' | 'fork' | 'side' | 'side-investigation' | 'implementation' | 'review'
 export type AgentRunStatus = 'prepared' | 'running' | 'orphaned' | 'exited' | 'failed' | 'cancelled'
 export type LiveAgentRunSession = {
@@ -256,6 +256,7 @@ export type LiveAgentRunSession = {
   effortId: number
   taskId: number | null
   profileId: number
+  provider: AgentProvider
   purpose: AgentRunPurpose
   terminalTabKey: string | null
   cwd: string
@@ -308,8 +309,6 @@ export type AgentProfile = {
   id: number
   shortRef: string
   name: string
-  commandTemplate: string
-  forkCommandTemplate: string | null
   environment: RunEnvironment
   wslDistro: string | null
   defaultCwdKind: 'task_worktree' | 'repo_root' | 'custom'
@@ -321,8 +320,6 @@ export type AgentProfile = {
 
 export type CreateAgentProfileInput = {
   name: string
-  commandTemplate: string
-  forkCommandTemplate?: string | null
   environment?: RunEnvironment
   wslDistro?: string | null
   defaultCwdKind?: AgentProfile['defaultCwdKind']
@@ -340,6 +337,7 @@ export type AgentRun = {
   effortId: number
   taskId: number | null
   profileId: number
+  provider: AgentProvider
   purpose: AgentRunPurpose
   label: string
   status: AgentRunStatus
@@ -358,6 +356,7 @@ export type AgentRun = {
 
 export type PrepareTaskRunInput = {
   taskId: number
+  provider?: AgentProvider | null
   profileId?: number | null
   purpose?: AgentRunPurpose
   label?: string
@@ -365,6 +364,7 @@ export type PrepareTaskRunInput = {
 
 export type PrepareEffortRunInput = {
   effortId: number
+  provider?: AgentProvider | null
   profileId?: number | null
   purpose?: AgentRunPurpose
   label?: string

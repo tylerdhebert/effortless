@@ -162,6 +162,7 @@ export class RunManager {
         effortId: run.effortId,
         taskId: run.taskId,
         profileId: run.profileId,
+        provider: run.provider,
         purpose: run.purpose,
         terminalTabKey: run.terminalTabKey,
         cwd: run.cwd,

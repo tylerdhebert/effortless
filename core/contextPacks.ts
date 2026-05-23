@@ -1,5 +1,6 @@
 import { mkdir } from 'node:fs/promises'
 import path from 'node:path'
+import { getAgentProviderConfig } from './agentProviders'
 import { getAppPaths } from './appPaths'
 import type { AppDatabase } from './db'
 import { getEffort } from './efforts'
@@ -151,9 +152,7 @@ function renderTaskBootstrap(
   const effort = getEffort(db, task.effortId)
   const cwd = commandPath(profile, run.cwd)
   const context = renderTaskContext(db, task)
-  const sessionHint = profile.commandTemplate.toLowerCase().includes('codex')
-    ? `First, run: efl session set --run ${run.shortRef}\n\n`
-    : ''
+  const sessionHint = renderSessionHint(run)
   return `# Effortless Run Bootstrap
 
 You are running inside Effortless.
@@ -163,12 +162,16 @@ Current run:
 - run: ${run.shortRef}
 - label: ${run.label}
 - purpose: ${run.purpose}
+- provider: ${getAgentProviderConfig(run.provider).name}
 - profile: ${profile.shortRef} ${profile.name}
 - effort: ${effort.shortRef}
 - task: ${task.shortRef}
 - cwd: ${cwd}
+- created_at: ${run.createdAt}
 
-${sessionHint}Use Effortless CLI updates as durable state:
+${sessionHint}
+
+Use Effortless CLI updates as durable state:
 
 - efl task checkpoint --task ${task.shortRef} --body "..."
 - efl task artifact --task ${task.shortRef} --body "..."
@@ -192,9 +195,7 @@ function renderEffortBootstrap(
   const effort = getEffort(db, run.effortId)
   const cwd = commandPath(profile, run.cwd)
   const context = renderEffortContext(db, run.effortId)
-  const sessionHint = profile.commandTemplate.toLowerCase().includes('codex')
-    ? `First, run: efl session set --run ${run.shortRef}\n\n`
-    : ''
+  const sessionHint = renderSessionHint(run)
   return `# Effortless Main Run Bootstrap
 
 You are running inside Effortless as the main agent for this effort.
@@ -204,11 +205,15 @@ Current run:
 - run: ${run.shortRef}
 - label: ${run.label}
 - purpose: ${run.purpose}
+- provider: ${getAgentProviderConfig(run.provider).name}
 - profile: ${profile.shortRef} ${profile.name}
 - effort: ${effort.shortRef}
 - cwd: ${cwd}
+- created_at: ${run.createdAt}
 
-${sessionHint}Use Effortless CLI updates as durable state. When the user asks you to focus on a task, use its task ref in CLI commands.
+${sessionHint}
+
+Use Effortless CLI updates as durable state. When the user asks you to focus on a task, use its task ref in CLI commands.
 
 Useful commands:
 
@@ -228,6 +233,14 @@ ${context}
 function commandPath(profile: AgentProfile, filePath: string): string {
   if (profile.environment !== 'wsl') return filePath
   return toWslPath(filePath)
+}
+
+function renderSessionHint(run: AgentRun): string {
+  const config = getAgentProviderConfig(run.provider)
+  if (config.preseedSessionId && run.providerSessionId) {
+    return `Effortless pre-registered this provider session id: ${run.providerSessionId}`
+  }
+  return config.sessionHint.replace('{run_ref}', run.shortRef)
 }
 
 function toWslPath(filePath: string): string {

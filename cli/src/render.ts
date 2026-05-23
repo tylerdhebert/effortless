@@ -1,3 +1,4 @@
+import type { AgentProviderConfig } from '../../core/agentProviders'
 import type { AgentProfile, AgentRun, InputRequest, Mandate, Plan, Reference, Repo, Review, Task } from '../../core/types'
 import type { runTaskBuild } from '../../core/builds'
 
@@ -76,7 +77,6 @@ export function printAgentProfile(profile: AgentProfile): void {
   console.log('')
   console.log(`  environment  ${profile.environment}${profile.wslDistro ? `/${profile.wslDistro}` : ''}`)
   console.log(`  cwd          ${profile.defaultCwdKind}${profile.customCwd ? ` ${profile.customCwd}` : ''}`)
-  console.log(`  command      ${profile.commandTemplate}`)
   if (Object.keys(profile.env).length > 0) {
     console.log('  env')
     for (const [name, value] of Object.entries(profile.env)) {
@@ -86,8 +86,19 @@ export function printAgentProfile(profile: AgentProfile): void {
   console.log('')
 }
 
+export function printAgentProvider(provider: AgentProviderConfig): void {
+  console.log(`${provider.key}  ${provider.name}`)
+  console.log(`  command  ${provider.commandTemplate}`)
+  console.log(`  resume   ${provider.resumeCommandTemplate}`)
+  if (provider.forkCommandTemplate) {
+    console.log(`  fork     ${provider.forkCommandTemplate}`)
+  }
+  console.log('')
+}
+
 export function printAgentRun(run: AgentRun): void {
   console.log(`${run.shortRef} ${run.status} ${run.purpose} ${run.label}`)
+  console.log(`provider ${run.provider}`)
   console.log(`task ${run.taskId ?? 'none'}`)
   console.log(`cwd ${run.cwd}`)
   console.log(`command ${run.command || '(not expanded)'}`)
@@ -122,14 +133,15 @@ export function printHelp(): void {
   console.log('efl task ready --task task-1')
   console.log('efl task merge --task task-1')
   console.log('efl task worktree --task task-1')
+  console.log('efl run providers')
   console.log('efl run profiles')
-  console.log('efl run prepare --effort eff-1 [--profile 1] [--label main]')
-  console.log('efl run prepare --task task-1 [--profile 1] [--label task-focus]')
+  console.log('efl run prepare --effort eff-1 [--provider codex] [--profile 1] [--label main]')
+  console.log('efl run prepare --task task-1 [--provider codex] [--profile 1] [--label task-focus]')
   console.log('efl run list [--task task-1]')
   console.log('efl run show --run run-1')
   console.log('efl run env --run run-1')
-  console.log('efl session set --run run-1 [--id <session-id>] [--provider codex]')
-  console.log('efl session set --effort eff-1 [--id <session-id>] [--provider codex]')
+  console.log('efl session set --run run-1 [--id <session-id>]')
+  console.log('efl session set --effort eff-1 [--id <session-id>]')
   console.log('efl session show --run run-1')
   console.log('efl session show --effort eff-1')
   console.log('efl resume --run run-1')

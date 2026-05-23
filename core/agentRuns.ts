@@ -1,6 +1,12 @@
 import type { AppDatabase } from './db'
 import { bumpAppState } from './db'
+import { randomUUID } from 'node:crypto'
 import { getAgentProfile, getDefaultAgentProfile } from './agentProfiles'
+import {
+  getAgentProviderConfig,
+  parseAgentProvider,
+  resolveProviderCommandTemplate,
+} from './agentProviders'
 import { writeEffortRunContext, writeTaskRunContext } from './contextPacks'
 import { getEffort } from './efforts'
 import { getRepo } from './repos'
@@ -8,6 +14,7 @@ import { listRepos } from './repos'
 import { ensureTaskWorktree, getTask, listTasks, updateTaskStatus } from './tasks'
 import type {
   AgentProfile,
+  AgentProvider,
   AgentRun,
   AgentRunPurpose,
   AgentRunStatus,
@@ -25,6 +32,7 @@ type AgentRunRow = {
   effort_id: number
   task_id: number | null
   profile_id: number
+  provider: AgentProvider
   purpose: AgentRunPurpose
   label: string
   status: AgentRunStatus
@@ -45,18 +53,21 @@ export type PreparedTaskRun = {
   run: AgentRun
   task: Task
   profile: AgentProfile
+  provider: AgentProvider
   env: Record<string, string>
 }
 
 export type PreparedEffortRun = {
   run: AgentRun
   profile: AgentProfile
+  provider: AgentProvider
   env: Record<string, string>
 }
 
 export type PreparedResumeRun = {
   run: AgentRun
   profile: AgentProfile
+  provider: AgentProvider
   env: Record<string, string>
 }
 
@@ -102,8 +113,11 @@ export async function prepareTaskRun(db: AppDatabase, input: PrepareTaskRunInput
       : effort.defaultProfileId != null
         ? getAgentProfile(db, effort.defaultProfileId)
         : getDefaultAgentProfile(db)
+  const provider = parseAgentProvider(input.provider ?? effort.defaultProvider)
+  const providerConfig = getAgentProviderConfig(provider)
   const cwd = resolveTaskRunCwd(db, task, profile)
   const now = new Date().toISOString()
+  const providerSessionId = providerConfig.preseedSessionId ? randomUUID() : null
   const purpose = input.purpose ?? 'implementation'
   const label = input.label?.trim() || `${purpose}-${Date.now()}`
 
@@ -111,11 +125,13 @@ export async function prepareTaskRun(db: AppDatabase, input: PrepareTaskRunInput
     effortId: effort.id,
     taskId: task.id,
     profileId: profile.id,
+    provider,
     purpose,
     label,
     environment: profile.environment,
     cwd,
     terminalTabKey: resolveTaskRunTerminalTabKey(purpose, task.shortRef),
+    providerSessionId,
     now,
   })
 
@@ -127,7 +143,8 @@ export async function prepareTaskRun(db: AppDatabase, input: PrepareTaskRunInput
   let command: string
   try {
     paths = await writeTaskRunContext(db, run, task, profile)
-    command = expandCommand(profile.commandTemplate, {
+    command = expandCommand(resolveStartCommand(provider, profile), {
+      provider_session_id: shellQuote(providerSessionId ?? '', profile.environment),
       prompt: shellQuote(paths.prompt, profile.environment),
       effort_ref: effort.shortRef,
       task_ref: task.shortRef,
@@ -136,9 +153,6 @@ export async function prepareTaskRun(db: AppDatabase, input: PrepareTaskRunInput
       worktree_path: commandPath(task.worktreePath ?? '', profile.environment),
       repo_path: commandPath(task.repoId ? getRepo(db, task.repoId).path : '', profile.environment),
     })
-    if (command === profile.commandTemplate.trim() && !profile.commandTemplate.includes('{')) {
-      command = `${command} ${shellQuote(paths.prompt, profile.environment)}`
-    }
   } catch (error) {
     markAgentRunFailed(db, id, error instanceof Error ? error.message : String(error))
     throw error
@@ -160,6 +174,7 @@ export async function prepareTaskRun(db: AppDatabase, input: PrepareTaskRunInput
     run,
     task,
     profile,
+    provider,
     env: buildRunEnvironment(run, effort.shortRef, task, profile),
   }
 }
@@ -172,8 +187,11 @@ export async function prepareEffortRun(db: AppDatabase, input: PrepareEffortRunI
       : effort.defaultProfileId != null
         ? getAgentProfile(db, effort.defaultProfileId)
         : getDefaultAgentProfile(db)
+  const provider = parseAgentProvider(input.provider ?? effort.defaultProvider)
+  const providerConfig = getAgentProviderConfig(provider)
   const cwd = resolveEffortRunCwd(db, effort.id, profile)
   const now = new Date().toISOString()
+  const providerSessionId = providerConfig.preseedSessionId ? randomUUID() : null
   const purpose = input.purpose ?? 'main'
   const label = input.label?.trim() || `main-${Date.now()}`
 
@@ -181,11 +199,13 @@ export async function prepareEffortRun(db: AppDatabase, input: PrepareEffortRunI
     effortId: effort.id,
     taskId: null,
     profileId: profile.id,
+    provider,
     purpose,
     label,
     environment: profile.environment,
     cwd,
     terminalTabKey: 'main',
+    providerSessionId,
     now,
   })
 
@@ -197,7 +217,8 @@ export async function prepareEffortRun(db: AppDatabase, input: PrepareEffortRunI
   let command: string
   try {
     paths = await writeEffortRunContext(db, run, profile)
-    command = expandCommand(profile.commandTemplate, {
+    command = expandCommand(resolveStartCommand(provider, profile), {
+      provider_session_id: shellQuote(providerSessionId ?? '', profile.environment),
       prompt: shellQuote(paths.prompt, profile.environment),
       effort_ref: effort.shortRef,
       task_ref: '',
@@ -206,9 +227,6 @@ export async function prepareEffortRun(db: AppDatabase, input: PrepareEffortRunI
       worktree_path: '',
       repo_path: commandPath(cwd, profile.environment),
     })
-    if (command === profile.commandTemplate.trim() && !profile.commandTemplate.includes('{')) {
-      command = `${command} ${shellQuote(paths.prompt, profile.environment)}`
-    }
   } catch (error) {
     markAgentRunFailed(db, id, error instanceof Error ? error.message : String(error))
     throw error
@@ -227,6 +245,7 @@ export async function prepareEffortRun(db: AppDatabase, input: PrepareEffortRunI
   return {
     run,
     profile,
+    provider,
     env: buildAgentRunEnvironment(db, run.id),
   }
 }
@@ -238,9 +257,12 @@ export async function prepareResumeRun(db: AppDatabase, input: PrepareResumeRunI
   }
 
   const profile = getAgentProfile(db, sourceRun.profileId)
-  if (!profile.commandTemplate.toLowerCase().includes('codex')) {
-    throw new Error('Only Codex resume is supported right now')
-  }
+  const commandTemplate = resolveProviderCommandTemplate(
+    getAgentProviderConfig(sourceRun.provider),
+    'resume',
+    profile.environment,
+  )
+  if (!commandTemplate) throw new Error(`${sourceRun.provider} does not support resume`)
 
   const now = new Date().toISOString()
   const label = `resume-${sourceRun.shortRef}-${Date.now()}`
@@ -248,17 +270,28 @@ export async function prepareResumeRun(db: AppDatabase, input: PrepareResumeRunI
     effortId: sourceRun.effortId,
     taskId: sourceRun.taskId,
     profileId: profile.id,
+    provider: sourceRun.provider,
     purpose: sourceRun.purpose,
     label,
     environment: sourceRun.environment,
     cwd: sourceRun.cwd,
     terminalTabKey: sourceRun.terminalTabKey ?? 'main',
+    providerSessionId: sourceRun.providerSessionId,
     now,
   })
 
   const id = Number(result.lastInsertRowid)
   const shortRef = `run-${id}`
-  const command = `codex resume ${shellQuote(sourceRun.providerSessionId, profile.environment)}`
+  const command = expandCommand(commandTemplate, {
+    provider_session_id: shellQuote(sourceRun.providerSessionId, profile.environment),
+    prompt: '',
+    effort_ref: '',
+    task_ref: '',
+    plan_ref: '',
+    review_ref: '',
+    worktree_path: '',
+    repo_path: commandPath(sourceRun.cwd, profile.environment),
+  })
   db.prepare(`
     UPDATE agent_runs
     SET short_ref = ?,
@@ -273,6 +306,7 @@ export async function prepareResumeRun(db: AppDatabase, input: PrepareResumeRunI
   return {
     run: getAgentRun(db, id),
     profile,
+    provider: sourceRun.provider,
     env: buildAgentRunEnvironment(db, id),
   }
 }
@@ -284,14 +318,13 @@ export async function prepareForkRun(db: AppDatabase, input: PrepareForkRunInput
   }
 
   const profile = getAgentProfile(db, sourceRun.profileId)
-  if (!profile.forkCommandTemplate?.trim()) {
-    throw new Error(`${profile.name} does not define a fork command`)
-  }
-  if (!profile.forkCommandTemplate.includes('{provider_session_id}')) {
-    throw new Error(`${profile.name} fork command needs {provider_session_id}`)
-  }
-  if (!profile.forkCommandTemplate.includes('{prompt}')) {
-    throw new Error(`${profile.name} fork command needs {prompt}`)
+  const commandTemplate = resolveProviderCommandTemplate(
+    getAgentProviderConfig(sourceRun.provider),
+    'fork',
+    profile.environment,
+  )
+  if (!commandTemplate) {
+    throw new Error(`${sourceRun.provider} does not support fork`)
   }
 
   const effort = getEffort(db, sourceRun.effortId)
@@ -302,17 +335,19 @@ export async function prepareForkRun(db: AppDatabase, input: PrepareForkRunInput
     effortId: sourceRun.effortId,
     taskId: task?.id ?? null,
     profileId: profile.id,
+    provider: sourceRun.provider,
     purpose: 'fork',
     label,
     environment: sourceRun.environment,
     cwd: sourceRun.cwd,
     terminalTabKey: 'pending',
+    providerSessionId: sourceRun.providerSessionId,
     now,
   })
 
   const id = Number(result.lastInsertRowid)
   const shortRef = `run-${id}`
-  const command = expandCommand(profile.forkCommandTemplate, {
+  const command = expandCommand(commandTemplate, {
     provider_session_id: shellQuote(sourceRun.providerSessionId, profile.environment),
     prompt: shellQuote(input.prompt, profile.environment),
     effort_ref: effort.shortRef,
@@ -338,6 +373,7 @@ export async function prepareForkRun(db: AppDatabase, input: PrepareForkRunInput
   return {
     run: getAgentRun(db, id),
     profile,
+    provider: sourceRun.provider,
     env: buildAgentRunEnvironment(db, id),
   }
 }
@@ -470,6 +506,8 @@ export function buildAgentRunEnvironment(db: AppDatabase, runId: number): Record
     ...profile.env,
     EFFORTLESS_RUN_ID: run.shortRef,
     EFFORTLESS_RUN_LABEL: run.label,
+    EFFORTLESS_RUN_CREATED_AT: run.createdAt,
+    EFFORTLESS_PROVIDER: run.provider,
     EFFORTLESS_EFFORT: effort.shortRef,
     ...(task ? { EFFORTLESS_TASK: task.shortRef } : {}),
   }
@@ -534,34 +572,46 @@ function insertPreparedAgentRun(
     effortId: number
     taskId: number | null
     profileId: number
+    provider: AgentProvider
     purpose: AgentRunPurpose
     label: string
     environment: RunEnvironment
     cwd: string
     terminalTabKey: string
+    providerSessionId: string | null
     now: string
   },
 ) {
   return db.prepare(`
     INSERT INTO agent_runs (
-      short_ref, effort_id, task_id, profile_id, purpose, label, status,
+      short_ref, effort_id, task_id, profile_id, provider, purpose, label, status,
       environment, cwd, command, provider_session_id,
       terminal_tab_key, exit_code, error,
       started_at, completed_at, created_at, updated_at
     )
-    VALUES (NULL, ?, ?, ?, ?, ?, 'prepared', ?, ?, '', NULL, ?, NULL, NULL, NULL, NULL, ?, ?)
+    VALUES (NULL, ?, ?, ?, ?, ?, ?, 'prepared', ?, ?, '', ?, ?, NULL, NULL, NULL, NULL, ?, ?)
   `).run(
     input.effortId,
     input.taskId,
     input.profileId,
+    input.provider,
     input.purpose,
     input.label,
     input.environment,
     input.cwd,
+    input.providerSessionId,
     input.terminalTabKey,
     input.now,
     input.now,
   )
+}
+
+function resolveStartCommand(provider: AgentProvider, profile: AgentProfile): string {
+  return resolveProviderCommandTemplate(
+    getAgentProviderConfig(provider),
+    'start',
+    profile.environment,
+  )!
 }
 
 function shellQuote(value: string, environment: RunEnvironment): string {
@@ -590,6 +640,8 @@ function buildRunEnvironment(
     ...profile.env,
     EFFORTLESS_RUN_ID: run.shortRef,
     EFFORTLESS_RUN_LABEL: run.label,
+    EFFORTLESS_RUN_CREATED_AT: run.createdAt,
+    EFFORTLESS_PROVIDER: run.provider,
     EFFORTLESS_EFFORT: effortRef,
     EFFORTLESS_TASK: task.shortRef,
   }
@@ -602,6 +654,7 @@ function mapAgentRun(row: AgentRunRow): AgentRun {
     effortId: row.effort_id,
     taskId: row.task_id,
     profileId: row.profile_id,
+    provider: parseAgentProvider(row.provider),
     purpose: row.purpose,
     label: row.label,
     status: row.status,

@@ -1,5 +1,6 @@
 import fs from 'node:fs'
 import Database from 'better-sqlite3'
+import { DEFAULT_AGENT_PROVIDER } from './agentProviders'
 import { getAppPaths } from './appPaths'
 import { DEFAULT_GLOBAL_MANDATES } from './defaultMandates'
 import { DEFAULT_TEMPLATE_PLAYBOOKS } from './defaultTemplatePlaybooks'
@@ -53,6 +54,7 @@ export function initializeSchema(db: AppDatabase): void {
       title TEXT NOT NULL,
       description TEXT NOT NULL,
       template TEXT NOT NULL,
+      default_provider TEXT NOT NULL DEFAULT 'codex',
       default_profile_id INTEGER REFERENCES agent_profiles(id),
       accepted_plan_id INTEGER,
       status TEXT NOT NULL,
@@ -186,6 +188,7 @@ export function initializeSchema(db: AppDatabase): void {
       effort_id INTEGER NOT NULL REFERENCES efforts(id) ON DELETE CASCADE,
       task_id INTEGER REFERENCES tasks(id) ON DELETE CASCADE,
       profile_id INTEGER NOT NULL REFERENCES agent_profiles(id),
+      provider TEXT NOT NULL DEFAULT 'codex',
       purpose TEXT NOT NULL,
       label TEXT NOT NULL,
       status TEXT NOT NULL,
@@ -215,17 +218,63 @@ export function initializeSchema(db: AppDatabase): void {
     );
   `)
 
+  const addedEffortProvider = ensureColumn(db, 'efforts', 'default_provider', `TEXT NOT NULL DEFAULT '${DEFAULT_AGENT_PROVIDER}'`)
   ensureColumn(db, 'efforts', 'default_profile_id', 'INTEGER')
   ensureColumn(db, 'agent_profiles', 'fork_command_template', 'TEXT')
+  const addedRunProvider = ensureColumn(db, 'agent_runs', 'provider', `TEXT NOT NULL DEFAULT '${DEFAULT_AGENT_PROVIDER}'`)
+
+  if (addedEffortProvider || addedRunProvider) {
+    migrateLegacyProviders(db, { efforts: addedEffortProvider, runs: addedRunProvider })
+  }
 
   seedDefaultGlobalMandates(db)
   seedDefaultTemplatePlaybooks(db)
 }
 
-function ensureColumn(db: AppDatabase, table: string, column: string, definition: string): void {
+function ensureColumn(db: AppDatabase, table: string, column: string, definition: string): boolean {
   const columns = db.prepare<{ name: string }>(`PRAGMA table_info(${table})`).all()
-  if (columns.some((candidate) => candidate.name === column)) return
+  if (columns.some((candidate) => candidate.name === column)) return false
   db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`)
+  return true
+}
+
+function migrateLegacyProviders(
+  db: AppDatabase,
+  targets: { efforts: boolean; runs: boolean },
+): void {
+  if (targets.efforts) {
+    db.exec(`
+      UPDATE efforts
+      SET default_provider = COALESCE((
+        SELECT CASE
+          WHEN lower(agent_profiles.command_template) LIKE '%opencode%' THEN 'opencode'
+          WHEN lower(agent_profiles.command_template) LIKE '%claude%' THEN 'claude'
+          WHEN lower(agent_profiles.command_template) LIKE '%cursor%' THEN 'cursor'
+          WHEN lower(agent_profiles.command_template) LIKE '%copilot%' THEN 'copilot'
+          ELSE 'codex'
+        END
+        FROM agent_profiles
+        WHERE agent_profiles.id = efforts.default_profile_id
+      ), default_provider)
+    `)
+  }
+
+  if (targets.runs) {
+    db.exec(`
+      UPDATE agent_runs
+      SET provider = COALESCE((
+        SELECT CASE
+          WHEN lower(agent_profiles.command_template) LIKE '%opencode%' THEN 'opencode'
+          WHEN lower(agent_profiles.command_template) LIKE '%claude%' THEN 'claude'
+          WHEN lower(agent_profiles.command_template) LIKE '%cursor%' THEN 'cursor'
+          WHEN lower(agent_profiles.command_template) LIKE '%copilot%' THEN 'copilot'
+          ELSE 'codex'
+        END
+        FROM agent_profiles
+        WHERE agent_profiles.id = agent_runs.profile_id
+      ), provider)
+    `)
+  }
 }
 
 function resetOldV2Schema(db: AppDatabase): void {

@@ -11,7 +11,7 @@ import { startCliCommandServer, type CliCommandServer } from './cliCommandServer
 import { getAppState, openDatabase, updateNotificationSettings } from '../core/db'
 import type { NotificationSettings } from '../core/db'
 import { getCustomThemeState, updateCustomThemeState } from '../core/themeConfig'
-import { listEfforts, createEffort, deleteEffort, updateEffortDefaultProfile, updateEffortSummary } from '../core/efforts'
+import { listEfforts, createEffort, deleteEffort, updateEffortDefaultProfile, updateEffortDefaultProvider, updateEffortSummary } from '../core/efforts'
 import { browsePath } from '../core/filesystem'
 import {
   answerInputRequest,
@@ -68,6 +68,7 @@ import type {
   ApproveTaskInput,
   CheckpointTaskInput,
   ClaimTaskInput,
+  CreateEffortInput,
   CreateTaskInput,
   CreateInputRequestInput,
   CreateAgentProfileInput,
@@ -79,7 +80,9 @@ import type {
   RequestReviewChangesInput,
   RequestTaskChangesInput,
   PrepareForkRunInput,
+  PrepareEffortRunInput,
   PrepareResumeRunInput,
+  PrepareTaskRunInput,
   SubmitReviewInput,
   UpdateAgentProfileInput,
   UpdateMandateInput,
@@ -90,6 +93,7 @@ import type {
   WorkSurface,
   ReferenceOwnerType,
   DiffType,
+  AgentProvider,
 } from '../core/types'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -173,7 +177,7 @@ ipcMain.handle('theme:custom:update', async (_event, state: { customThemeActive:
   return getRendererAppState()
 })
 
-ipcMain.handle('efforts:create', (_event, input: { title: string; description: string; template: 'bugfix' | 'delivery' | 'investigation' }) =>
+ipcMain.handle('efforts:create', (_event, input: CreateEffortInput) =>
   createEffort(db, input),
 )
 ipcMain.handle('efforts:delete', (_event, effortId: number) =>
@@ -184,6 +188,9 @@ ipcMain.handle('efforts:updateSummary', (_event, effortId: number, summary: stri
 )
 ipcMain.handle('efforts:updateDefaultProfile', (_event, effortId: number, profileId: number | null) =>
   updateEffortDefaultProfile(db, effortId, profileId),
+)
+ipcMain.handle('efforts:updateDefaultProvider', (_event, effortId: number, provider: AgentProvider) =>
+  updateEffortDefaultProvider(db, effortId, provider),
 )
 ipcMain.handle('tasks:list', (_event, effortId: number) => listTasks(db, effortId))
 ipcMain.handle('tasks:listAll', () => listAllTasks(db))
@@ -227,10 +234,10 @@ ipcMain.handle('agentProfiles:list', () => listAgentProfiles(db))
 ipcMain.handle('agentProfiles:create', (_event, input: CreateAgentProfileInput) => createAgentProfile(db, input))
 ipcMain.handle('agentProfiles:update', (_event, input: UpdateAgentProfileInput) => updateAgentProfile(db, input))
 ipcMain.handle('agentRuns:list', (_event, effortId?: number | null) => listAgentRuns(db, effortId ?? null))
-ipcMain.handle('agentRuns:prepareEffort', (_event, input: { effortId: number; profileId?: number | null; purpose?: 'main' | 'side-investigation' | 'implementation' | 'review'; label?: string }) =>
+ipcMain.handle('agentRuns:prepareEffort', (_event, input: PrepareEffortRunInput) =>
   prepareEffortRun(db, input),
 )
-ipcMain.handle('agentRuns:prepareTask', (_event, input: { taskId: number; profileId?: number | null; purpose?: 'main' | 'side-investigation' | 'implementation' | 'review'; label?: string }) =>
+ipcMain.handle('agentRuns:prepareTask', (_event, input: PrepareTaskRunInput) =>
   prepareTaskRun(db, input),
 )
 ipcMain.handle('agentRuns:prepareResume', (_event, input: PrepareResumeRunInput) =>

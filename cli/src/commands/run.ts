@@ -1,9 +1,10 @@
 import { listAgentProfiles } from '../../../core/agentProfiles'
 import { buildAgentRunEnvironment, listAgentRuns, listTaskRuns, prepareEffortRun, prepareTaskRun } from '../../../core/agentRuns'
+import { listAgentProviders, parseAgentProvider } from '../../../core/agentProviders'
 import { getEffortByRef } from '../../../core/efforts'
 import { option } from '../args'
 import { db, resolveRunRef, resolveTask } from '../context'
-import { printAgentProfile, printAgentRun } from '../render'
+import { printAgentProfile, printAgentProvider, printAgentRun } from '../render'
 
 export async function handleRun(surface: string, command: string): Promise<boolean> {
   if (surface !== 'run') return false
@@ -15,6 +16,13 @@ export async function handleRun(surface: string, command: string): Promise<boole
     return true
   }
 
+  if (command === 'providers') {
+    for (const provider of listAgentProviders()) {
+      printAgentProvider(provider)
+    }
+    return true
+  }
+
   if (command === 'prepare') {
     const taskRef = option('--task')
     const effortRef = option('--effort')
@@ -22,17 +30,20 @@ export async function handleRun(surface: string, command: string): Promise<boole
       throw new Error('run prepare requires --task or --effort')
     }
     const profileId = resolveProfileId()
+    const provider = resolveProvider()
     const prepared = taskRef
       ? await prepareTaskRun(db, {
           taskId: resolveTask(db, taskRef).id,
+          provider,
           profileId,
           label: option('--label') ?? undefined,
         })
       : await prepareEffortRun(db, {
           effortId: getEffortByRef(db, effortRef!).id,
+          provider,
           profileId,
           label: option('--label') ?? undefined,
-        })
+    })
     printAgentRun(prepared.run)
     console.log(`profile ${prepared.profile.shortRef} ${prepared.profile.name}`)
     console.log('')
@@ -81,6 +92,11 @@ export async function handleRun(surface: string, command: string): Promise<boole
   }
 
   return false
+}
+
+function resolveProvider() {
+  const value = option('--provider')
+  return value ? parseAgentProvider(value) : null
 }
 
 function resolveProfileId(): number | null {

@@ -113,7 +113,7 @@ export function PathBrowserPopover({
     if (position.top > maxTop) {
       setPosition((previous) => (previous ? { ...previous, top: Math.max(8, maxTop) } : previous))
     }
-  }, [position?.left, position?.top])
+  }, [position])
 
   if (!open || !position) return null
 

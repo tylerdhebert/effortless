@@ -13,7 +13,7 @@ import { createReference } from '../core/references'
 import { createRepo } from '../core/repos'
 import { worktreePath } from '../core/git'
 import type { AppDatabase } from '../core/db'
-import type { Effort, Plan, Repo, Task } from '../core/types'
+import type { Effort, Repo, Task } from '../core/types'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const repoRoot = path.resolve(__dirname, '..')
