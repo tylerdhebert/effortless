@@ -241,10 +241,6 @@ export function AgentProfileTab({
           ) : null}
         </label>
 
-        <p className={styles.validation}>
-          providers are built into effortless. profiles only control where and how a provider process launches.
-        </p>
-
         {validationMessage ? <p className={styles.validation}>{validationMessage}</p> : null}
       </form>
     </div>
