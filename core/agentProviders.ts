@@ -45,9 +45,9 @@ export const AGENT_PROVIDERS: Record<AgentProvider, AgentProviderConfig> = {
     key: 'cursor',
     name: 'Cursor',
     commandTemplate: 'cursor-agent {prompt}',
-    windowsCommandTemplate: 'cursor agent {prompt}',
+    windowsCommandTemplate: 'cursor-agent {prompt}',
     resumeCommandTemplate: 'cursor-agent --resume {provider_session_id}',
-    windowsResumeCommandTemplate: 'cursor agent --resume {provider_session_id}',
+    windowsResumeCommandTemplate: 'cursor-agent --resume {provider_session_id}',
     sessionHint: 'First, run: efl session set --run {run_ref}. Effortless will match Cursor by this run timestamp and cwd.',
   },
   copilot: {

@@ -40,6 +40,22 @@ Work directly when the task is single-threaded. Use side runs only when the subt
 6. Keep durable state updated with checkpoints, artifacts, reviews, and summaries.
 7. Mark work ready only when the handoff state is truthful.
 
+## embedded runner
+
+effortless starts your configured agent CLI inside an embedded terminal (xterm + PTY). The app injects a generated startup prompt; you work in the real provider TUI.
+
+After start, register the provider session when prompted:
+
+```bash
+efl session set --run <run-ref>
+```
+
+Run env vars (`EFFORTLESS_RUN`, `EFFORTLESS_TASK`, etc.) are set in the PTY so many `efl` commands can omit `--run` / `--task`.
+
+Profile setup (Windows, WSL, templates, env): `docs/run-profiles.md`.
+
+Native module notes (`node-pty`, packaging): `docs/native-deps.md`.
+
 ## First Commands
 
 Effort context:

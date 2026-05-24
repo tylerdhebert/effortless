@@ -8,6 +8,7 @@ import { Play, Send } from 'lucide-react'
 import type {
   AgentProfile,
   AgentProvider,
+  AgentRun,
   Task,
   ActivityEvent,
   Repo,
@@ -17,6 +18,7 @@ import type {
   TaskCommitView,
   TaskConflictView,
 } from '../../../core/types'
+import { resolveRunBadgeLabel } from '../../lib/runStatus'
 import { listAgentProviders } from '../../../core/agentProviders'
 import { CommentStream } from './CommentStream'
 import { ReviewHistory } from './ReviewHistory'
@@ -32,6 +34,9 @@ type TaskDetailPaneProps = {
   defaultProvider: AgentProvider
   defaultProfileId: number | null
   mainRunLive: boolean
+  taskRuns?: AgentRun[]
+  liveSessionIds?: Set<number>
+  providerLiveRunIds?: Set<number>
   reviews: Review[]
   comments: ActivityEvent[]
   latestBuild: TaskBuildResult | null
@@ -57,6 +62,9 @@ export function TaskDetailPane({
   defaultProvider,
   defaultProfileId,
   mainRunLive,
+  taskRuns = [],
+  liveSessionIds = new Set<number>(),
+  providerLiveRunIds = new Set<number>(),
   reviews,
   comments,
   latestBuild,
@@ -205,6 +213,17 @@ export function TaskDetailPane({
                   {task.worktreePath ?? 'no worktree yet'}
                 </span>
               </div>
+              {taskRuns.length > 0 ? (
+                <div className={styles['chip-group']}>
+                  <small>runs</small>
+                  <span className={styles['task-run-summary']}>
+                    {taskRuns.slice(0, 4).map((run) => {
+                      const badge = resolveRunBadgeLabel(run, liveSessionIds, providerLiveRunIds) ?? run.status
+                      return `${run.shortRef} ${badge}`
+                    }).join(' · ')}
+                  </span>
+                </div>
+              ) : null}
             </div>
           </div>
           <div className={styles['task-header-controls']}>

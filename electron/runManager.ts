@@ -123,10 +123,12 @@ export class RunManager {
         }
       })
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error)
+      const message = formatAgentRunStartError(error, profile, run)
       markAgentRunFailed(this.db, runId, message)
       this.emit({ kind: 'error', runId, body: message })
-      throw error
+      const startError = new Error(message)
+      ;(startError as Error & { cause: unknown }).cause = error
+      throw startError
     }
   }
 
@@ -205,6 +207,21 @@ export class RunManager {
 }
 
 let nextAttachmentId = 1
+
+function formatAgentRunStartError(
+  error: unknown,
+  profile: { name: string },
+  run: { shortRef: string; command: string },
+): string {
+  const message = error instanceof Error ? error.message : String(error)
+  const executable = run.command.trim().match(/^(\S+)/)?.[1] ?? 'agent'
+
+  if (/not recognized|enoent|cannot find|command not found|no such file or directory/i.test(message)) {
+    return `Run ${run.shortRef} could not start: profile "${profile.name}" command "${executable}" was not found on PATH. Install it or update the profile command template.`
+  }
+
+  return message
+}
 
 function resolveShellLaunch(
   run: { id: number; shortRef: string; command: string; cwd: string; environment: string },

@@ -16,6 +16,7 @@ type TaskListProps = {
   selectedTaskId: number | null
   onSelectTask: (taskId: number) => void
   pendingTaskIds?: Set<number>
+  runBadgeByTaskId?: Map<number, string>
   variant?: 'list' | 'strip'
 }
 
@@ -24,6 +25,7 @@ export function TaskList({
   selectedTaskId,
   onSelectTask,
   pendingTaskIds,
+  runBadgeByTaskId,
   variant = 'list',
 }: TaskListProps) {
   if (tasks.length === 0) {
@@ -32,12 +34,14 @@ export function TaskList({
 
   return (
     <div className={`${styles['task-list']} ${variant === 'strip' ? styles['task-list--strip'] : ''}`}>
-      {tasks.map((task) => (
+      {tasks.map((task) => {
+        const runBadge = runBadgeByTaskId?.get(task.id) ?? null
+        return (
         <button
           key={task.id}
           type="button"
           className={`${styles['task-list-row']} ${task.id === selectedTaskId ? styles.selected : ''}`}
-          title={`${task.title} | ${task.description}`}
+          title={`${task.title} | ${task.description}${runBadge ? ` | run ${runBadge}` : ''}`}
           onClick={() => onSelectTask(task.id)}
         >
           {variant === 'strip' ? (
@@ -48,6 +52,7 @@ export function TaskList({
                 aria-hidden="true"
               />
               <span className={styles['task-list-ref']}>{task.shortRef}</span>
+              {runBadge ? <span className={styles['task-list-run-badge']}>{runBadge}</span> : null}
               {pendingTaskIds?.has(task.id) ? (
                 <WarningIndicator title="needs input" size={12} />
               ) : null}
@@ -66,6 +71,7 @@ export function TaskList({
                   aria-hidden="true"
                 />
                 <span className={styles['task-list-ref']}>{task.shortRef}</span>
+                {runBadge ? <span className={styles['task-list-run-badge']}>{runBadge}</span> : null}
                 {pendingTaskIds?.has(task.id) ? (
                   <WarningIndicator title="needs input" size={12} />
                 ) : null}
@@ -77,7 +83,7 @@ export function TaskList({
             </>
           )}
         </button>
-      ))}
+      )})}
     </div>
   )
 }

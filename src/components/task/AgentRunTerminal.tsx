@@ -10,9 +10,18 @@ type TerminalEntry = {
   terminal: Terminal
   fit: FitAddon
   lastLiveSession: LiveAgentRunSession | null
-  reattachComplete: boolean
+  lastPtySize: TerminalSize | null
+  pendingInitialResizeTolerance: boolean
   dispose: () => void
 }
+
+type TerminalSize = {
+  cols: number
+  rows: number
+}
+
+type FitScheduleMode = 'immediate' | 'settled'
+const TERMINAL_LAYOUT_SETTLE_MS = 200
 
 type XtermViewportInternals = {
   _core?: {
@@ -75,6 +84,7 @@ type AgentRunTerminalProps = {
   activeRunProviderLive?: boolean
   startDisabled?: boolean
   emptyLabel?: string
+  ptyAvailable?: boolean
   menuOpen?: boolean
   onStart?: () => void
   onForkMain?: () => void
@@ -98,6 +108,7 @@ export function AgentRunTerminal({
   activeRunProviderLive = false,
   startDisabled = false,
   emptyLabel = 'ready',
+  ptyAvailable = true,
   menuOpen: menuOpenProp,
   onStart,
   onForkMain,
@@ -123,9 +134,9 @@ export function AgentRunTerminal({
   const menuRef = useRef<HTMLDivElement | null>(null)
   const menuRowRefs = useRef<Array<HTMLButtonElement | null>>([])
   const fitFrameRef = useRef<number | null>(null)
-  const secondFitFrameRef = useRef<number | null>(null)
-  const settleTimerRefs = useRef<number[]>([])
-  const scheduleFitAndRefreshRef = useRef<(runId?: number) => void>(() => {})
+  const layoutSettleTimerRef = useRef<number | null>(null)
+  const lastPublishedTerminalSizeRef = useRef<TerminalSize | null>(null)
+  const scheduleFitAndRefreshRef = useRef<(runId?: number, mode?: FitScheduleMode, reason?: string) => void>(() => {})
   const [menuOpenInternal, setMenuOpenInternal] = useState(false)
   const [focusedMenuIndex, setFocusedMenuIndex] = useState(-1)
 
@@ -182,24 +193,31 @@ export function AgentRunTerminal({
     return palette
   }, [])
 
+  const publishTerminalSize = useCallback((size: TerminalSize) => {
+    if (sameTerminalSize(lastPublishedTerminalSizeRef.current, size)) return
+    lastPublishedTerminalSizeRef.current = size
+    onTerminalSizeChange?.(size)
+  }, [onTerminalSizeChange])
+
   const renderIdleTerminal = useCallback(() => {
     const entry = idleEntryRef.current
     if (!entry) return
     const palette = applyTerminalPalette(entry.terminal, idleHostRef.current, undefined)
     entry.fit.fit()
-    onTerminalSizeChange?.({
+    publishTerminalSize({
       cols: entry.terminal.cols,
       rows: entry.terminal.rows,
     })
     drawIdleWordmark(entry.terminal, palette.idleArt)
-  }, [applyTerminalPalette, onTerminalSizeChange])
+  }, [applyTerminalPalette, publishTerminalSize])
 
   const fitAndRefreshTerminal = useCallback((runId?: number) => {
-    const targets = runId == null
-      ? [...terminalEntriesRef.current.entries()]
+    const targetRunId = runId ?? (activeRunHasLiveSession ? activeRun?.id : undefined)
+    const targets = targetRunId == null
+      ? []
       : (() => {
-          const entry = terminalEntriesRef.current.get(runId)
-          return entry ? [[runId, entry] as const] : []
+          const entry = terminalEntriesRef.current.get(targetRunId)
+          return entry ? [[targetRunId, entry] as const] : []
         })()
 
     for (const [targetRunId, entry] of targets) {
@@ -209,85 +227,62 @@ export function AgentRunTerminal({
 
       const target = runsByIdRef.current.get(targetRunId)
       if (target?.hasLiveSession) {
-        if (targetRunId === activeRun?.id) {
-          onTerminalSizeChange?.({
-            cols: entry.terminal.cols,
-            rows: entry.terminal.rows,
-          })
-        }
-        void window.effortless.resizeAgentRun(targetRunId, {
+        const size = {
           cols: entry.terminal.cols,
           rows: entry.terminal.rows,
-        })
+        }
+        if (targetRunId === activeRun?.id) {
+          publishTerminalSize(size)
+        }
+        if (entry.pendingInitialResizeTolerance && entry.lastPtySize && isMinorTerminalSizeDrift(entry.lastPtySize, size)) {
+          entry.pendingInitialResizeTolerance = false
+        } else if (!sameTerminalSize(entry.lastPtySize, size)) {
+          entry.lastPtySize = size
+          entry.pendingInitialResizeTolerance = false
+          void window.effortless.resizeAgentRun(targetRunId, size)
+        } else {
+          entry.pendingInitialResizeTolerance = false
+        }
       }
     }
 
     if (runId == null && !activeRunHasLiveSession) {
       renderIdleTerminal()
     }
-  }, [queueViewportSync, activeRun?.id, activeRunHasLiveSession, renderIdleTerminal, onTerminalSizeChange])
+  }, [queueViewportSync, activeRun?.id, activeRunHasLiveSession, renderIdleTerminal, publishTerminalSize])
 
-  const scheduleFitAndRefresh = useCallback((runId?: number) => {
-    if (fitFrameRef.current != null) {
-      window.cancelAnimationFrame(fitFrameRef.current)
-    }
-    if (secondFitFrameRef.current != null) {
-      window.cancelAnimationFrame(secondFitFrameRef.current)
-    }
-
-    fitFrameRef.current = window.requestAnimationFrame(() => {
-      fitFrameRef.current = null
-      fitAndRefreshTerminal(runId)
-      secondFitFrameRef.current = window.requestAnimationFrame(() => {
-        secondFitFrameRef.current = null
+  const scheduleFitAndRefresh = useCallback((runId?: number, mode: FitScheduleMode = 'immediate', _reason = 'unknown') => {
+    const queueFit = () => {
+      if (fitFrameRef.current != null) {
+        window.cancelAnimationFrame(fitFrameRef.current)
+      }
+      fitFrameRef.current = window.requestAnimationFrame(() => {
+        fitFrameRef.current = null
         fitAndRefreshTerminal(runId)
       })
-    })
+    }
+
+    if (mode === 'settled') {
+      if (layoutSettleTimerRef.current != null) {
+        window.clearTimeout(layoutSettleTimerRef.current)
+      }
+      layoutSettleTimerRef.current = window.setTimeout(() => {
+        layoutSettleTimerRef.current = null
+        queueFit()
+      }, TERMINAL_LAYOUT_SETTLE_MS)
+      return
+    }
+
+    if (layoutSettleTimerRef.current != null) {
+      window.clearTimeout(layoutSettleTimerRef.current)
+      layoutSettleTimerRef.current = null
+    }
+    queueFit()
   }, [fitAndRefreshTerminal])
 
   useEffect(() => {
     scheduleFitAndRefreshRef.current = scheduleFitAndRefresh
   }, [scheduleFitAndRefresh])
-
-  const nudgeTerminalHost = useCallback((runId: number) => {
-    const host = hostRefs.current.get(runId)
-    if (!host) return
-
-    host.style.height = 'calc(100% - 1px)'
-    window.requestAnimationFrame(() => {
-      const currentHost = hostRefs.current.get(runId)
-      if (!currentHost) return
-      currentHost.style.height = ''
-      scheduleFitAndRefresh(runId)
-    })
-  }, [scheduleFitAndRefresh])
-
-  const triggerReattachPulse = useCallback((
-    runId: number,
-    entry: TerminalEntry,
-    liveSession: LiveAgentRunSession | null,
-  ) => {
-    if (!liveSession || entry.reattachComplete) return
-    // A real size pulse nudges TUIs to repaint their current screen into a fresh xterm.
-    // This preserves live interactivity without pretending to restore historical scrollback.
-    window.requestAnimationFrame(() => {
-      const currentEntry = terminalEntriesRef.current.get(runId)
-      if (!currentEntry || currentEntry !== entry || currentEntry.reattachComplete) return
-      const cols = currentEntry.terminal.cols || liveSession.cols
-      const rows = currentEntry.terminal.rows || liveSession.rows
-      const pulseSize = computeReattachPulseSize(cols, rows)
-      void window.effortless.resizeAgentRun(runId, pulseSize)
-      window.requestAnimationFrame(() => {
-        const settledEntry = terminalEntriesRef.current.get(runId)
-        if (!settledEntry || settledEntry !== currentEntry || settledEntry.reattachComplete) return
-        void window.effortless.resizeAgentRun(runId, { cols, rows })
-        settledEntry.terminal.refresh(0, Math.max(0, settledEntry.terminal.rows - 1))
-        queueViewportSync(settledEntry)
-        settledEntry.reattachComplete = true
-        scheduleFitAndRefreshRef.current(runId)
-      })
-    })
-  }, [queueViewportSync])
 
   const refreshTerminalPaint = useCallback((runId: number) => {
     const entry = terminalEntriesRef.current.get(runId)
@@ -303,7 +298,7 @@ export function AgentRunTerminal({
       entry.terminal.buffer.active.length > entry.terminal.rows &&
       scrollable.scrollHeight <= scrollable.clientHeight
     ) {
-      scheduleFitAndRefresh(runId)
+      scheduleFitAndRefresh(runId, 'settled', 'scrollability-recovery')
     }
   }, [queueViewportSync, scheduleFitAndRefresh])
 
@@ -351,14 +346,7 @@ export function AgentRunTerminal({
       mountedRunIds.add(runId)
       const existingEntry = terminalEntriesRef.current.get(runId)
       if (existingEntry) {
-        const previousLiveSession = existingEntry.lastLiveSession
-        if (mountedRun.reattached && mountedRun.liveSession && !sameLiveSession(previousLiveSession, mountedRun.liveSession)) {
-          existingEntry.reattachComplete = false
-        }
         existingEntry.lastLiveSession = mountedRun.liveSession
-        if (mountedRun.reattached) {
-          triggerReattachPulse(runId, existingEntry, mountedRun.liveSession)
-        }
         continue
       }
 
@@ -366,7 +354,9 @@ export function AgentRunTerminal({
       if (!host) continue
 
       const terminal = new Terminal({
-        cursorBlink: true,
+        cols: mountedRun.liveSession?.cols,
+        rows: mountedRun.liveSession?.rows,
+        cursorBlink: false,
         fontFamily: '"Cascadia Code", Consolas, "Courier New", monospace',
         fontSize: 12,
         theme: deriveTerminalPalette(host, undefined).theme,
@@ -374,7 +364,9 @@ export function AgentRunTerminal({
       const fit = new FitAddon()
       terminal.loadAddon(fit)
       terminal.open(host)
-      const resizeObserver = new ResizeObserver(() => scheduleFitAndRefresh(runId))
+      const resizeObserver = new ResizeObserver(() => {
+        scheduleFitAndRefresh(undefined, 'settled', 'resize-observer')
+      })
       resizeObserver.observe(host)
 
       const dataDisposable = terminal.onData((data) => {
@@ -391,7 +383,10 @@ export function AgentRunTerminal({
         terminal,
         fit,
         lastLiveSession: mountedRun.liveSession,
-        reattachComplete: false,
+        lastPtySize: mountedRun.liveSession
+          ? { cols: mountedRun.liveSession.cols, rows: mountedRun.liveSession.rows }
+          : null,
+        pendingInitialResizeTolerance: Boolean(mountedRun.liveSession),
         dispose: () => {
           resizeObserver.disconnect()
           writeParsedDisposable.dispose()
@@ -401,12 +396,7 @@ export function AgentRunTerminal({
       }
       terminalEntriesRef.current.set(runId, entry)
       applyTerminalPalette(terminal, host, undefined)
-      scheduleFitAndRefresh(runId)
-      if (mountedRun.reattached) {
-        triggerReattachPulse(runId, entry, mountedRun.liveSession)
-      } else {
-        entry.reattachComplete = true
-      }
+      scheduleFitAndRefresh(runId, 'settled', 'terminal-create')
     }
 
     for (const [runId, entry] of terminalEntriesRef.current.entries()) {
@@ -414,7 +404,7 @@ export function AgentRunTerminal({
       entry.dispose()
       terminalEntriesRef.current.delete(runId)
     }
-  }, [applyTerminalPalette, mountedRuns, refreshTerminalPaint, scheduleFitAndRefresh, triggerReattachPulse])
+  }, [activeRun?.id, activeRunHasLiveSession, applyTerminalPalette, mountedRuns, refreshTerminalPaint, scheduleFitAndRefresh])
 
   useEffect(() => {
     const root = document.documentElement
@@ -439,23 +429,19 @@ export function AgentRunTerminal({
 
   useEffect(() => {
     const terminalEntries = terminalEntriesRef.current
-    const handleWindowResize = () => scheduleFitAndRefreshRef.current()
+    const handleWindowResize = () => scheduleFitAndRefreshRef.current(undefined, 'settled', 'window-resize')
     window.addEventListener('resize', handleWindowResize)
 
     return () => {
+      if (layoutSettleTimerRef.current != null) {
+        window.clearTimeout(layoutSettleTimerRef.current)
+      }
       if (fitFrameRef.current != null) {
         window.cancelAnimationFrame(fitFrameRef.current)
-      }
-      if (secondFitFrameRef.current != null) {
-        window.cancelAnimationFrame(secondFitFrameRef.current)
       }
       window.removeEventListener('resize', handleWindowResize)
       idleEntryRef.current?.dispose()
       idleEntryRef.current = null
-      for (const timer of settleTimerRefs.current) {
-        window.clearTimeout(timer)
-      }
-      settleTimerRefs.current = []
       for (const entry of terminalEntries.values()) {
         entry.dispose()
       }
@@ -541,7 +527,7 @@ export function AgentRunTerminal({
 
   useEffect(() => {
     if (drawerClosedAt) {
-      scheduleFitAndRefresh()
+      scheduleFitAndRefresh(undefined, 'settled', 'drawer-closed')
       if (activeRun && activeRunHasLiveSession) {
         terminalEntriesRef.current.get(activeRun.id)?.terminal.focus()
       }
@@ -549,7 +535,7 @@ export function AgentRunTerminal({
   }, [drawerClosedAt, scheduleFitAndRefresh, activeRun, activeRunHasLiveSession])
 
   useEffect(() => {
-    scheduleFitAndRefresh()
+    scheduleFitAndRefresh(undefined, 'settled', 'menu-open-change')
   }, [menuOpen, scheduleFitAndRefresh])
 
   const activeRunId = activeRun?.id ?? null
@@ -573,31 +559,12 @@ export function AgentRunTerminal({
 
   useEffect(() => {
     if (!activeRunId || !activeRunHasLiveSession) {
-      for (const timer of settleTimerRefs.current) {
-        window.clearTimeout(timer)
-      }
-      settleTimerRefs.current = []
       renderIdleTerminal()
       return
     }
-    scheduleFitAndRefresh(activeRunId)
-    nudgeTerminalHost(activeRunId)
+    scheduleFitAndRefresh(activeRunId, 'settled', 'active-run-change')
     terminalEntriesRef.current.get(activeRunId)?.terminal.focus()
-    for (const timer of settleTimerRefs.current) {
-      window.clearTimeout(timer)
-    }
-    settleTimerRefs.current = [40, 120, 260, 520].map((delayMs) =>
-      window.setTimeout(() => {
-        scheduleFitAndRefreshRef.current(activeRunId)
-      }, delayMs),
-    )
-    return () => {
-      for (const timer of settleTimerRefs.current) {
-        window.clearTimeout(timer)
-      }
-      settleTimerRefs.current = []
-    }
-  }, [activeRunId, activeRunHasLiveSession, scheduleFitAndRefresh, nudgeTerminalHost, renderIdleTerminal])
+  }, [activeRunId, activeRunHasLiveSession, scheduleFitAndRefresh, renderIdleTerminal])
 
   const attachmentsWithRuns = tabs.filter((tab) => tab.run).length
   const activeTab = tabs.find((tab) => tab.key === activeTabKey) ?? null
@@ -680,7 +647,13 @@ export function AgentRunTerminal({
         </div>
       </div>
       <div className={styles['terminal-stack']}>
-        {!activeRunHasLiveSession ? (
+        {!ptyAvailable ? (
+          <div className={styles['terminal-pty-unavailable']}>
+            <p>embedded terminal unavailable</p>
+            <p>node-pty did not load on this platform. runs can still be prepared; start will fail until native deps are fixed.</p>
+          </div>
+        ) : null}
+        {!activeRunHasLiveSession && ptyAvailable ? (
           <div className={`${styles['terminal-host']} ${styles.active}`}>
             <div
               ref={idleHostRef}
@@ -859,28 +832,12 @@ function resumeDisabledTitle(run: AgentRun | null, runLive: boolean | undefined,
   return 'resume'
 }
 
-function sameLiveSession(left: LiveAgentRunSession | null, right: LiveAgentRunSession | null): boolean {
-  if (!left || !right) return left === right
-  return (
-    left.runId === right.runId &&
-    left.attachmentId === right.attachmentId
-  )
+function sameTerminalSize(left: TerminalSize | null, right: TerminalSize): boolean {
+  return Boolean(left && left.cols === right.cols && left.rows === right.rows)
 }
 
-function computeReattachPulseSize(cols: number, rows: number): { cols: number; rows: number } {
-  if (rows > 2) {
-    return { cols, rows: rows - 1 }
-  }
-  if (rows === 2) {
-    return { cols, rows: 1 }
-  }
-  if (cols > 2) {
-    return { cols: cols - 1, rows }
-  }
-  if (cols === 2) {
-    return { cols: 1, rows }
-  }
-  return { cols, rows }
+function isMinorTerminalSizeDrift(left: TerminalSize, right: TerminalSize): boolean {
+  return Math.abs(left.cols - right.cols) <= 1 && Math.abs(left.rows - right.rows) <= 1
 }
 
 function drawIdleWordmark(terminal: Terminal, palette: TerminalPalette['idleArt']): void {

@@ -1,3 +1,18 @@
+.terminal-pty-unavailable {
+  display: grid;
+  align-content: center;
+  gap: 8px;
+  min-height: 120px;
+  padding: 24px 30px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.terminal-pty-unavailable p {
+  margin: 0;
+}
+
 .terminal-section {
   --terminal-surface: color-mix(in srgb, black 88%, var(--field) 12%);
   position: relative;
@@ -336,7 +351,6 @@
   border: 0;
   border-radius: 0;
   background: var(--terminal-surface);
-  transition: height 160ms ease, padding 160ms ease;
 }
 
 .terminal-shell {

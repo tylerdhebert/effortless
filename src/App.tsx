@@ -30,6 +30,7 @@ import { TaskCreationForm } from './components/task/TaskCreationForm'
 import { TaskDetailPane } from './components/task/TaskDetailPane'
 import { TaskList } from './components/task/TaskList'
 import { getAgentProviderConfig, listAgentProviders } from '../core/agentProviders'
+import { countActiveEffortRuns, pickTaskRunBadge } from './lib/runStatus'
 import {
   effortStatusColor,
   effortSupportsPlans,
@@ -50,8 +51,13 @@ import type { PendingNotification } from '../core/notifications'
 import './App.css'
 
 type EffortRailDrawer = 'description' | 'references' | 'inputs' | 'plan' | 'tasks'
+type LiveSessionCacheEntry = {
+  session: LiveAgentRunSession
+  lastSeenAt: number
+}
 
 const DEFAULT_TERMINAL_SIZE = { cols: 100, rows: 24 }
+const LIVE_SESSION_GRACE_MS = 5000
 const FORK_MAIN_PROMPT = 'Continue from main as a forked Effortless session. Keep scope tight and update durable state with efl.'
 
 function App() {
@@ -77,6 +83,7 @@ function App() {
   const [terminalStartSize, setTerminalStartSize] = useState(DEFAULT_TERMINAL_SIZE)
   const preserveSelectionOnEffortChangeRef = useRef(false)
   const bootstrapLiveAttachmentIdsRef = useRef<Set<string> | null>(null)
+  const liveSessionGraceRef = useRef(new Map<number, LiveSessionCacheEntry>())
 
   const effortsQuery = useQuery({
     queryKey: ['efforts'],
@@ -252,20 +259,79 @@ function App() {
     refetchInterval: 1000,
   })
 
+  const ptyStatusQuery = useQuery({
+    queryKey: ['pty-status'],
+    queryFn: () => window.effortless.getPtyRuntimeStatus(),
+    staleTime: Infinity,
+  })
+  const ptyAvailable = ptyStatusQuery.data?.available !== false
+
   const liveSessions = useMemo(() => liveSessionsQuery.data ?? [], [liveSessionsQuery.data])
+  const stableLiveSessions = useMemo(() => {
+    const now = Date.now()
+    const cache = liveSessionGraceRef.current
+    const allRuns = allRunsQuery.data
+    const runningRunIds = new Set(
+      (allRuns ?? [])
+        .filter((run) => run.status === 'running')
+        .map((run) => run.id),
+    )
+    const seenRunIds = new Set<number>()
+
+    for (const session of liveSessions) {
+      seenRunIds.add(session.runId)
+      cache.set(session.runId, { session, lastSeenAt: now })
+    }
+
+    for (const [runId, cached] of cache) {
+      const runCanBePreserved = allRuns == null || runningRunIds.has(runId)
+      if (!runCanBePreserved || now - cached.lastSeenAt > LIVE_SESSION_GRACE_MS) {
+        cache.delete(runId)
+      }
+    }
+
+    return [
+      ...liveSessions,
+      ...Array.from(cache.entries())
+        .filter(([runId]) => !seenRunIds.has(runId) && (allRuns == null || runningRunIds.has(runId)))
+        .map(([, cached]) => cached.session),
+    ]
+  }, [allRunsQuery.data, liveSessions])
   const providers = useMemo(() => listAgentProviders(), [])
-  const liveSessionIds = useMemo(() => new Set(liveSessions.map((session) => session.runId)), [liveSessions])
+  const liveSessionIds = useMemo(() => new Set(stableLiveSessions.map((session) => session.runId)), [stableLiveSessions])
   const providerLiveRunIds = useMemo(
-    () => new Set(liveSessions.filter((session) => session.providerLive).map((session) => session.runId)),
-    [liveSessions],
+    () => new Set(stableLiveSessions.filter((session) => session.providerLive).map((session) => session.runId)),
+    [stableLiveSessions],
   )
   const liveSessionByRunId = useMemo(() => {
     const byRunId = new Map<number, LiveAgentRunSession>()
-    for (const session of liveSessions) {
+    for (const session of stableLiveSessions) {
       byRunId.set(session.runId, session)
     }
     return byRunId
-  }, [liveSessions])
+  }, [stableLiveSessions])
+
+  const runBadgeByTaskId = useMemo(() => {
+    const runs = effortRunsQuery.data ?? []
+    const map = new Map<number, string>()
+    for (const task of tasksQuery.data ?? []) {
+      const taskRuns = runs.filter((run) => run.taskId === task.id)
+      const badge = pickTaskRunBadge(taskRuns, liveSessionIds, providerLiveRunIds)
+      if (badge) {
+        map.set(task.id, badge)
+      }
+    }
+    return map
+  }, [effortRunsQuery.data, tasksQuery.data, liveSessionIds, providerLiveRunIds])
+
+  const activeEffortRunCount = useMemo(() => {
+    return countActiveEffortRuns(effortRunsQuery.data ?? [], liveSessionIds, providerLiveRunIds)
+  }, [effortRunsQuery.data, liveSessionIds, providerLiveRunIds])
+
+  const selectedTaskRuns = useMemo(() => {
+    if (!selectedTask) return []
+    return (effortRunsQuery.data ?? []).filter((run) => run.taskId === selectedTask.id)
+  }, [effortRunsQuery.data, selectedTask])
 
   useEffect(() => {
     if (bootstrapLiveAttachmentIdsRef.current !== null) return
@@ -985,6 +1051,12 @@ function App() {
                         <small>status</small>
                         <span style={{ borderColor: effortStatusColor(selectedEffort.status), boxShadow: `0 0 8px ${effortStatusColor(selectedEffort.status)}` }}>{selectedEffort.status}</span>
                       </div>
+                      {activeEffortRunCount > 0 ? (
+                        <div className="chip-group">
+                          <small>runs</small>
+                          <span>{activeEffortRunCount} live</span>
+                        </div>
+                      ) : null}
                       <label className="chip-group effort-profile-chip">
                         <small>provider</small>
                         <select
@@ -1048,6 +1120,8 @@ function App() {
                   mountedRuns={mountedTerminalRuns}
                   activeTabKey={activeTerminalTabKey}
                   isStarting={startEffortRun.isPending || resumeAgentRun.isPending || forkMainRun.isPending}
+                  startDisabled={!ptyAvailable}
+                  ptyAvailable={ptyAvailable}
                   emptyLabel="ready for effort"
                   menuOpen={terminalMenuOpen}
                   onStart={() => {
@@ -1208,6 +1282,7 @@ function App() {
                                 selectedTaskId={selectedTaskId}
                                 onSelectTask={setSelectedTaskId}
                                 pendingTaskIds={taskPendingInputIds}
+                                runBadgeByTaskId={runBadgeByTaskId}
                                 variant="strip"
                               />
                               <div className="task-switcher-actions">
@@ -1257,6 +1332,9 @@ function App() {
                               defaultProvider={selectedEffort.defaultProvider}
                               defaultProfileId={selectedEffort.defaultProfileId ?? effortDefaultProfile?.id ?? null}
                               mainRunLive={Boolean(mainTerminalTab?.run && providerLiveRunIds.has(mainTerminalTab.run.id))}
+                              taskRuns={selectedTaskRuns}
+                              liveSessionIds={liveSessionIds}
+                              providerLiveRunIds={providerLiveRunIds}
                               reviews={reviewsQuery.data ?? []}
                               comments={commentsQuery.data ?? []}
                               latestBuild={buildQuery.data ?? null}

@@ -128,8 +128,8 @@ The core loop is:
 - [x] Verify packaged app includes `node-pty` Win x64 prebuilds.
 - [x] Configure Electron Builder to skip Bun-driven native rebuilds.
 - [x] Configure ASAR unpack rules for `better-sqlite3` and `node-pty` native files.
-- [ ] Document native rebuild notes in repo docs.
-- [ ] Keep the runner UI guarded when PTY initialization fails.
+- [x] Document native rebuild notes in repo docs.
+- [x] Keep the runner UI guarded when PTY initialization fails.
 - [x] Build verification: `bun run build`.
 
 ## Phase 2E: Electron Run Manager
@@ -190,7 +190,7 @@ The core loop is:
 - [x] Quote injected prompt text safely.
 - [x] Support command templates such as `codex {prompt}`, `claude {prompt}`, and `opencode {prompt}`.
 - [x] Validate default profile command expansion through `efl run prepare`.
-- [ ] Add useful failure message when the command is missing.
+- [x] Add useful failure message when the command is missing.
 - [ ] Build verification: `bun run build`.
 
 ## Phase 2I: WSL Profiles
@@ -217,12 +217,12 @@ The core loop is:
 - [x] Infer activity author label from `EFFORTLESS_RUN_LABEL`.
 - [x] Add `efl run show --run run-1`.
 - [ ] Add `efl run start --run run-1` if CLI-driven starts become useful.
-- [ ] Add `efl run fail --run run-1 --body ...` for manual recovery.
-- [ ] Add `efl run cancel --run run-1`.
+- [x] Add `efl run fail --run run-1 --body ...` for manual recovery.
+- [x] Add `efl run cancel --run run-1`.
 - [x] Add `efl run env --run run-1`.
 - [x] Allow `efl task checkpoint --body ...` with inferred task and activity label.
 - [x] Allow `efl task artifact --body ...` with inferred task and activity label.
-- [ ] Allow `efl build run` with inferred task.
+- [x] Allow `efl build run` with inferred task.
 - [x] Add `efl input answer --input input-1 --answer ...`.
 - [x] Add `efl input request --no-wait`.
 - [ ] Build verification: `bun run build`.
@@ -262,10 +262,10 @@ The core loop is:
 
 ## Phase 2K: Run Status And Notifications
 
-- [ ] Show active run badges in task list.
-- [ ] Show active run count on effort.
-- [ ] Show failed run state in task detail.
-- [ ] Show completed run state in task detail.
+- [x] Show active run badges in task list.
+- [x] Show active run count on effort.
+- [x] Show failed run state in task detail.
+- [x] Show completed run state in task detail.
 - [ ] Add notification kind for failed run if useful.
 - [ ] Add notification kind for waiting input tied to a run if useful.
 - [x] Refresh run/task queries on terminal exit and error events.
@@ -318,14 +318,24 @@ The core loop is:
 ## Phase 2P: Documentation
 
 - [x] Update README with single-agent runner workflow.
-- [ ] Document run profiles.
-- [ ] Document Windows profile setup.
-- [ ] Document WSL profile setup.
-- [ ] Document command-template variables.
-- [ ] Document environment variables.
-- [ ] Document how agents update Effortless through `efl`.
-- [ ] Update `AGENT-effortless.md` after the real runner exists.
+- [x] Document run profiles.
+- [x] Document Windows profile setup.
+- [x] Document WSL profile setup.
+- [x] Document command-template variables.
+- [x] Document environment variables.
+- [x] Document how agents update Effortless through `efl`.
+- [x] Update `AGENT-effortless.md` after the real runner exists.
 - [ ] Build verification: `bun run build`.
+
+## Phase 2P.5: CLI Help And Bare-Agent Onboarding
+
+- [ ] Rewrite top-level `efl --help` so a fresh agent can understand the main loop without already knowing Effortless vocabulary.
+- [ ] Add command-specific help examples for the core agent flow: session bind, effort context, task context, checkpoint, artifact, input request, run show/list, and run recovery.
+- [ ] Make CLI help explain which commands infer `--run`, `--effort`, and `--task` from the active run environment.
+- [ ] Add a concise bare-agent quickstart that teaches the intended flow: bind session, read context, work in the right surface, checkpoint durable state, request input when blocked, and summarize before handoff.
+- [ ] Add provider-neutral startup guidance that fits Codex, Cursor, OpenCode, and Claude Code without assuming the agent has seen Effortless before.
+- [ ] Keep help output compact by default, with examples and deeper explanation available through explicit help/detail commands.
+- [ ] Dogfood with a fresh agent and record where it still fumbles.
 
 ## Phase 2Q: Final Acceptance
 

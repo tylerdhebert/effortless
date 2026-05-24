@@ -1,5 +1,15 @@
 import { listAgentProfiles } from '../../../core/agentProfiles'
-import { buildAgentRunEnvironment, listAgentRuns, listTaskRuns, prepareEffortRun, prepareTaskRun } from '../../../core/agentRuns'
+import {
+  buildAgentRunEnvironment,
+  listAgentRuns,
+  listTaskRuns,
+  markAgentRunCancelled,
+  markAgentRunFailed,
+  prepareEffortRun,
+  prepareTaskRun,
+} from '../../../core/agentRuns'
+import type { AgentRun } from '../../../core/types'
+import { bodyArg } from '../args'
 import { listAgentProviders, parseAgentProvider } from '../../../core/agentProviders'
 import { getEffortByRef } from '../../../core/efforts'
 import { option } from '../args'
@@ -91,7 +101,43 @@ export async function handleRun(surface: string, command: string): Promise<boole
     return true
   }
 
+  if (command === 'fail') {
+    const run = resolveRunRef(db)
+    assertRunCanBeMarkedFailed(run)
+    const updated = markAgentRunFailed(db, run.id, bodyArg().trim())
+    printAgentRun(updated)
+    return true
+  }
+
+  if (command === 'cancel') {
+    const run = resolveRunRef(db)
+    assertRunCanBeMarkedCancelled(run)
+    const updated = markAgentRunCancelled(db, run.id)
+    printAgentRun(updated)
+    return true
+  }
+
   return false
+}
+
+function assertRunCanBeMarkedFailed(run: AgentRun): void {
+  if (run.status === 'failed') {
+    return
+  }
+
+  if (run.status === 'exited' || run.status === 'cancelled') {
+    throw new Error(`run ${run.shortRef} is already ${run.status}`)
+  }
+}
+
+function assertRunCanBeMarkedCancelled(run: AgentRun): void {
+  if (run.status === 'cancelled') {
+    return
+  }
+
+  if (run.status === 'exited' || run.status === 'failed') {
+    throw new Error(`run ${run.shortRef} is already ${run.status}`)
+  }
 }
 
 function resolveProvider() {
