@@ -1,6 +1,6 @@
 import { answerInputRequest, createInputRequest, getInputRequestByRef } from '../../../core/inputs'
 import { option, requiredOption, parseChoices, rawArgs } from '../args'
-import { db, resolveInputTarget, wait } from '../context'
+import { db, resolveInputTarget, resolveRunRef, wait } from '../context'
 import { printInputRequest } from '../render'
 import type { InputRequest } from '../../../core/types'
 
@@ -10,7 +10,7 @@ export async function handleInput(surface: string, command: string): Promise<boo
   if (command === 'request') {
     const inputRequest = createInputRequest(db, {
       ...resolveInputTarget(db),
-      runId: null,
+      runId: resolveActiveRunId(db),
       type: requiredOption('--type') as 'yesno' | 'choice' | 'text',
       prompt: requiredOption('--prompt'),
       choices: parseChoices(option('--choices')),
@@ -75,4 +75,14 @@ async function waitForInputRequest(inputRequest: InputRequest): Promise<void> {
   console.error(`reattach with: efl input wait --input ${inputRequest.shortRef}`)
   console.error('you must confirm human approval before ending turn')
   process.exitCode = 1
+}
+
+function resolveActiveRunId(database: typeof db): number | null {
+  const runRef = process.env.EFFORTLESS_RUN_ID
+  if (!runRef) return null
+  try {
+    return resolveRunRef(database, runRef).id
+  } catch {
+    return null
+  }
 }

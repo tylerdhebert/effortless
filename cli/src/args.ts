@@ -6,6 +6,22 @@ export function setRawArgs(args: string[]): void {
   rawArgs = args
 }
 
+export function hasFlag(name: string): boolean {
+  return rawArgs.includes(name)
+}
+
+export function wantsHelp(): boolean {
+  return hasFlag('--help') || hasFlag('-h')
+}
+
+export function isBrief(): boolean {
+  return hasFlag('--brief')
+}
+
+export function isVerbose(): boolean {
+  return hasFlag('--full') || hasFlag('--verbose')
+}
+
 export function option(name: string): string | null {
   const index = rawArgs.indexOf(name)
 

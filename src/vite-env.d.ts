@@ -1,5 +1,6 @@
 /// <reference types="vite/client" />
 
+import type { PendingNotification } from '../core/notifications'
 import type {
   AnswerInputRequestInput,
   ApplyReviewInput,
@@ -123,6 +124,7 @@ interface Window {
       listAgentProfiles: () => Promise<AgentProfile[]>
       createAgentProfile: (input: CreateAgentProfileInput) => Promise<AgentProfile>
       updateAgentProfile: (input: UpdateAgentProfileInput) => Promise<AgentProfile>
+      deleteAgentProfile: (profileId: number) => Promise<void>
       listAgentRuns: (effortId?: number | null) => Promise<AgentRun[]>
       prepareEffortRun: (input: PrepareEffortRunInput) => Promise<{
         run: AgentRun
@@ -161,7 +163,7 @@ interface Window {
       resizeAgentRun: (runId: number, size: { cols: number; rows: number }) => Promise<void>
       stopAgentRun: (runId: number) => Promise<void>
       onAgentRunTerminalEvent: (handler: (event: {
-        kind: 'data' | 'exit' | 'error'
+        kind: 'data' | 'exit' | 'error' | 'started'
         runId: number
         body?: string
         exitCode?: number
@@ -181,18 +183,7 @@ interface Window {
       createReference: (input: CreateReferenceInput) => Promise<Reference>
       deleteReference: (refId: number) => Promise<void>
       captureDebugScreenshot: (relativePath?: string) => Promise<{ path: string; sha256: string }>
-      listPendingNotifications: () => Promise<Array<{
-        id: number
-        kind: 'task-review' | 'input-request'
-        effortId: number
-        effortShortRef: string
-        effortTitle: string
-        entityId: number
-        entityShortRef: string
-        entityType: string
-        message: string
-        startedAt: string
-      }>>
+      listPendingNotifications: () => Promise<PendingNotification[]>
       countPendingNotifications: () => Promise<number>
       showOSNotification: (title: string, body: string) => Promise<void>
       updateNotificationSettings: (settings: {

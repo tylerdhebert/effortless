@@ -12,16 +12,20 @@ type AgentProfileTabProps = {
   profiles: AgentProfile[]
   createProfile: (input: CreateAgentProfileInput) => Promise<AgentProfile>
   updateProfile: (input: UpdateAgentProfileInput) => Promise<AgentProfile>
+  deleteProfile: (profileId: number) => Promise<void>
   isCreating: boolean
   isUpdating: boolean
+  isDeleting: boolean
 }
 
 export function AgentProfileTab({
   profiles,
   createProfile,
   updateProfile,
+  deleteProfile,
   isCreating,
   isUpdating,
+  isDeleting,
 }: AgentProfileTabProps) {
   const [selectedProfileKey, setSelectedProfileKey] = useState<string>('new')
   const [name, setName] = useState('')
@@ -31,6 +35,7 @@ export function AgentProfileTab({
   const [customCwd, setCustomCwd] = useState('')
   const [envText, setEnvText] = useState('')
   const [validationMessage, setValidationMessage] = useState<string | null>(null)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   const selectedProfile = useMemo(
     () => profiles.find((profile) => String(profile.id) === selectedProfileKey) ?? null,
@@ -88,6 +93,18 @@ export function AgentProfileTab({
     name.trim().length > 0 &&
     (defaultCwdKind !== 'custom' || customCwd.trim().length > 0) &&
     invalidEnvLines.length === 0
+
+  async function handleDelete() {
+    if (!selectedProfile) return
+    setDeleteError(null)
+    try {
+      await deleteProfile(selectedProfile.id)
+      setSelectedProfileKey('new')
+      setValidationMessage(null)
+    } catch (error) {
+      setDeleteError(error instanceof Error ? error.message : String(error))
+    }
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -169,6 +186,16 @@ export function AgentProfileTab({
             {selectedProfile ? <small>{selectedProfile.shortRef}</small> : null}
           </div>
           <div className={styles.actions}>
+            {selectedProfile ? (
+              <button
+                type="button"
+                className={styles.deleteButton}
+                onClick={() => void handleDelete()}
+                disabled={isDeleting || isUpdating}
+              >
+                {isDeleting ? 'deleting' : 'delete profile'}
+              </button>
+            ) : null}
             <button type="button" onClick={validateProfileDraft}>
               validate
             </button>
@@ -242,6 +269,7 @@ export function AgentProfileTab({
         </label>
 
         {validationMessage ? <p className={styles.validation}>{validationMessage}</p> : null}
+        {deleteError ? <p className={styles.error}>{deleteError}</p> : null}
       </form>
     </div>
   )

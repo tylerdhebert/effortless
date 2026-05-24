@@ -15,7 +15,7 @@ import { getEffort } from '../../../core/efforts'
 import { listPlans } from '../../../core/plans'
 import { getRepo } from '../../../core/repos'
 import { listReferences } from '../../../core/references'
-import { option, requiredOption, bodyArg } from '../args'
+import { option, requiredOption, bodyArg, isBrief } from '../args'
 import { db, resolveTask, wait } from '../context'
 import {
   printArtifactPreview,
@@ -93,14 +93,15 @@ export async function handleTask(surface: string, command: string): Promise<bool
   }
 
   if (command === 'context') {
+    const brief = isBrief()
     const task = resolveTask(db, resolveTaskRef())
     const effort = getEffort(db, task.effortId)
     const plans = listPlans(db, effort.id)
     const effortTasks = listTasks(db, effort.id)
     printTask(task)
     console.log(task.title)
-    printTemplatePlaybook(db, effort.template)
-    printSurfaceMandate(db, 'task', task.repoId)
+    printTemplatePlaybook(db, effort.template, { brief })
+    printSurfaceMandate(db, 'task', task.repoId, { brief })
     printTemplateWorkflow(effort, {
       plans: plans.length,
       acceptedPlans: plans.filter((plan) => plan.accepted).length,
@@ -108,7 +109,7 @@ export async function handleTask(surface: string, command: string): Promise<bool
       acceptedTasks: effortTasks.filter((candidate) => candidate.status === 'accepted').length,
       mergedTasks: effortTasks.filter((candidate) => candidate.status === 'merged').length,
     })
-    printRelatedMandates(db, ['effort', 'review'], task.repoId)
+    printRelatedMandates(db, ['effort', 'review'], task.repoId, { brief })
     console.log('')
     console.log('description')
     console.log(task.description)
@@ -149,8 +150,10 @@ export async function handleTask(surface: string, command: string): Promise<bool
     }
 
     const references = listReferences(db, 'task', task.id)
-    printExpandedReferences(db, references)
-    printComments(comments)
+    printExpandedReferences(db, references, { brief })
+    if (!brief) {
+      printComments(comments)
+    }
 
     return true
   }

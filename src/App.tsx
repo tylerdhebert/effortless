@@ -505,6 +505,17 @@ function App() {
     },
   })
 
+  const deleteAgentProfile = useMutation({
+    mutationFn: (profileId: number) => window.effortless.deleteAgentProfile(profileId),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['agent-profiles'] }),
+        queryClient.invalidateQueries({ queryKey: ['app-state'] }),
+        queryClient.invalidateQueries({ queryKey: ['efforts'] }),
+      ])
+    },
+  })
+
   const updateTemplatePlaybook = useMutation({
     mutationFn: (input: { template: 'bugfix' | 'delivery' | 'investigation'; body: string }) =>
       window.effortless.updateTemplatePlaybook(input),
@@ -585,6 +596,24 @@ function App() {
         provider,
         profileId,
         purpose: 'implementation',
+      })
+      await window.effortless.startAgentRun(prepared.run.id, terminalStartSize)
+      return prepared
+    },
+    onSuccess: async (prepared) => {
+      setActiveEffortDrawer(null)
+      await refreshAgentRunState(prepared.run.terminalTabKey)
+    },
+  })
+
+  const rerunTaskRun = useMutation({
+    mutationFn: async ({ task, provider, profileId }: { task: Task; provider: AgentProvider; profileId: number | null }) => {
+      const prepared = await window.effortless.prepareTaskRun({
+        taskId: task.id,
+        provider,
+        profileId,
+        purpose: 'implementation',
+        label: 'rerun',
       })
       await window.effortless.startAgentRun(prepared.run.id, terminalStartSize)
       return prepared
@@ -683,8 +712,19 @@ function App() {
 
   useEffect(() => {
     return window.effortless.onAgentRunTerminalEvent((event) => {
+      if (event.kind === 'started') {
+        setActiveTerminalTabKey(event.body ?? 'main')
+        void queryClient.invalidateQueries({ queryKey: ['agent-runs'] })
+        void queryClient.invalidateQueries({ queryKey: ['agent-runs', 'live-sessions'] })
+        void queryClient.invalidateQueries({ queryKey: ['app-state'] })
+        void queryClient.invalidateQueries({ queryKey: ['notifications'] })
+        void queryClient.invalidateQueries({ queryKey: ['notifications-count'] })
+        return
+      }
       if (event.kind !== 'exit' && event.kind !== 'error') return
       void queryClient.invalidateQueries({ queryKey: ['agent-runs'] })
+      void queryClient.invalidateQueries({ queryKey: ['notifications'] })
+      void queryClient.invalidateQueries({ queryKey: ['notifications-count'] })
       void queryClient.invalidateQueries({ queryKey: ['agent-runs', 'live-sessions'] })
       void queryClient.invalidateQueries({ queryKey: ['app-state'] })
       if (selectedEffort?.id) {
@@ -832,13 +872,29 @@ function App() {
       return
     }
 
-    if (notification.kind === 'input-request') {
+    if (notification.kind === 'run-failed') {
+      if (notification.taskId) {
+        setSelectedTaskId(notification.taskId)
+        setSelectedPlanId(null)
+        setActiveEffortDrawer('tasks')
+      } else {
+        setActiveEffortDrawer(null)
+      }
+      setActiveTerminalTabKey(notification.terminalTabKey ?? 'main')
+      return
+    }
+
+    if (notification.kind === 'input-request' || notification.kind === 'run-input-request') {
       setActiveEffortDrawer('inputs')
       const input = await window.effortless.getInputRequest(notification.entityShortRef)
       setFocusedInputId(input.id)
       if (input.taskId) {
         setSelectedTaskId(input.taskId)
         setSelectedPlanId(null)
+      }
+      if (notification.terminalTabKey) {
+        setActiveTerminalTabKey(notification.terminalTabKey)
+        setActiveEffortDrawer(null)
       }
     }
   }
@@ -984,6 +1040,7 @@ function App() {
             deleteRepo={repoMutations.deleteRepo.mutateAsync}
             createAgentProfile={createAgentProfile.mutateAsync}
             updateAgentProfile={updateAgentProfile.mutateAsync}
+            deleteAgentProfile={deleteAgentProfile.mutateAsync}
             createMandate={mandateMutations.createMandate.mutateAsync}
             updateMandate={mandateMutations.updateMandate.mutateAsync}
             deleteMandate={mandateMutations.deleteMandate.mutateAsync}
@@ -994,6 +1051,7 @@ function App() {
             isDeletingRepo={repoMutations.deleteRepo.isPending}
             isCreatingAgentProfile={createAgentProfile.isPending}
             isUpdatingAgentProfile={updateAgentProfile.isPending}
+            isDeletingAgentProfile={deleteAgentProfile.isPending}
             isCreatingMandate={mandateMutations.createMandate.isPending}
             isUpdatingMandate={mandateMutations.updateMandate.isPending}
             isDeletingMandate={mandateMutations.deleteMandate.isPending}
@@ -1343,11 +1401,13 @@ function App() {
                               onRunBuild={(taskId) => taskMutations.runBuild.mutate(taskId)}
                               onWorkOnTask={(input) => sendTaskToEffortSession.mutate(input)}
                               onStartTaskRun={(input) => startTaskRun.mutate(input)}
+                              onRerunTaskRun={(input) => rerunTaskRun.mutate(input)}
                               onMergeTask={(taskId) => taskMutations.mergeTask.mutate(taskId)}
                               onApplyReview={(reviewId) => reviewMutations.applyReview.mutate({ reviewId })}
                               onRequestReviewChanges={(input) => reviewMutations.requestReviewChanges.mutate(input)}
                               isRunningBuild={taskMutations.runBuild.isPending}
                               isLaunchingTask={sendTaskToEffortSession.isPending || startTaskRun.isPending}
+                              isRerunningTask={rerunTaskRun.isPending}
                               isMergingTask={taskMutations.mergeTask.isPending}
                               isApplyingReview={reviewMutations.applyReview.isPending}
                               isRequestingReviewChanges={reviewMutations.requestReviewChanges.isPending}

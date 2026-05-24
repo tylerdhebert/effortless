@@ -1,6 +1,11 @@
 import { useQuery } from '@tanstack/react-query'
+import type { PendingNotification } from '../../core/notifications'
 
-export function useNotifications() {
+export function useNotifications(): {
+  notifications: PendingNotification[]
+  count: number
+  isLoading: boolean
+} {
   const notificationsQuery = useQuery({
     queryKey: ['notifications'],
     queryFn: () => window.effortless.listPendingNotifications(),

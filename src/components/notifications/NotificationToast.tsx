@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { ChevronLeft, ChevronRight, X } from 'lucide-react'
-import type { PendingNotification } from '../../../core/notifications'
+import { formatNotificationKind, type PendingNotification } from '../../../core/notifications'
 import styles from './NotificationToast.module.css'
 
 type NotificationToastProps = {
@@ -26,7 +26,7 @@ export function NotificationToast({
   const [index, setIndex] = useState(0)
   const [newNotifications, setNewNotifications] = useState<PendingNotification[]>([])
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const prevIdsRef = useRef<Set<number>>(new Set())
+  const prevIdsRef = useRef<Set<string>>(new Set())
   const hasEstablishedBaselineRef = useRef(false)
 
   const durationMs = toastDurationSeconds * 1000
@@ -38,7 +38,8 @@ export function NotificationToast({
   useEffect(() => {
     if (isLoading) return
 
-    const currentIds = new Set(notifications.map((n) => n.id))
+    const notificationKey = (notification: PendingNotification) => `${notification.kind}-${notification.id}`
+    const currentIds = new Set(notifications.map(notificationKey))
 
     if (!hasEstablishedBaselineRef.current) {
       prevIdsRef.current = currentIds
@@ -46,7 +47,7 @@ export function NotificationToast({
       return
     }
 
-    const arrived = notifications.filter((n) => !prevIdsRef.current.has(n.id))
+    const arrived = notifications.filter((notification) => !prevIdsRef.current.has(notificationKey(notification)))
     prevIdsRef.current = currentIds
 
     if (arrived.length > 0) {
@@ -57,7 +58,7 @@ export function NotificationToast({
       if (osNotificationsEnabled) {
         for (const notification of arrived) {
           window.effortless.showOSNotification(
-            `${notification.effortShortRef}: ${notification.kind.replace('-', ' ')}`,
+            `${notification.effortShortRef}: ${formatNotificationKind(notification.kind)}`,
             notification.message,
           )
         }
@@ -161,7 +162,7 @@ export function NotificationToast({
     >
       <div className={styles.toastContent}>
         <div className={styles.toastHeader}>
-          <span className={styles.toastKind}>{current.kind.replace('-', ' ')}</span>
+          <span className={styles.toastKind}>{formatNotificationKind(current.kind)}</span>
           <button
             type="button"
             className={styles.toastClose}

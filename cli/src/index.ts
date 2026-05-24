@@ -1,7 +1,7 @@
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { rawArgs, setRawArgs } from './args'
-import { printHelp } from './render'
+import { rawArgs, setRawArgs, wantsHelp } from './args'
+import { printHelp, resolveHelpDomain } from './help'
 import { handleBuild } from './commands/build'
 import { handleEffort } from './commands/effort'
 import { handleInput } from './commands/input'
@@ -28,8 +28,18 @@ export async function runCli(args = rawArgs, database?: AppDatabase): Promise<vo
 
   const [surface, command] = args
 
-  if (!surface || !command) {
-    printHelp()
+  if (wantsHelp() && (!surface || command === 'help')) {
+    printHelp(resolveHelpDomain(surface) ?? 'root')
+    return
+  }
+
+  if (!surface || command === 'help') {
+    printHelp(resolveHelpDomain(surface) ?? 'root')
+    return
+  }
+
+  if (wantsHelp()) {
+    printHelp(resolveHelpDomain(surface) ?? 'root')
     return
   }
 
@@ -56,7 +66,12 @@ export async function runCli(args = rawArgs, database?: AppDatabase): Promise<vo
     }
   }
 
-  printHelp()
+  const domain = resolveHelpDomain(surface)
+  if (domain) {
+    printHelp(domain)
+    return
+  }
+  printHelp('root')
 }
 
 const executedPath = process.argv[1] ? path.resolve(process.argv[1]) : null

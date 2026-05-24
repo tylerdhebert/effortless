@@ -3,7 +3,7 @@ import { getLatestTaskBuild } from '../../../core/builds'
 import { getEffort } from '../../../core/efforts'
 import { getRepo } from '../../../core/repos'
 import { getTask, listTaskComments } from '../../../core/tasks'
-import { requiredOption, bodyArg } from '../args'
+import { requiredOption, bodyArg, isBrief } from '../args'
 import { db, resolveTask } from '../context'
 import {
   printArtifactPreview,
@@ -63,13 +63,14 @@ export async function handleReview(surface: string, command: string): Promise<bo
   }
 
   if (command === 'context') {
+    const brief = isBrief()
     const review = getReviewByRef(db, requiredOption('--review'))
     const task = getTask(db, review.taskId)
     const effort = getEffort(db, task.effortId)
     printReview(review)
-    printTemplatePlaybook(db, effort.template)
-    printSurfaceMandate(db, 'review', task.repoId)
-    printRelatedMandates(db, ['effort', 'task'], task.repoId)
+    printTemplatePlaybook(db, effort.template, { brief })
+    printSurfaceMandate(db, 'review', task.repoId, { brief })
+    printRelatedMandates(db, ['effort', 'task'], task.repoId, { brief })
     printHandoffSummary(review.summary)
     printArtifactPreview(review.body, `efl review show --review ${review.shortRef}`)
 
@@ -119,8 +120,10 @@ export async function handleReview(surface: string, command: string): Promise<bo
     const comments = listTaskComments(db, task.id)
     printLatestUpdate(comments)
     const { listReferences } = await import('../../../core/references')
-    printExpandedReferences(db, listReferences(db, 'review', review.id))
-    printComments(comments)
+    printExpandedReferences(db, listReferences(db, 'review', review.id), { brief })
+    if (!brief) {
+      printComments(comments)
+    }
 
     return true
   }

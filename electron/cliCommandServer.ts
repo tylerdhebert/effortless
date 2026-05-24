@@ -5,6 +5,7 @@ import path from 'node:path'
 import { getAppPaths } from '../core/appPaths'
 import type { AppDatabase } from '../core/db'
 import { runCli } from '../cli/src/index'
+import { setCliRunStarter, type CliRunStarter } from '../cli/src/context'
 
 type CliCommandRequest = {
   args: string[]
@@ -24,7 +25,11 @@ export type CliCommandServer = {
 
 let commandQueue = Promise.resolve()
 
-export async function startCliCommandServer(db: AppDatabase): Promise<CliCommandServer> {
+export async function startCliCommandServer(
+  db: AppDatabase,
+  runStarter?: CliRunStarter,
+): Promise<CliCommandServer> {
+  setCliRunStarter(runStarter ?? null)
   const token = randomBytes(32).toString('hex')
   const server = http.createServer((request, response) => {
     void handleCliRequest(db, token, request, response)

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { AlertTriangle, Clock } from 'lucide-react'
-import type { PendingNotification } from '../../../core/notifications'
+import { formatNotificationKind, type PendingNotification } from '../../../core/notifications'
 import styles from './NotificationFooter.module.css'
 
 type NotificationFooterProps = {
@@ -51,7 +51,7 @@ export function NotificationFooter({ count, notifications, onNavigate }: Notific
           ) : (
             <ul className={styles.list}>
               {notifications.map((notification) => (
-                <li key={notification.id}>
+                <li key={`${notification.kind}-${notification.id}`}>
                   <button
                     type="button"
                     className={styles.item}
@@ -66,7 +66,7 @@ export function NotificationFooter({ count, notifications, onNavigate }: Notific
                         {formatElapsed(notification.startedAt)}
                       </span>
                     </div>
-                    <div className={styles.itemType}>{notification.kind.replace('-', ' ')}</div>
+                    <div className={styles.itemType}>{formatNotificationKind(notification.kind)}</div>
                     <div className={styles.itemMessage}>{notification.message}</div>
                   </button>
                 </li>

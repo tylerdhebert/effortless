@@ -31,6 +31,7 @@ type ManageSurfaceProps = {
   deleteRepo: (repoId: number) => Promise<void>
   createAgentProfile: (input: CreateAgentProfileInput) => Promise<AgentProfile>
   updateAgentProfile: (input: UpdateAgentProfileInput) => Promise<AgentProfile>
+  deleteAgentProfile: (profileId: number) => Promise<void>
   createMandate: (input: { workSurface: WorkSurface; repoId: number | null; sourceType: MandateSourceType; body: string | null; filePath: string | null }) => Promise<Mandate>
   updateMandate: (input: { mandateId: number; workSurface: WorkSurface; repoId: number | null; sourceType: MandateSourceType; body: string | null; filePath: string | null }) => Promise<Mandate>
   deleteMandate: (mandateId: number) => Promise<void>
@@ -41,6 +42,7 @@ type ManageSurfaceProps = {
   isDeletingRepo: boolean
   isCreatingAgentProfile: boolean
   isUpdatingAgentProfile: boolean
+  isDeletingAgentProfile: boolean
   isCreatingMandate: boolean
   isUpdatingMandate: boolean
   isDeletingMandate: boolean
@@ -80,6 +82,7 @@ export function ManageSurface({
   deleteRepo,
   createAgentProfile,
   updateAgentProfile,
+  deleteAgentProfile,
   createMandate,
   updateMandate,
   deleteMandate,
@@ -90,6 +93,7 @@ export function ManageSurface({
   isDeletingRepo,
   isCreatingAgentProfile,
   isUpdatingAgentProfile,
+  isDeletingAgentProfile,
   isCreatingMandate,
   isUpdatingMandate,
   isDeletingMandate,
@@ -323,8 +327,10 @@ export function ManageSurface({
                 profiles={agentProfiles}
                 createProfile={createAgentProfile}
                 updateProfile={updateAgentProfile}
+                deleteProfile={deleteAgentProfile}
                 isCreating={isCreatingAgentProfile}
                 isUpdating={isUpdatingAgentProfile}
+                isDeleting={isDeletingAgentProfile}
               />
             </section>
           </section>

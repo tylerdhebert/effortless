@@ -9,6 +9,24 @@ import { option } from './args'
 
 export let db: AppDatabase = undefined as unknown as AppDatabase
 
+export type CliRunStarter = (runId: number) => Promise<void>
+
+let runStarter: CliRunStarter | null = null
+
+export function setCliRunStarter(starter: CliRunStarter | null): void {
+  runStarter = starter
+}
+
+export async function startPreparedRun(runId: number): Promise<void> {
+  if (!runStarter) {
+    throw new Error(
+      'efl run start requires the effortless desktop app running (it hosts the terminal). ' +
+        'start effortless, then retry — or use the UI start button.',
+    )
+  }
+  await runStarter(runId)
+}
+
 export function setCliDatabase(database: AppDatabase): void {
   db = database
 }

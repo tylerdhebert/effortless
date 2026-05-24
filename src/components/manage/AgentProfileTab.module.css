@@ -107,6 +107,11 @@
   justify-content: flex-end;
 }
 
+.deleteButton {
+  border-color: color-mix(in srgb, #ffb0a5 40%, var(--line-strong));
+  color: #ffb0a5;
+}
+
 .field {
   display: grid;
   gap: 8px;

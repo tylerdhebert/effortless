@@ -75,6 +75,40 @@ export function createAgentProfile(db: AppDatabase, input: CreateAgentProfileInp
   return getAgentProfile(db, id)
 }
 
+export function countAgentProfileReferences(
+  db: AppDatabase,
+  profileId: number,
+): { runs: number; efforts: number } {
+  getAgentProfile(db, profileId)
+  const runs =
+    db.prepare<{ count: number }>(`SELECT COUNT(*) AS count FROM agent_runs WHERE profile_id = ?`).get(profileId)
+      ?.count ?? 0
+  const efforts =
+    db
+      .prepare<{ count: number }>(`SELECT COUNT(*) AS count FROM efforts WHERE default_profile_id = ?`)
+      .get(profileId)?.count ?? 0
+  return { runs, efforts }
+}
+
+export function deleteAgentProfile(db: AppDatabase, profileId: number): void {
+  const { runs, efforts } = countAgentProfileReferences(db, profileId)
+  if (runs > 0) {
+    throw new Error(`profile is used by ${runs} run${runs === 1 ? '' : 's'}`)
+  }
+  if (efforts > 0) {
+    throw new Error(`profile is the default on ${efforts} effort${efforts === 1 ? '' : 's'}`)
+  }
+
+  const profileCount =
+    db.prepare<{ count: number }>(`SELECT COUNT(*) AS count FROM agent_profiles`).get()?.count ?? 0
+  if (profileCount <= 1) {
+    throw new Error('cannot delete the last profile')
+  }
+
+  db.prepare(`DELETE FROM agent_profiles WHERE id = ?`).run(profileId)
+  bumpAppState(db)
+}
+
 export function updateAgentProfile(db: AppDatabase, input: UpdateAgentProfileInput): AgentProfile {
   getAgentProfile(db, input.profileId)
   db.prepare(`

@@ -1,7 +1,7 @@
 import { createPlan, getPlanByRef, listPlanComments, listPlans, markPlanReady } from '../../../core/plans'
 import { getEffort } from '../../../core/efforts'
 import { listTasks } from '../../../core/tasks'
-import { requiredOption, bodyArg } from '../args'
+import { requiredOption, bodyArg, isBrief } from '../args'
 import { db } from '../context'
 import {
   printArtifactPreview,
@@ -58,6 +58,7 @@ export async function handlePlan(surface: string, command: string): Promise<bool
   }
 
   if (command === 'context') {
+    const brief = isBrief()
     const plan = getPlanByRef(db, requiredOption('--plan'))
     const effort = getEffort(db, plan.effortId)
     const plans = listPlans(db, effort.id)
@@ -65,8 +66,8 @@ export async function handlePlan(surface: string, command: string): Promise<bool
     printPlan(plan)
     console.log(`effort ${effort.shortRef} ${effort.template} ${effort.status}`)
     console.log(effort.title)
-    printTemplatePlaybook(db, effort.template)
-    printSurfaceMandate(db, 'plan')
+    printTemplatePlaybook(db, effort.template, { brief })
+    printSurfaceMandate(db, 'plan', null, { brief })
     printTemplateWorkflow(effort, {
       plans: plans.length,
       acceptedPlans: plans.filter((candidate) => candidate.accepted).length,
@@ -74,7 +75,7 @@ export async function handlePlan(surface: string, command: string): Promise<bool
       acceptedTasks: tasks.filter((task) => task.status === 'accepted').length,
       mergedTasks: tasks.filter((task) => task.status === 'merged').length,
     })
-    printRelatedMandates(db, ['effort', 'task', 'review', 'run'])
+    printRelatedMandates(db, ['effort', 'task', 'review', 'run'], null, { brief })
 
     const comments = listPlanComments(db, plan.id)
     printLatestUpdate(comments)
@@ -82,8 +83,10 @@ export async function handlePlan(surface: string, command: string): Promise<bool
     printArtifactPreview(plan.body, `efl plan show --plan ${plan.shortRef}`)
 
     const { listReferences } = await import('../../../core/references')
-    printExpandedReferences(db, listReferences(db, 'plan', plan.id))
-    printComments(comments)
+    printExpandedReferences(db, listReferences(db, 'plan', plan.id), { brief })
+    if (!brief) {
+      printComments(comments)
+    }
 
     return true
   }

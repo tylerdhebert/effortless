@@ -3,7 +3,7 @@ import { listInputRequests } from '../../../core/inputs'
 import { listPlans } from '../../../core/plans'
 import { listReferences } from '../../../core/references'
 import { listTasks } from '../../../core/tasks'
-import { bodyArg, option, requiredOption } from '../args'
+import { bodyArg, isBrief, option, requiredOption } from '../args'
 import { db } from '../context'
 import {
   printArtifactPreview,
@@ -59,6 +59,7 @@ export async function handleEffort(surface: string, command: string): Promise<bo
   }
 
   if (command === 'context') {
+    const brief = isBrief()
     const effort = getEffortByRef(db, requiredOption('--effort'))
     const plans = listPlans(db, effort.id)
     const acceptedPlan = plans.find((plan) => plan.accepted) ?? null
@@ -68,8 +69,8 @@ export async function handleEffort(surface: string, command: string): Promise<bo
 
     console.log(`${effort.shortRef} ${effort.template} ${effort.status}`)
     console.log(effort.title)
-    printTemplatePlaybook(db, effort.template)
-    printSurfaceMandate(db, 'effort')
+    printTemplatePlaybook(db, effort.template, { brief })
+    printSurfaceMandate(db, 'effort', null, { brief })
     printTemplateWorkflow(effort, {
       plans: plans.length,
       acceptedPlans: plans.filter((plan) => plan.accepted).length,
@@ -77,7 +78,7 @@ export async function handleEffort(surface: string, command: string): Promise<bo
       acceptedTasks: tasks.filter((task) => task.status === 'accepted').length,
       mergedTasks: tasks.filter((task) => task.status === 'merged').length,
     })
-    printRelatedMandates(db, ['plan', 'task', 'review', 'run'])
+    printRelatedMandates(db, ['plan', 'task', 'review', 'run'], null, { brief })
     console.log('')
     console.log('description')
     console.log(effort.description)
@@ -117,7 +118,7 @@ export async function handleEffort(surface: string, command: string): Promise<bo
       }
     }
 
-    printExpandedReferences(db, references)
+    printExpandedReferences(db, references, { brief })
 
     return true
   }
@@ -137,8 +138,7 @@ export async function handleEffort(surface: string, command: string): Promise<bo
     return true
   }
 
-  console.log('effort commands: create, list, show, context, summary, complete')
-  return true
+  return false
 }
 
 function firstLine(value: string): string {

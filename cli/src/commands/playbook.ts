@@ -47,8 +47,7 @@ export async function handlePlaybook(surface: string, command: string): Promise<
     return true
   }
 
-  console.log('playbook commands: list, show, update, reset')
-  return true
+  return false
 }
 
 function requiredTemplate(): EffortTemplate {

@@ -1,6 +1,10 @@
 import type { AppDatabase } from './db'
 
-type PendingNotificationKind = 'task-review' | 'input-request'
+export type PendingNotificationKind =
+  | 'task-review'
+  | 'input-request'
+  | 'run-input-request'
+  | 'run-failed'
 
 export type PendingNotification = {
   id: number
@@ -13,12 +17,28 @@ export type PendingNotification = {
   entityType: string
   message: string
   startedAt: string
+  taskId: number | null
+  terminalTabKey: string | null
+}
+
+export function formatNotificationKind(kind: PendingNotificationKind): string {
+  switch (kind) {
+    case 'task-review':
+      return 'task review'
+    case 'input-request':
+      return 'input request'
+    case 'run-input-request':
+      return 'run input'
+    case 'run-failed':
+      return 'run failed'
+    default:
+      return kind
+  }
 }
 
 export function listPendingNotifications(db: AppDatabase): PendingNotification[] {
   const notifications: PendingNotification[] = []
 
-  // Tasks in reviewing status
   const taskRows = db
     .prepare<{
       id: number
@@ -55,10 +75,11 @@ export function listPendingNotifications(db: AppDatabase): PendingNotification[]
       entityType: 'task',
       message: row.title,
       startedAt: row.updated_at,
+      taskId: row.id,
+      terminalTabKey: null,
     })
   }
 
-  // Pending input requests
   const inputRows = db
     .prepare<{
       id: number
@@ -67,9 +88,11 @@ export function listPendingNotifications(db: AppDatabase): PendingNotification[]
       effort_short_ref: string
       effort_title: string
       task_id: number | null
+      task_short_ref: string | null
       run_id: number | null
+      run_short_ref: string | null
+      run_terminal_tab_key: string | null
       prompt: string
-      type: string
       requested_at: string
     }>(`
       SELECT
@@ -79,31 +102,82 @@ export function listPendingNotifications(db: AppDatabase): PendingNotification[]
         efforts.short_ref AS effort_short_ref,
         efforts.title AS effort_title,
         input_requests.task_id,
+        tasks.short_ref AS task_short_ref,
         input_requests.run_id,
+        agent_runs.short_ref AS run_short_ref,
+        agent_runs.terminal_tab_key AS run_terminal_tab_key,
         input_requests.prompt,
-        input_requests.type,
         input_requests.requested_at
       FROM input_requests
       JOIN efforts ON efforts.id = input_requests.effort_id
+      LEFT JOIN tasks ON tasks.id = input_requests.task_id
+      LEFT JOIN agent_runs ON agent_runs.id = input_requests.run_id
       WHERE input_requests.status = 'pending'
     `)
     .all()
 
   for (const row of inputRows) {
-    const entityType = row.task_id ? 'task' : row.run_id ? 'run' : 'effort'
-    const entityId = row.task_id ?? row.run_id ?? row.effort_id
-
+    const runScoped = row.run_id != null
     notifications.push({
       id: row.id,
-      kind: 'input-request',
+      kind: runScoped ? 'run-input-request' : 'input-request',
       effortId: row.effort_id,
       effortShortRef: row.effort_short_ref,
       effortTitle: row.effort_title,
-      entityId: entityId,
+      entityId: row.id,
       entityShortRef: row.short_ref,
-      entityType: entityType,
+      entityType: runScoped ? 'run' : row.task_id ? 'task' : 'effort',
       message: row.prompt,
       startedAt: row.requested_at,
+      taskId: row.task_id,
+      terminalTabKey: row.run_terminal_tab_key,
+    })
+  }
+
+  const failedRunRows = db
+    .prepare<{
+      id: number
+      short_ref: string
+      effort_id: number
+      effort_short_ref: string
+      effort_title: string
+      task_id: number | null
+      label: string
+      error: string | null
+      terminal_tab_key: string | null
+      updated_at: string
+    }>(`
+      SELECT
+        agent_runs.id,
+        agent_runs.short_ref,
+        efforts.id AS effort_id,
+        efforts.short_ref AS effort_short_ref,
+        efforts.title AS effort_title,
+        agent_runs.task_id,
+        agent_runs.label,
+        agent_runs.error,
+        agent_runs.terminal_tab_key,
+        agent_runs.updated_at
+      FROM agent_runs
+      JOIN efforts ON efforts.id = agent_runs.effort_id
+      WHERE agent_runs.status = 'failed'
+    `)
+    .all()
+
+  for (const row of failedRunRows) {
+    notifications.push({
+      id: row.id,
+      kind: 'run-failed',
+      effortId: row.effort_id,
+      effortShortRef: row.effort_short_ref,
+      effortTitle: row.effort_title,
+      entityId: row.id,
+      entityShortRef: row.short_ref,
+      entityType: 'run',
+      message: row.error?.trim() || `${row.label} failed`,
+      startedAt: row.updated_at,
+      taskId: row.task_id,
+      terminalTabKey: row.terminal_tab_key,
     })
   }
 
@@ -113,19 +187,7 @@ export function listPendingNotifications(db: AppDatabase): PendingNotification[]
 }
 
 export function countPendingNotifications(db: AppDatabase): number {
-  const taskCount = db
-    .prepare<{ count: number }>(`
-      SELECT COUNT(*) AS count FROM tasks WHERE status = 'reviewing'
-    `)
-    .get()!.count
-
-  const inputCount = db
-    .prepare<{ count: number }>(`
-      SELECT COUNT(*) AS count FROM input_requests WHERE status = 'pending'
-    `)
-    .get()!.count
-
-  return taskCount + inputCount
+  return listPendingNotifications(db).length
 }
 
 export function getPendingNotificationsByEffort(

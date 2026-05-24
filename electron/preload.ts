@@ -152,6 +152,8 @@ contextBridge.exposeInMainWorld('effortless', {
     ipcRenderer.invoke('agentProfiles:create', input) as Promise<AgentProfile>,
   updateAgentProfile: (input: UpdateAgentProfileInput) =>
     ipcRenderer.invoke('agentProfiles:update', input) as Promise<AgentProfile>,
+  deleteAgentProfile: (profileId: number) =>
+    ipcRenderer.invoke('agentProfiles:delete', profileId) as Promise<void>,
   listAgentRuns: (effortId?: number | null) =>
     ipcRenderer.invoke('agentRuns:list', effortId ?? null) as Promise<AgentRun[]>,
   prepareEffortRun: (input: PrepareEffortRunInput) =>
@@ -206,13 +208,13 @@ contextBridge.exposeInMainWorld('effortless', {
   stopAgentRun: (runId: number) =>
     ipcRenderer.invoke('agentRuns:stop', runId) as Promise<void>,
   onAgentRunTerminalEvent: (handler: (event: {
-    kind: 'data' | 'exit' | 'error'
+    kind: 'data' | 'exit' | 'error' | 'started'
     runId: number
     body?: string
     exitCode?: number
   }) => void) => {
     const listener = (_event: Electron.IpcRendererEvent, payload: {
-      kind: 'data' | 'exit' | 'error'
+      kind: 'data' | 'exit' | 'error' | 'started'
       runId: number
       body?: string
       exitCode?: number

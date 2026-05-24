@@ -16,11 +16,17 @@ import type {
 
 const PREVIEW_LIMIT = 900
 
+export type ContextPrintOptions = {
+  brief?: boolean
+}
+
 export function printSurfaceMandate(
   db: AppDatabase,
   surface: WorkSurface,
   repoId: number | null = null,
+  options: ContextPrintOptions = {},
 ): void {
+  if (options.brief) return
   const mandate = resolveMandate(db, surface, repoId)
   if (!mandate) return
 
@@ -33,7 +39,9 @@ export function printRelatedMandates(
   db: AppDatabase,
   surfaces: WorkSurface[],
   repoId: number | null = null,
+  options: ContextPrintOptions = {},
 ): void {
+  if (options.brief) return
   const mandates = surfaces
     .map((surface) => ({ surface, resolved: resolveMandate(db, surface, repoId) }))
     .filter((entry) => entry.resolved != null)
@@ -47,7 +55,12 @@ export function printRelatedMandates(
   }
 }
 
-export function printTemplatePlaybook(db: AppDatabase, template: EffortTemplate): void {
+export function printTemplatePlaybook(
+  db: AppDatabase,
+  template: EffortTemplate,
+  options: ContextPrintOptions = {},
+): void {
+  if (options.brief) return
   const playbook = getTemplatePlaybook(db, template)
 
   console.log('')
@@ -118,7 +131,22 @@ export function printArtifactPreview(
   endSection(title)
 }
 
-export function printExpandedReferences(db: AppDatabase, references: Reference[]): void {
+export function printExpandedReferences(
+  db: AppDatabase,
+  references: Reference[],
+  options: ContextPrintOptions = {},
+): void {
+  if (options.brief) {
+    if (references.length === 0) return
+    printSection('references')
+    for (const reference of references) {
+      const label = reference.label ? ` ${reference.label}` : ''
+      console.log(`  ${reference.shortRef} ${reference.targetType}${label}`)
+    }
+    endSection('references')
+    return
+  }
+
   if (references.length === 0) return
 
   printSection('references')

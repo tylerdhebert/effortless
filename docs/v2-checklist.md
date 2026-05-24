@@ -99,7 +99,7 @@ The core loop is:
 - [x] List profiles with name, command template, environment, cwd mode, and env count.
 - [x] Create profile form.
 - [x] Edit profile form.
-- [ ] Delete profile support only after handling runs that reference the profile.
+- [x] Delete profile support only after handling runs that reference the profile.
 - [x] Let an effort choose its default profile.
 - [x] Show the selected effort profile in the effort header.
 - [x] Use the effort default profile when starting the main effort run.
@@ -178,9 +178,9 @@ The core loop is:
 - [x] Start a main effort run from the effort terminal.
 - [x] Stop running run.
 - [x] Let the effort surface choose the profile before starting main.
-- [ ] Rerun from existing task context by preparing a new run.
-- [ ] Keep task detail layout stable on narrow screens.
-- [ ] Build verification: `bun run build`.
+- [x] Rerun from existing task context by preparing a new run.
+- [x] Keep task detail layout stable on narrow screens.
+- [x] Build verification: `bun run build`.
 
 ## Phase 2H: Windows Profiles
 
@@ -216,7 +216,7 @@ The core loop is:
 - [x] Infer input target task from `EFFORTLESS_TASK`.
 - [x] Infer activity author label from `EFFORTLESS_RUN_LABEL`.
 - [x] Add `efl run show --run run-1`.
-- [ ] Add `efl run start --run run-1` if CLI-driven starts become useful.
+- [x] Add `efl run start --run run-1` if CLI-driven starts become useful.
 - [x] Add `efl run fail --run run-1 --body ...` for manual recovery.
 - [x] Add `efl run cancel --run run-1`.
 - [x] Add `efl run env --run run-1`.
@@ -266,11 +266,11 @@ The core loop is:
 - [x] Show active run count on effort.
 - [x] Show failed run state in task detail.
 - [x] Show completed run state in task detail.
-- [ ] Add notification kind for failed run if useful.
-- [ ] Add notification kind for waiting input tied to a run if useful.
+- [x] Add notification kind for failed run if useful.
+- [x] Add notification kind for waiting input tied to a run if useful.
 - [x] Refresh run/task queries on terminal exit and error events.
 - [x] Keep app-state polling invalidation working for CLI updates.
-- [ ] Build verification: `bun run build`.
+- [x] Build verification: `bun run build`.
 
 ## Phase 2L: Review Runs
 
@@ -329,12 +329,12 @@ The core loop is:
 
 ## Phase 2P.5: CLI Help And Bare-Agent Onboarding
 
-- [ ] Rewrite top-level `efl --help` so a fresh agent can understand the main loop without already knowing Effortless vocabulary.
-- [ ] Add command-specific help examples for the core agent flow: session bind, effort context, task context, checkpoint, artifact, input request, run show/list, and run recovery.
-- [ ] Make CLI help explain which commands infer `--run`, `--effort`, and `--task` from the active run environment.
-- [ ] Add a concise bare-agent quickstart that teaches the intended flow: bind session, read context, work in the right surface, checkpoint durable state, request input when blocked, and summarize before handoff.
-- [ ] Add provider-neutral startup guidance that fits Codex, Cursor, OpenCode, and Claude Code without assuming the agent has seen Effortless before.
-- [ ] Keep help output compact by default, with examples and deeper explanation available through explicit help/detail commands.
+- [x] Rewrite top-level `efl --help` so a fresh agent can understand the main loop without already knowing Effortless vocabulary.
+- [x] Add command-specific help examples for the core agent flow: session bind, effort context, task context, checkpoint, artifact, input request, run show/list, and run recovery.
+- [x] Make CLI help explain which commands infer `--run`, `--effort`, and `--task` from the active run environment.
+- [x] Add a concise bare-agent quickstart that teaches the intended flow: bind session, read context, work in the right surface, checkpoint durable state, request input when blocked, and summarize before handoff.
+- [x] Add provider-neutral startup guidance that fits Codex, Cursor, OpenCode, and Claude Code without assuming the agent has seen Effortless before.
+- [x] Keep help output compact by default, with examples and deeper explanation available through explicit help/detail commands.
 - [ ] Dogfood with a fresh agent and record where it still fumbles.
 
 ## Phase 2Q: Final Acceptance

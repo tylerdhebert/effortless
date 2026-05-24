@@ -96,81 +96,57 @@ export function printAgentProvider(provider: AgentProviderConfig): void {
   console.log('')
 }
 
-export function printAgentRun(run: AgentRun): void {
+export function printAgentRun(run: AgentRun, options: { brief?: boolean; verbose?: boolean } = {}): void {
+  if (options.brief) {
+    printAgentRunBrief(run)
+    return
+  }
+
+  const verbose = options.verbose ?? false
   console.log(`${run.shortRef} ${run.status} ${run.purpose} ${run.label}`)
   console.log(`provider ${run.provider}`)
   console.log(`task ${run.taskId ?? 'none'}`)
-  console.log(`cwd ${run.cwd}`)
-  console.log(`command ${run.command || '(not expanded)'}`)
+  if (verbose) {
+    console.log(`cwd ${run.cwd}`)
+    console.log(`command ${truncateCommand(run.command)}`)
+  }
 }
 
-export function printHelp(): void {
-  console.log('efl effort create --title "title" --description "description" [--template bugfix|delivery|investigation]')
-  console.log('efl effort list')
-  console.log('efl effort show --effort eff-1')
-  console.log('efl effort context --effort eff-1')
-  console.log('efl effort summary --effort eff-1 --body "summary" [--from-file summary.md]')
-  console.log('efl effort complete --effort eff-1')
-  console.log('efl playbook list')
-  console.log('efl playbook show --template delivery')
-  console.log('efl playbook update --template delivery --body "playbook body" [--from-file delivery.md]')
-  console.log('efl playbook reset --template delivery')
-  console.log('efl plan submit --effort eff-1 --body "plan here" [--from-file plan.md]')
-  console.log('efl plan list --effort eff-1')
-  console.log('efl plan show --plan plan-1')
-  console.log('efl plan context --plan plan-1')
-  console.log('efl plan ready --plan plan-1')
-  console.log(
-    'efl task create --effort eff-1 --title "title" --description "description" --repo repo-1 --branch agent/task',
-  )
-  console.log('efl task claim --task task-1')
-  console.log('efl task list --effort eff-1')
-  console.log('efl task show --task task-1')
-  console.log('efl task context --task task-1')
-  console.log('efl task plan --task task-1 --body "implementation plan" [--from-file plan.md]')
-  console.log('efl task checkpoint --task task-1 --body "message" [--from-file checkpoint.md]')
-  console.log('efl task artifact --task task-1 --body "artifact summary" [--from-file artifact.md]')
-  console.log('efl task ready --task task-1')
-  console.log('efl task merge --task task-1')
-  console.log('efl task worktree --task task-1')
-  console.log('efl run providers')
-  console.log('efl run profiles')
-  console.log('efl run prepare --effort eff-1 [--provider codex] [--profile 1] [--label main]')
-  console.log('efl run prepare --task task-1 [--provider codex] [--profile 1] [--label task-focus]')
-  console.log('efl run list [--task task-1]')
-  console.log('efl run show --run run-1')
-  console.log('efl run env --run run-1')
-  console.log('efl run fail --run run-1 --body "reason" [--from-file reason.md]')
-  console.log('efl run cancel --run run-1')
-  console.log('efl session set --run run-1 [--id <session-id>]')
-  console.log('efl session set --effort eff-1 [--id <session-id>]')
-  console.log('efl session show --run run-1')
-  console.log('efl session show --effort eff-1')
-  console.log('efl resume --run run-1')
-  console.log('efl resume --effort eff-1')
-  console.log('efl review submit --task task-1 --verdict approve --body "message" [--from-file review.md]')
-  console.log('efl review list --task task-1')
-  console.log('efl review show --review rev-1')
-  console.log('efl review context --review rev-1')
-  console.log('efl review ready --review rev-1')
-  console.log('efl repo create --name ui --path C:\\repo\\ui --base-branch main --build-command "bun run build"')
-  console.log('efl repo list')
-  console.log('efl build run [--task task-1]')
-  console.log('efl build status [--task task-1]')
-  console.log('efl input request --task task-1 --type text --prompt "What copy should this use?"')
-  console.log('efl input wait --input input-1')
-  console.log('efl input show --input input-1')
-  console.log('efl input answer --input input-1 --answer "Use the simple version"')
-  console.log('efl mandate list [--surface task] [--repo repo-1]')
-  console.log('efl mandate create --surface task --body "instructions" [--from-file mandate.md] [--repo repo-1]')
-  console.log('efl mandate create --surface task --source-type file --file /path/instructions.md [--repo repo-1]')
-  console.log('efl mandate update --mandate mandate-1 [--surface task] [--body "updated"] [--from-file mandate.md] [--file /path/new.md]')
-  console.log('efl mandate delete --mandate mandate-1')
-  console.log('efl mandate resolve --surface task [--repo repo-1]')
-  console.log('efl ref add --owner-type effort --owner-ref eff-1 --target-type file --file /path/notes.md --label "notes"')
-  console.log('efl ref add --owner-type task --owner-ref task-1 --target-type plan --target-id 2 --label "accepted plan"')
-  console.log('efl ref list --owner-type effort --owner-ref eff-1')
-  console.log('efl ref remove --ref ref-1')
+export function printAgentRunBrief(run: AgentRun): void {
+  const scope = run.taskId != null ? `task#${run.taskId}` : 'effort'
+  console.log(`${run.shortRef}  ${run.status.padEnd(9)}  ${run.label}  ${run.provider}  ${scope}`)
+}
+
+export function printAgentRunDetail(run: AgentRun, options: { brief?: boolean } = {}): void {
+  if (options.brief) {
+    printAgentRunBrief(run)
+    return
+  }
+
+  printAgentRun(run, { verbose: true })
+  console.log(`profile ${run.profileId}`)
+  console.log(`effort ${run.effortId}`)
+  console.log(`environment ${run.environment}`)
+  if (run.providerSessionId) {
+    console.log(`provider session ${run.providerSessionId}`)
+  }
+  if (run.command) {
+    console.log(`command ${truncateCommand(run.command)}`)
+  }
+  console.log(`context dir  ~/.effortless/runs/${run.shortRef}/`)
+  if (run.exitCode !== null) {
+    console.log(`exit ${run.exitCode}`)
+  }
+  if (run.error) {
+    console.log(`error ${run.error}`)
+  }
+}
+
+function truncateCommand(command: string, limit = 240): string {
+  const trimmed = command.trim()
+  if (!trimmed) return '(not expanded)'
+  if (trimmed.length <= limit) return trimmed
+  return `${trimmed.slice(0, limit).trimEnd()}… (truncated — see context pack, not the full shell line)`
 }
 
 export function planState(plan: Plan): string {

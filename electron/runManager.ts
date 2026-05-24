@@ -26,7 +26,7 @@ type RunSession = {
 }
 
 type TerminalEventSink = (event: {
-  kind: 'data' | 'exit' | 'error'
+  kind: 'data' | 'exit' | 'error' | 'started'
   runId: number
   body?: string
   exitCode?: number
@@ -86,6 +86,7 @@ export class RunManager {
       this.providerRunIds.add(runId)
       this.completedRunIds.delete(runId)
       markAgentRunStarted(this.db, runId)
+      this.emit({ kind: 'started', runId, body: run.terminalTabKey ?? 'main' })
 
       terminal.onData((body) => {
         const exitCode = parseProviderExitSentinel(body, runId)

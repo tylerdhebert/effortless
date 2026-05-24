@@ -4,7 +4,7 @@ import { Diff, Hunk, parseDiff, tokenize } from 'react-diff-view'
 import type { FileData, ViewType } from 'react-diff-view'
 import 'react-diff-view/style/index.css'
 import { refractor as rawRefractor } from 'refractor'
-import { Play, Send } from 'lucide-react'
+import { Play, RotateCcw, Send } from 'lucide-react'
 import type {
   AgentProfile,
   AgentProvider,
@@ -45,11 +45,13 @@ type TaskDetailPaneProps = {
   onRunBuild: (taskId: number) => void
   onWorkOnTask: (input: { task: Task; provider: AgentProvider; profileId: number | null }) => void
   onStartTaskRun: (input: { task: Task; provider: AgentProvider; profileId: number | null }) => void
+  onRerunTaskRun: (input: { task: Task; provider: AgentProvider; profileId: number | null }) => void
   onMergeTask: (taskId: number) => void
   onApplyReview: (reviewId: number) => void
   onRequestReviewChanges: (input: { reviewId: number; body: string }) => void
   isRunningBuild: boolean
   isLaunchingTask: boolean
+  isRerunningTask: boolean
   isMergingTask: boolean
   isApplyingReview: boolean
   isRequestingReviewChanges: boolean
@@ -73,11 +75,13 @@ export function TaskDetailPane({
   onRunBuild,
   onWorkOnTask,
   onStartTaskRun,
+  onRerunTaskRun,
   onMergeTask,
   onApplyReview,
   onRequestReviewChanges,
   isRunningBuild,
   isLaunchingTask,
+  isRerunningTask,
   isMergingTask,
   isApplyingReview,
   isRequestingReviewChanges,
@@ -170,6 +174,8 @@ export function TaskDetailPane({
     () => profiles.find((profile) => profile.id === launchProfileId) ?? null,
     [profiles, launchProfileId],
   )
+  const canRerun = taskRuns.length > 0
+  const launchBusy = isLaunchingTask || isRerunningTask
 
   if (!task) {
     return (
@@ -227,6 +233,7 @@ export function TaskDetailPane({
             </div>
           </div>
           <div className={styles['task-header-controls']}>
+            <div className={styles['task-launch-panel']}>
             <div className={styles['task-launch-controls']}>
               <label className={styles['task-launch-field']}>
                 <span>terminal</span>
@@ -265,6 +272,7 @@ export function TaskDetailPane({
                 </select>
               </label>
             </div>
+            <div className={styles['task-header-actions']}>
             <PillSwitcher
               ariaLabel="task detail mode"
               options={[
@@ -286,15 +294,30 @@ export function TaskDetailPane({
                   onWorkOnTask({ task, provider: launchProvider, profileId })
                 }
               }}
-              disabled={isLaunchingTask || (launchTarget === 'task' && profiles.length === 0)}
+              disabled={launchBusy || (launchTarget === 'task' && profiles.length === 0)}
             >
               {launchTarget === 'task' ? <Play size={14} aria-hidden="true" /> : <Send size={14} aria-hidden="true" />}
               <span>
-                {isLaunchingTask
+                {launchBusy
                   ? launchTarget === 'task' ? 'starting' : 'sending'
                   : launchTarget === 'task' ? 'start task run' : 'work on this'}
               </span>
             </button>
+            {canRerun ? (
+              <button
+                type="button"
+                className={styles['task-header-action']}
+                title="prepare a fresh task run with updated context"
+                onClick={() => {
+                  const profileId = selectedProfile?.id ?? defaultProfileId ?? null
+                  onRerunTaskRun({ task, provider: launchProvider, profileId })
+                }}
+                disabled={launchBusy || profiles.length === 0}
+              >
+                <RotateCcw size={14} aria-hidden="true" />
+                <span>{isRerunningTask ? 'rerunning' : 'rerun'}</span>
+              </button>
+            ) : null}
             <button
               type="button"
               className={styles['task-header-action']}
@@ -314,6 +337,8 @@ export function TaskDetailPane({
             >
               <span>merge</span>
             </button>
+            </div>
+            </div>
           </div>
         </div>
         {launchTarget === 'main' && mainRunLive ? (

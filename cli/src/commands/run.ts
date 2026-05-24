@@ -1,6 +1,7 @@
 import { listAgentProfiles } from '../../../core/agentProfiles'
 import {
   buildAgentRunEnvironment,
+  getAgentRun,
   listAgentRuns,
   listTaskRuns,
   markAgentRunCancelled,
@@ -9,12 +10,16 @@ import {
   prepareTaskRun,
 } from '../../../core/agentRuns'
 import type { AgentRun } from '../../../core/types'
-import { bodyArg } from '../args'
+import { bodyArg, isBrief, isVerbose, option } from '../args'
 import { listAgentProviders, parseAgentProvider } from '../../../core/agentProviders'
 import { getEffortByRef } from '../../../core/efforts'
-import { option } from '../args'
-import { db, resolveRunRef, resolveTask } from '../context'
-import { printAgentProfile, printAgentProvider, printAgentRun } from '../render'
+import { db, resolveRunRef, resolveTask, startPreparedRun } from '../context'
+import {
+  printAgentProfile,
+  printAgentProvider,
+  printAgentRun,
+  printAgentRunDetail,
+} from '../render'
 
 export async function handleRun(surface: string, command: string): Promise<boolean> {
   if (surface !== 'run') return false
@@ -54,7 +59,7 @@ export async function handleRun(surface: string, command: string): Promise<boole
           profileId,
           label: option('--label') ?? undefined,
     })
-    printAgentRun(prepared.run)
+    printAgentRunDetail(prepared.run)
     console.log(`profile ${prepared.profile.shortRef} ${prepared.profile.name}`)
     console.log('')
     console.log('env')
@@ -69,27 +74,27 @@ export async function handleRun(surface: string, command: string): Promise<boole
     const runs = taskRef
       ? listTaskRuns(db, resolveTask(db, taskRef).id)
       : listAgentRuns(db)
+    const verbose = isVerbose()
     for (const run of runs) {
-      printAgentRun(run)
+      printAgentRun(run, { brief: !verbose, verbose })
     }
+    return true
+  }
+
+  if (command === 'start') {
+    const run = resolveRunRef(db)
+    assertRunCanBeStarted(run)
+    await startPreparedRun(run.id)
+    const updated = getAgentRun(db, run.id)
+    printAgentRunDetail(updated, { brief: isBrief() })
+    console.log('')
+    console.log('started — watch the run in the effortless terminal UI')
     return true
   }
 
   if (command === 'show') {
     const run = resolveRunRef(db)
-    printAgentRun(run)
-    console.log(`profile ${run.profileId}`)
-    console.log(`effort ${run.effortId}`)
-    console.log(`environment ${run.environment}`)
-    if (run.providerSessionId) {
-      console.log(`provider session ${run.providerSessionId}`)
-    }
-    if (run.exitCode !== null) {
-      console.log(`exit ${run.exitCode}`)
-    }
-    if (run.error) {
-      console.log(`error ${run.error}`)
-    }
+    printAgentRunDetail(run, { brief: isBrief() })
     return true
   }
 
@@ -127,6 +132,16 @@ function assertRunCanBeMarkedFailed(run: AgentRun): void {
 
   if (run.status === 'exited' || run.status === 'cancelled') {
     throw new Error(`run ${run.shortRef} is already ${run.status}`)
+  }
+}
+
+function assertRunCanBeStarted(run: AgentRun): void {
+  if (run.status === 'running') {
+    return
+  }
+
+  if (run.status !== 'prepared') {
+    throw new Error(`run ${run.shortRef} is ${run.status}; only prepared runs can be started`)
   }
 }
 

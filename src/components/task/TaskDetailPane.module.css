@@ -19,18 +19,33 @@
 }
 
 .task-detail-header-row {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, max-content);
+  align-items: start;
   gap: 14px;
 }
 
 .task-header-controls {
-  display: inline-flex;
-  align-items: center;
+  display: grid;
   gap: 10px;
+  justify-items: end;
+  min-width: 0;
+}
+
+.task-launch-panel {
+  display: grid;
+  gap: 10px;
+  justify-items: end;
+  width: min(100%, 520px);
+}
+
+.task-header-actions {
+  display: flex;
   flex-wrap: wrap;
+  align-items: center;
   justify-content: flex-end;
+  gap: 8px;
+  width: 100%;
 }
 
 .task-launch-controls {
@@ -84,9 +99,9 @@
 
 .task-title-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   align-items: center;
-  gap: 12px;
+  gap: 8px;
 }
 
 .task-title-row h3 {
@@ -200,10 +215,9 @@
 }
 
 .expanded-meta {
-  display: flex;
-  align-items: stretch;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
   gap: 6px;
-  flex-wrap: wrap;
 }
 
 .chip-group {
@@ -535,50 +549,52 @@
   gap: 8px;
 }
 
+@media (max-width: 1100px) {
+  .task-detail-header-row {
+    grid-template-columns: 1fr;
+  }
+
+  .task-header-controls,
+  .task-launch-panel {
+    width: 100%;
+    justify-items: stretch;
+  }
+
+  .task-header-actions {
+    justify-content: stretch;
+  }
+
+  .task-header-actions .task-header-action {
+    flex: 1 1 140px;
+    justify-content: center;
+  }
+}
+
 @media (max-width: 960px) {
   .task-detail-supporting-grid {
     grid-template-columns: 1fr;
   }
 
-  .task-detail-header-row {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .task-title-row,
   .review-section-header {
     grid-template-columns: 1fr;
   }
 
-  .task-title-row :global(.toggle-switch),
   .review-section-header :global(.toggle-switch) {
     justify-self: stretch;
   }
 
-  .task-header-action {
-    justify-content: center;
-  }
-
-  .task-header-controls {
-    width: 100%;
-    justify-content: stretch;
-  }
-
   .task-launch-controls {
     width: 100%;
+    display: grid;
+    grid-template-columns: 1fr;
   }
 
-  .task-launch-field {
-    flex: 1 1 180px;
-  }
-
-  .task-header-controls :global(.pill-switcher) {
-    flex: 1;
-  }
-
-  .task-header-controls .task-header-action {
+  .task-launch-field select {
     width: 100%;
-    justify-content: center;
+  }
+
+  .expanded-meta {
+    grid-template-columns: 1fr;
   }
 
   .implementation-grid {

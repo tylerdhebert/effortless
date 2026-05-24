@@ -3,7 +3,12 @@ import { fileURLToPath } from 'node:url'
 import { createHash } from 'node:crypto'
 import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
-import { createAgentProfile, listAgentProfiles, updateAgentProfile } from '../core/agentProfiles'
+import {
+  createAgentProfile,
+  deleteAgentProfile,
+  listAgentProfiles,
+  updateAgentProfile,
+} from '../core/agentProfiles'
 import { listAgentRuns, markAgentRunExited, markAgentRunFailed, markAgentRunStarted, prepareEffortRun, prepareForkRun, prepareResumeRun, prepareTaskRun } from '../core/agentRuns'
 import { getLatestTaskBuild, runTaskBuild } from '../core/builds'
 import { getPtyRuntimeStatus, RunManager } from './runManager'
@@ -233,6 +238,9 @@ ipcMain.handle('tasks:updateDetails', (_event, input: UpdateTaskDetailsInput) =>
 ipcMain.handle('agentProfiles:list', () => listAgentProfiles(db))
 ipcMain.handle('agentProfiles:create', (_event, input: CreateAgentProfileInput) => createAgentProfile(db, input))
 ipcMain.handle('agentProfiles:update', (_event, input: UpdateAgentProfileInput) => updateAgentProfile(db, input))
+ipcMain.handle('agentProfiles:delete', (_event, profileId: number) => {
+  deleteAgentProfile(db, profileId)
+})
 ipcMain.handle('agentRuns:list', (_event, effortId?: number | null) => listAgentRuns(db, effortId ?? null))
 ipcMain.handle('agentRuns:prepareEffort', (_event, input: PrepareEffortRunInput) =>
   prepareEffortRun(db, input),
@@ -395,6 +403,6 @@ app.on('activate', () => {
 
 app.whenReady().then(async () => {
   bootstrapRunManager()
-  cliCommandServer = await startCliCommandServer(db)
+  cliCommandServer = await startCliCommandServer(db, (runId) => runManager.start(runId, { cols: 100, rows: 24 }))
   createWindow()
 })
