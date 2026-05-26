@@ -179,109 +179,107 @@ export function TaskDetailPane({
 
   if (!task) {
     return (
-      <div className={styles['task-detail-pane']}>
+      <div className="effort-zone">
         <p className="empty-state">select a task</p>
       </div>
     )
   }
 
   return (
-    <div className={styles['task-detail-pane']}>
-      <div className={styles['task-detail-header']}>
-        <div className={styles['task-detail-header-row']}>
-          <div className={styles['task-detail-header-copy']}>
-            <div className={styles['task-title-row']}>
-              <h3>{task.title}</h3>
-            </div>
-            <div className={styles['expanded-meta']}>
-              <div className={styles['chip-group']}>
-                <small>ref</small>
-                <span>{task.shortRef}</span>
-              </div>
-              <div className={styles['chip-group']}>
-                <small>status</small>
-                <span>{task.status}</span>
-              </div>
-              <div className={styles['chip-group']}>
-                <small>repo</small>
-                <span>{taskRepo?.name ?? 'no repo'}</span>
-              </div>
-              <div className={styles['chip-group']}>
-                <small>branch</small>
-                <span>{task.branchName ?? 'no branch'}</span>
-              </div>
-              <div className={styles['chip-group']}>
-                <small>worktree</small>
-                <span
-                  className={styles['worktree-chip']}
-                  title={task.worktreePath ?? 'no worktree yet'}
-                >
-                  {task.worktreePath ?? 'no worktree yet'}
-                </span>
-              </div>
-              {taskRuns.length > 0 ? (
-                <div className={styles['chip-group']}>
-                  <small>runs</small>
-                  <span className={styles['task-run-summary']}>
-                    {taskRuns.slice(0, 4).map((run) => {
-                      const badge = resolveRunBadgeLabel(run, liveSessionIds, providerLiveRunIds) ?? run.status
-                      return `${run.shortRef} ${badge}`
-                    }).join(' · ')}
-                  </span>
-                </div>
-              ) : null}
-            </div>
+    <div className={`effort-zone ${styles['task-detail']}`}>
+      <div className={`effort-zone-hero ${styles['task-detail-header']}`}>
+        <div className={styles['task-detail-header-top']}>
+          <h3>{task.title}</h3>
+          <PillSwitcher
+            ariaLabel="task detail mode"
+            options={[
+              { id: 'meta', label: 'meta' },
+              { id: 'work', label: 'work' },
+            ]}
+            value={surfaceMode}
+            onChange={setSurfaceMode}
+          />
+        </div>
+
+        <div className={styles['expanded-meta']}>
+          <div className={styles['chip-group']}>
+            <small>ref</small>
+            <span>{task.shortRef}</span>
           </div>
-          <div className={styles['task-header-controls']}>
-            <div className={styles['task-launch-panel']}>
-            <div className={styles['task-launch-controls']}>
-              <label className={styles['task-launch-field']}>
-                <span>terminal</span>
-                <select
-                  aria-label="task launch terminal"
-                  value={launchTarget}
-                  onChange={(event) => setLaunchTarget(event.target.value as 'main' | 'task')}
-                >
-                  <option value="main">main effort terminal</option>
-                  <option value="task">task terminal</option>
-                </select>
-              </label>
-              <label className={styles['task-launch-field']}>
-                <span>provider</span>
-                <select
-                  aria-label="task launch provider"
-                  value={launchProvider}
-                  onChange={(event) => setLaunchProvider(event.target.value as AgentProvider)}
-                >
-                  {providers.map((provider) => (
-                    <option key={provider.key} value={provider.key}>{provider.name}</option>
-                  ))}
-                </select>
-              </label>
-              <label className={styles['task-launch-field']}>
-                <span>profile</span>
-                <select
-                  aria-label="task launch profile"
-                  value={launchProfileId == null ? '' : String(launchProfileId)}
-                  onChange={(event) => setLaunchProfileId(event.target.value ? Number(event.target.value) : null)}
-                  disabled={profiles.length === 0}
-                >
-                  {profiles.map((profile) => (
-                    <option key={profile.id} value={profile.id}>{profile.name}</option>
-                  ))}
-                </select>
-              </label>
+          <div className={styles['chip-group']}>
+            <small>status</small>
+            <span>{task.status}</span>
+          </div>
+          <div className={styles['chip-group']}>
+            <small>repo</small>
+            <span>{taskRepo?.name ?? 'no repo'}</span>
+          </div>
+          <div className={styles['chip-group']}>
+            <small>branch</small>
+            <span>{task.branchName ?? 'no branch'}</span>
+          </div>
+          <div className={`${styles['chip-group']} ${styles['chip-group-worktree']}`}>
+            <small>worktree</small>
+            <span
+              className={styles['worktree-chip']}
+              title={task.worktreePath ?? 'no worktree yet'}
+            >
+              {task.worktreePath ?? 'no worktree yet'}
+            </span>
+          </div>
+          {taskRuns.length > 0 ? (
+            <div className={`${styles['chip-group']} ${styles['chip-group-runs']}`}>
+              <small>runs</small>
+              <span className={styles['task-run-summary']}>
+                {taskRuns.slice(0, 4).map((run) => {
+                  const badge = resolveRunBadgeLabel(run, liveSessionIds, providerLiveRunIds) ?? run.status
+                  return `${run.shortRef} ${badge}`
+                }).join(' · ')}
+              </span>
             </div>
-            <div className={styles['task-header-actions']}>
-            <PillSwitcher
-              ariaLabel="task detail mode"
-              options={[
-                { id: 'meta', label: 'meta' },
-                { id: 'work', label: 'work' },
-              ]}
-              value={surfaceMode}
-              onChange={setSurfaceMode}
-            />
+          ) : null}
+        </div>
+
+        <div className={styles['task-launch-bar']}>
+          <div className={styles['task-launch-controls']}>
+            <label className={styles['task-launch-field']}>
+              <span>terminal</span>
+              <select
+                aria-label="task launch terminal"
+                value={launchTarget}
+                onChange={(event) => setLaunchTarget(event.target.value as 'main' | 'task')}
+              >
+                <option value="main">main effort terminal</option>
+                <option value="task">task terminal</option>
+              </select>
+            </label>
+            <label className={styles['task-launch-field']}>
+              <span>provider</span>
+              <select
+                aria-label="task launch provider"
+                value={launchProvider}
+                onChange={(event) => setLaunchProvider(event.target.value as AgentProvider)}
+              >
+                {providers.map((provider) => (
+                  <option key={provider.key} value={provider.key}>{provider.name}</option>
+                ))}
+              </select>
+            </label>
+            <label className={styles['task-launch-field']}>
+              <span>profile</span>
+              <select
+                aria-label="task launch profile"
+                value={launchProfileId == null ? '' : String(launchProfileId)}
+                onChange={(event) => setLaunchProfileId(event.target.value ? Number(event.target.value) : null)}
+                disabled={profiles.length === 0}
+              >
+                {profiles.map((profile) => (
+                  <option key={profile.id} value={profile.id}>{profile.name}</option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <div className={styles['task-header-actions']}>
             <button
               type="button"
               className={styles['task-header-action']}
@@ -337,8 +335,6 @@ export function TaskDetailPane({
             >
               <span>merge</span>
             </button>
-            </div>
-            </div>
           </div>
         </div>
         {launchTarget === 'main' && mainRunLive ? (
@@ -350,45 +346,40 @@ export function TaskDetailPane({
 
       {surfaceMode === 'meta' ? (
         <>
-          <section className={styles['task-detail-section']}>
+          <section className="effort-zone-section">
             <h4>description</h4>
-            <div className={styles['task-readout']}>
+            <div className="effort-zone-readout">
               <p>{task.description}</p>
             </div>
           </section>
 
-          <section className={styles['task-detail-section']}>
+          <section className="effort-zone-section">
             <h4>comments</h4>
             <CommentStream comments={comments} />
           </section>
 
           <div className={styles['task-detail-supporting-grid']}>
-            <section className={styles['task-detail-section']}>
+            <section className="effort-zone-section">
               <h4>handoff</h4>
-              <div className={styles['task-readout']}>
+              <div className="effort-zone-readout">
                 <p>{task.handoffSummary ?? 'no handoff yet'}</p>
               </div>
             </section>
 
-            <section className={styles['task-detail-section']}>
+            <section className="effort-zone-section">
               <h4>artifact</h4>
-              <div className={styles['task-readout']}>
+              <div className="effort-zone-readout">
                 <p>{task.artifact ?? 'no artifact yet'}</p>
               </div>
             </section>
           </div>
 
-          <section className={styles['task-detail-section']}>
-            <div className={styles['review-section-header']}>
-              <h4>review</h4>
-            </div>
+          <section className="effort-zone-section">
+            <h4>review</h4>
             <p className={styles['task-review-summary']}>{reviewSummary(task, latestReview)}</p>
 
             {pendingReview ? (
-              <ReviewRecord
-                review={pendingReview}
-                dateLabel={pendingReview.createdAt}
-              >
+              <ReviewRecord review={pendingReview}>
                 <div className={styles['task-action-row']}>
                   <button
                     type="button"
@@ -426,7 +417,7 @@ export function TaskDetailPane({
         </>
       ) : (
         <>
-          <section className={styles['task-detail-section']}>
+          <section className="effort-zone-section">
             <h4>build</h4>
             {latestBuild ? (
               <div className={styles['build-result']}>
@@ -441,7 +432,7 @@ export function TaskDetailPane({
             )}
           </section>
 
-          <section className={styles['task-detail-section']}>
+          <section className="effort-zone-section">
             <h4>implementation</h4>
             <div className={styles['implementation-controls']}>
               <PillSwitcher

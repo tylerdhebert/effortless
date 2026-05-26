@@ -86,10 +86,14 @@
   display: grid;
   align-content: start;
   gap: 6px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--panel) 78%, transparent);
-  padding: 10px;
+  padding: 10px 0;
+  border: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 55%, transparent);
+  background: transparent;
+}
+
+.reference-card:last-child {
+  border-bottom: none;
 }
 
 .reference-card-header {
@@ -118,6 +122,9 @@
 .reference-card--featured {
   min-height: 0;
   gap: 10px;
+  padding: 0;
+  border: none;
+  background: transparent;
 }
 
 .reference-card--featured .reference-card-header {

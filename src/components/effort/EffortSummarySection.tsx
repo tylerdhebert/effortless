@@ -9,9 +9,9 @@ export function EffortSummarySection({ label, summary }: EffortSummarySectionPro
   }
 
   return (
-    <section className="template-summary-section">
-      <span className="drawer-inline-label">{label}</span>
-      <div className="template-summary-body">
+    <section className="effort-zone-section template-summary-section">
+      <h4>{label}</h4>
+      <div className="effort-zone-readout">
         <p>{summary}</p>
       </div>
     </section>

@@ -47,14 +47,14 @@ export function PlanSection({
 
   if (plans.length === 0) {
     return (
-      <section className={styles['plan-section']}>
+      <section className={`effort-zone ${styles['plan-section']}`}>
         <p className="empty-state">no plans yet</p>
       </section>
     )
   }
 
   return (
-    <section className={styles['plan-section']}>
+    <section className={`effort-zone ${styles['plan-section']}`}>
       <div className={styles['plan-pager']}>
         <div className={styles['plan-pager-top']}>
           <button

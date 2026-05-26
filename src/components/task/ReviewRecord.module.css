@@ -1,12 +1,11 @@
 .review-record {
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: var(--panel);
-  padding: 11px 12px;
+  padding: 12px 0;
+  border-top: 1px solid color-mix(in srgb, var(--line) 55%, transparent);
+  background: transparent;
 }
 
 .review-record.applied {
-  border-color: color-mix(in srgb, var(--accent) 24%, transparent);
+  border-top-color: color-mix(in srgb, var(--accent) 30%, transparent);
 }
 
 .review-record p {
@@ -23,14 +22,13 @@
   margin-bottom: 2px;
 }
 
-.review-record-header div {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.review-record-header span {
+  color: var(--muted);
+  font-size: 0.69rem;
+  letter-spacing: 0.04em;
 }
 
-.review-record-header span,
-.review-record-header strong {
+.review-record-header small {
   color: var(--muted);
   font-size: 0.69rem;
   letter-spacing: 0.04em;

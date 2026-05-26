@@ -41,7 +41,7 @@ export function InputRequestList({ inputs, onAnswer, isAnswering, focusedInputId
   const answeredCount = inputs.filter((input) => input.status === 'answered').length
 
   return (
-    <div className={styles['input-panel']}>
+    <div className={`effort-zone ${styles['input-panel']}`}>
       <div className={styles['input-tabs']}>
         <PillSwitcher
           ariaLabel="input status"
@@ -54,7 +54,8 @@ export function InputRequestList({ inputs, onAnswer, isAnswering, focusedInputId
         />
       </div>
 
-      <div className={styles['input-cards']}>
+      <div className={`effort-zone-section ${styles['input-cards']}`}>
+        <h4>{tab} inputs</h4>
         {filtered.length === 0 ? (
           <p className="empty-state">no {tab} inputs</p>
         ) : (

@@ -4,19 +4,19 @@ import styles from './ReviewRecord.module.css'
 
 type ReviewRecordProps = {
   review: Review
-  dateLabel?: string
   children?: React.ReactNode
 }
 
-export function ReviewRecord({ review, dateLabel, children }: ReviewRecordProps) {
+export function ReviewRecord({ review, children }: ReviewRecordProps) {
   return (
     <article className={styles['review-record']}>
       <div className={styles['review-record-header']}>
-        <div>
-          <span>{review.shortRef}</span>
-          <strong>{review.verdict}</strong>
-        </div>
-        <small>{dateLabel ?? formatTimestamp(review.createdAt)}</small>
+        <span>{review.shortRef}</span>
+        <small>
+          {review.verdict}
+          {' · '}
+          {formatTimestamp(review.createdAt)}
+        </small>
       </div>
       <p>{review.body}</p>
       {children}

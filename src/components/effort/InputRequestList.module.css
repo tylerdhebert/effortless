@@ -3,9 +3,8 @@
   grid-template-rows: auto minmax(0, 1fr);
   align-content: stretch;
   min-height: 0;
-  height: 100%;
   overflow: hidden;
-  gap: 4px;
+  gap: 10px;
 }
 
 .input-tabs {
@@ -48,22 +47,11 @@
   display: grid;
   align-content: start;
   gap: 8px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--panel) 78%, transparent);
-  padding: 10px;
+  padding: 10px 0;
   cursor: pointer;
-  transition: border-color 160ms ease;
+  transition: background 160ms ease;
   align-self: start;
   min-height: 0;
-}
-
-.input-card:hover {
-  border-color: var(--line-strong);
-}
-
-.input-card.expanded {
-  border-color: var(--line-strong);
 }
 
 .input-card.answered {
@@ -75,7 +63,7 @@
 }
 
 .input-card.read-only:hover {
-  border-color: color-mix(in srgb, var(--accent) 16%, transparent);
+  background: transparent;
 }
 
 .input-card.pending.expanded .input-card-prompt {

@@ -18,6 +18,9 @@
   --accent: #8ccf62;
   --placeholder: #707767;
   --focus-shadow: color-mix(in srgb, var(--accent) 18%, transparent);
+  --effort-section-bg: color-mix(in srgb, var(--panel) 52%, transparent);
+  --effort-section-border: color-mix(in srgb, var(--line-strong) 42%, var(--line));
+  --effort-section-inset: color-mix(in srgb, var(--field) 35%, transparent);
   --diff-insert-bg: rgba(46, 160, 67, 0.2);
   --diff-delete-bg: rgba(248, 81, 73, 0.2);
   --diff-gutter-insert-bg: rgba(46, 160, 67, 0.7);

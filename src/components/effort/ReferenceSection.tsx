@@ -218,7 +218,7 @@ export function ReferenceSection({
   }, [activeReference])
 
   return (
-    <section className={styles['reference-section']}>
+    <section className={`effort-zone ${styles['reference-section']}`}>
       <div className={styles['reference-toolbar']}>
         <span>{references.length} refs</span>
         <div className={styles['reference-title-actions']}>
@@ -372,9 +372,16 @@ export function ReferenceSection({
         </div>
       ) : null}
 
-      <div className={styles['reference-preview-shell']}>
+      <div
+        className={
+          activeReference
+            ? `effort-zone-section ${styles['reference-preview-shell']}`
+            : styles['reference-preview-shell']
+        }
+      >
         {activeReference ? (
           <>
+            <h4>reference</h4>
             {references.length > 1 ? (
               <div className={styles['reference-preview-nav']}>
                 <button

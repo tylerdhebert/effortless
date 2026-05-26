@@ -1256,7 +1256,7 @@ function App() {
                   </header>
                   <div className="effort-drawer-body">
                     {activeEffortDrawer === 'description' ? (
-                      <div className="drawer-stack">
+                      <div className="drawer-stack effort-zone-stack">
                         {(selectedEffort.status === 'complete' || selectedEffort.status === 'archived') ? (
                           <>
                             {selectedEffort.template === 'investigation' ? (
@@ -1270,7 +1270,8 @@ function App() {
                             ) : null}
                           </>
                         ) : null}
-                        <section className={`effort-description-section ${usesBugfixOverview ? 'bugfix-description-section' : ''}`}>
+                        <section className={`effort-zone-section effort-description-section ${usesBugfixOverview ? 'bugfix-description-section' : ''}`}>
+                          <h4>description</h4>
                           <div className="drawer-effort-meta">
                             <div className="chip-group">
                               <small>ref</small>
@@ -1285,7 +1286,9 @@ function App() {
                               <span>{selectedEffort.status}</span>
                             </div>
                           </div>
-                          <p className="effort-description">{selectedEffort.description}</p>
+                          <div className="effort-zone-readout effort-description">
+                            <p>{selectedEffort.description}</p>
+                          </div>
                         </section>
                       </div>
                     ) : null}

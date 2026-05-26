@@ -41,7 +41,6 @@ export function TaskList({
           key={task.id}
           type="button"
           className={`${styles['task-list-row']} ${task.id === selectedTaskId ? styles.selected : ''}`}
-          title={`${task.title} | ${task.description}${runBadge ? ` | run ${runBadge}` : ''}`}
           onClick={() => onSelectTask(task.id)}
         >
           {variant === 'strip' ? (
