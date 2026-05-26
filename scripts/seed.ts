@@ -161,10 +161,8 @@ async function seedBugfixEffort(
     repoId: repos.effortlessRepo.id,
     branchName: 'task/task-reattach-copy',
     baseBranch: repos.effortlessRepo.baseBranch,
-    handoffSummary:
-      'The interruption path now funnels through the same render helper as the live wait loop.',
     artifact:
-      'terminal transcript\n- task wait interrupted\n- review wait interrupted\n- input wait interrupted',
+      'The interruption path now funnels through the same render helper as the live wait loop.\n\nterminal transcript\n- task wait interrupted\n- review wait interrupted\n- input wait interrupted',
   })
   attachTaskWorkspace(db, task, repos.effortlessRepo, 'impl-hotfix', 'in-flight')
   checkpointTask(db, {
@@ -261,10 +259,8 @@ async function seedDeliveryEffort(
     repoId: repos.effortlessRepo.id,
     branchName: 'task/plan-review-loop',
     baseBranch: repos.effortlessRepo.baseBranch,
-    handoffSummary:
-      'Plan submissions now have ready and accepted timestamps plus a plan comment stream for feedback.',
     artifact:
-      'screens checked\n- accepted plan visible\n- changes requested plan visible\n- plan wait responds to approval and feedback',
+      'Plan submissions now have ready and accepted timestamps plus a plan comment stream for feedback.\n\nscreens checked\n- accepted plan visible\n- changes requested plan visible\n- plan wait responds to approval and feedback',
   })
   attachTaskWorkspace(db, acceptedTask, repos.effortlessRepo, 'impl-plan', 'in-flight')
   checkpointTask(db, {
@@ -315,10 +311,8 @@ async function seedDeliveryEffort(
     repoId: changesRepo.id,
     branchName: 'task/repo-detail-surface',
     baseBranch: changesRepo.baseBranch,
-    handoffSummary:
-      'Repo metadata is visible, but the diff/commit/conflict tabs still need to be filled in.',
     artifact:
-      'remaining\n- diff tab\n- commit tab\n- conflict tab',
+      'Repo metadata is visible, but the diff/commit/conflict tabs still need to be filled in.\n\nremaining\n- diff tab\n- commit tab\n- conflict tab',
   })
   attachTaskWorkspace(db, changesTask, changesRepo, 'impl-repo', 'in-flight')
   checkpointTask(db, {
@@ -363,10 +357,8 @@ async function seedDeliveryEffort(
     repoId: repos.effortlessRepo.id,
     branchName: 'task/demo-seed-loader',
     baseBranch: repos.effortlessRepo.baseBranch,
-    handoffSummary:
-      'The seed script should reset the local DB, create fixtures, and print the key effort refs.',
     artifact:
-      'fixture targets\n- plans with feedback\n- accepted and rejected reviews\n- pending input request',
+      'The seed script should reset the local DB, create fixtures, and print the key effort refs.\n\nfixture targets\n- plans with feedback\n- accepted and rejected reviews\n- pending input request',
   })
   attachTaskWorkspace(db, waitingTask, repos.effortlessRepo, 'impl-seed', 'in-flight')
   checkpointTask(db, {

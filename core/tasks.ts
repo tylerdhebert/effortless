@@ -29,7 +29,6 @@ type TaskRow = {
   branch_name: string | null
   base_branch: string | null
   worktree_path: string | null
-  handoff_summary: string | null
   artifact: string | null
   created_at: string
   updated_at: string
@@ -82,7 +81,6 @@ export function updateTaskDetails(db: AppDatabase, input: UpdateTaskDetailsInput
         branch_name = ?,
         base_branch = ?,
         worktree_path = ?,
-        handoff_summary = ?,
         artifact = ?,
         updated_at = ?
     WHERE id = ?
@@ -91,7 +89,6 @@ export function updateTaskDetails(db: AppDatabase, input: UpdateTaskDetailsInput
     nextBranchName,
     nextBaseBranch,
     repoChanged || branchChanged || baseBranchChanged ? null : current.worktreePath,
-    input.handoffSummary === undefined ? current.handoffSummary : input.handoffSummary?.trim() || null,
     input.artifact === undefined ? current.artifact : input.artifact?.trim() || null,
     new Date().toISOString(),
     input.taskId,
@@ -320,7 +317,6 @@ function mapTask(row: TaskRow): Task {
     branchName: row.branch_name,
     baseBranch: row.base_branch,
     worktreePath: row.worktree_path,
-    handoffSummary: row.handoff_summary,
     artifact: row.artifact,
     createdAt: row.created_at,
     updatedAt: row.updated_at,

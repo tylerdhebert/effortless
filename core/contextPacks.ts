@@ -79,7 +79,6 @@ function renderTaskContext(db: AppDatabase, task: Task): string {
       `${task.shortRef} ${task.status}`,
       task.title,
       task.description,
-      task.handoffSummary ? `handoff\n${task.handoffSummary}` : null,
       task.artifact ? `artifact\n${task.artifact}` : null,
     ]),
     heading('Repository', repo

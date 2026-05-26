@@ -85,7 +85,6 @@ export function initializeSchema(db: AppDatabase): void {
       branch_name TEXT,
       base_branch TEXT,
       worktree_path TEXT,
-      handoff_summary TEXT,
       artifact TEXT,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL

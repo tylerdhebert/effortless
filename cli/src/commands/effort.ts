@@ -8,7 +8,7 @@ import { db } from '../context'
 import {
   printArtifactPreview,
   printExpandedReferences,
-  printHandoffSummary,
+  printSummary,
   printRelatedMandates,
   printSurfaceMandate,
   printTemplatePlaybook,
@@ -83,7 +83,7 @@ export async function handleEffort(surface: string, command: string): Promise<bo
     console.log('description')
     console.log(effort.description)
 
-    printHandoffSummary(effort.summary)
+    printSummary(effort.summary)
 
     if (acceptedPlan) {
       printArtifactPreview(

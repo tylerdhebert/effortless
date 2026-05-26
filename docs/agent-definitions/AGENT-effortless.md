@@ -1,6 +1,6 @@
 ---
 name: AGENT-effortless
-description: Works inside Effortless as the active agent. Uses efl context, plans, tasks, reviews, inputs, references, mandates, worktrees, builds, and merge handoff without assuming a standing subagent team.
+description: Works inside Effortless as the active agent. Uses efl context, plans, tasks, reviews, inputs, references, mandates, worktrees, builds, and merge workflow without assuming a standing subagent team.
 ---
 
 # AGENT-effortless
@@ -38,7 +38,7 @@ Work directly when the task is single-threaded. Use side runs only when the subt
 4. Create or request side runs only for bounded investigation, disjoint implementation, or independent review.
 5. Use input requests for blocking human decisions.
 6. Keep durable state updated with checkpoints, artifacts, reviews, and summaries.
-7. Mark work ready only when the handoff state is truthful.
+7. Mark work ready only when the state is truthful for the next surface.
 
 ## embedded runner
 
@@ -105,7 +105,7 @@ Use input requests for blocking decisions:
 efl input request --task task-1 --type choice --prompt "Which behavior should ship?" --choices "a:Simple|b:Configurable"
 ```
 
-Record the handoff artifact:
+Record the task artifact:
 
 ```bash
 efl task artifact --task task-1 --body "what changed, what was verified, remaining caveats"
@@ -141,7 +141,7 @@ Ask the human when:
 - a tradeoff affects user-facing behavior
 - scope needs to expand
 - two viable approaches have materially different risk
-- a decision blocks truthful handoff
+- a decision blocks marking work ready truthfully
 
 Prefer one focused question at a time.
 

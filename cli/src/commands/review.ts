@@ -9,7 +9,7 @@ import {
   printArtifactPreview,
   printComments,
   printExpandedReferences,
-  printHandoffSummary,
+  printSummary,
   printLatestUpdate,
   printRelatedMandates,
   printSection,
@@ -71,17 +71,13 @@ export async function handleReview(surface: string, command: string): Promise<bo
     printTemplatePlaybook(db, effort.template, { brief })
     printSurfaceMandate(db, 'review', task.repoId, { brief })
     printRelatedMandates(db, ['effort', 'task'], task.repoId, { brief })
-    printHandoffSummary(review.summary)
+    printSummary(review.summary)
     printArtifactPreview(review.body, `efl review show --review ${review.shortRef}`)
 
     printSection('task')
     console.log(`${task.shortRef}`)
     console.log(`${task.status} ${task.title}`)
     console.log(task.description)
-    if (task.handoffSummary) {
-      console.log('handoff')
-      console.log(task.handoffSummary)
-    }
     endSection('task')
 
     if (task.repoId) {

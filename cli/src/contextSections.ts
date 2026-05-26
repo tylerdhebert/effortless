@@ -110,11 +110,11 @@ export function printLatestUpdate(
   endSection('latest update')
 }
 
-export function printHandoffSummary(summary: string | null | undefined): void {
+export function printSummary(summary: string | null | undefined): void {
   if (!summary) return
-  printSection('handoff summary')
+  printSection('summary')
   console.log(summary)
-  endSection('handoff summary')
+  endSection('summary')
 }
 
 export function printArtifactPreview(
@@ -214,7 +214,7 @@ function printExpandedReference(db: AppDatabase, reference: Reference): void {
   if (reference.targetType === 'plan') {
     const plan = getPlanByRef(db, String(reference.targetId))
     console.log(`[${plan.shortRef}] ${planState(plan)} plan${label}`)
-    if (plan.summary) printIndentedPreview('handoff', plan.summary)
+    if (plan.summary) printIndentedPreview('summary', plan.summary)
     else printIndentedPreview('body', plan.body)
     return
   }
@@ -224,14 +224,14 @@ function printExpandedReference(db: AppDatabase, reference: Reference): void {
     console.log(`[${task.shortRef}] ${task.title} (task${label})`)
     console.log(`  status: ${task.status}`)
     if (task.branchName) console.log(`  branch: ${task.branchName}`)
-    if (task.handoffSummary) printIndentedPreview('handoff', task.handoffSummary)
+    if (task.artifact) printIndentedPreview('artifact', task.artifact)
     return
   }
 
   if (reference.targetType === 'review') {
     const review = getReviewByRef(db, String(reference.targetId))
     console.log(`[${review.shortRef}] ${review.verdict} review${label}`)
-    if (review.summary) printIndentedPreview('handoff', review.summary)
+    if (review.summary) printIndentedPreview('summary', review.summary)
     else printIndentedPreview('body', review.body)
   }
 }

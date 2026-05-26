@@ -22,7 +22,6 @@ import {
   printComments,
   endSection,
   printExpandedReferences,
-  printHandoffSummary,
   printLatestUpdate,
   printRelatedMandates,
   printSection,
@@ -77,10 +76,6 @@ export async function handleTask(surface: string, command: string): Promise<bool
     printTask(task)
     console.log(task.title)
     console.log(task.description)
-    if (task.handoffSummary) {
-      console.log('handoff')
-      console.log(task.handoffSummary)
-    }
     if (task.artifact) {
       console.log('artifact')
       console.log(task.artifact)
@@ -116,7 +111,6 @@ export async function handleTask(surface: string, command: string): Promise<bool
 
     const comments = listTaskComments(db, task.id)
     printLatestUpdate(comments)
-    printHandoffSummary(task.handoffSummary)
     printArtifactPreview(task.artifact, `efl task show --task ${task.shortRef}`)
 
     if (task.repoId) {
@@ -162,22 +156,6 @@ export async function handleTask(surface: string, command: string): Promise<bool
     const task = resolveTask(db, resolveTaskRef())
     const agentId = resolveAgentId()
     const updated = await claimTask(db, { taskId: task.id, agentId })
-    printTask(updated)
-    return true
-  }
-
-  if (command === 'plan') {
-    const task = resolveTask(db, resolveTaskRef())
-    const agentId = resolveAgentId()
-    const updated = updateTaskDetails(db, {
-      taskId: task.id,
-      handoffSummary: bodyArg(),
-    })
-    checkpointTask(db, {
-      taskId: task.id,
-      agentId,
-      body: 'implementation plan updated',
-    })
     printTask(updated)
     return true
   }

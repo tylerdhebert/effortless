@@ -78,7 +78,7 @@ Implement the task in its worktree, keep the scope tight, and leave a clean hand
 3. Keep the implementation and checkpoints aligned with the accepted plan when one exists.
 4. Do not mark ready with a failing build.
 5. Keep the task scoped to the requested implementation.
-6. Use the task artifact as the handoff summary.`,
+6. Use the task artifact to summarize what changed, what was verified, and what remains.`,
   },
   {
     workSurface: 'review',

@@ -64,7 +64,6 @@ export type Task = {
   branchName: string | null
   baseBranch: string | null
   worktreePath: string | null
-  handoffSummary: string | null
   artifact: string | null
   createdAt: string
   updatedAt: string
@@ -162,7 +161,6 @@ export type UpdateTaskDetailsInput = {
   repoId?: number | null
   branchName?: string | null
   baseBranch?: string | null
-  handoffSummary?: string | null
   artifact?: string | null
 }
 
