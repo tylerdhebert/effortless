@@ -13,6 +13,7 @@ dist-electron
 dist-cli
 dist-ssr
 release
+*.tsbuildinfo
 .playwright-mcp/
 *.local
 
