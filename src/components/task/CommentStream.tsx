@@ -11,14 +11,14 @@ export function CommentStream({ comments }: CommentStreamProps) {
     <div className={styles['comment-stream']}>
       {comments.map((comment) => (
         <article className={styles.comment} key={comment.id}>
-          <div>
-            <span>{comment.kind}</span>
-            <small>
+          <div className={styles['comment-header']}>
+            <span className={styles['comment-kind']}>{comment.kind}</span>
+            <small className={styles['comment-meta']}>
               {comment.author}
               {' · '}{formatTimestamp(comment.createdAt)}
             </small>
           </div>
-          <p>{comment.body}</p>
+          <p className={styles['comment-body']}>{comment.body}</p>
         </article>
       ))}
 

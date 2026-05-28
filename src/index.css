@@ -25,6 +25,10 @@
   --diff-delete-bg: rgba(248, 81, 73, 0.2);
   --diff-gutter-insert-bg: rgba(46, 160, 67, 0.7);
   --diff-gutter-delete-bg: rgba(248, 81, 73, 0.7);
+
+  --space-tight: 6px;
+  --space-section: 12px;
+  --space-region: 20px;
 }
 
 body {

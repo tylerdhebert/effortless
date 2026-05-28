@@ -1,6 +1,6 @@
 .efforts-sidebar {
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  grid-template-rows: auto auto minmax(0, 1fr);
   min-height: 0;
   position: relative;
   border-right: 1px solid var(--line);
@@ -11,19 +11,19 @@
 }
 
 .efforts-sidebar[data-surface-mode="manage"] {
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto minmax(0, 1fr);
 }
 
 .efforts-sidebar[data-surface-mode="effort"] {
-  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  grid-template-rows: auto auto minmax(0, 1fr);
 }
 
 .sidebar-heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 18px 18px 16px;
+  gap: var(--space-tight);
+  padding: var(--space-section) var(--space-section) var(--space-section);
   border-bottom: 1px solid var(--line);
   background: rgba(0, 0, 0, 0.08);
 }
@@ -322,21 +322,27 @@
 .sidebar-footer {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 12px 16px;
+  justify-content: center;
+  gap: 8px;
+  padding: var(--space-tight) var(--space-section);
   border-top: 1px solid var(--line);
+}
+
+.sidebar-footer > .icon-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
 }
 
 .add-effort-btn {
   display: grid;
   place-items: center;
-  width: 36px;
-  height: 36px;
+  width: 28px;
+  height: 28px;
   padding: 0;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 10px;
+  border-radius: 9px;
   color: var(--muted);
   cursor: pointer;
   transition: all 150ms ease;

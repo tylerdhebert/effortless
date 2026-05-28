@@ -224,7 +224,7 @@ export function TaskDetailPane({
               className={styles['worktree-chip']}
               title={task.worktreePath ?? 'no worktree yet'}
             >
-              {task.worktreePath ?? 'no worktree yet'}
+              {task.worktreePath ? task.worktreePath.split(/[\\/]/).pop() : 'no worktree yet'}
             </span>
           </div>
           {taskRuns.length > 0 ? (
@@ -358,21 +358,12 @@ export function TaskDetailPane({
             <CommentStream comments={comments} />
           </section>
 
-          <div className={styles['task-detail-supporting-grid']}>
-            <section className="effort-zone-section">
-              <h4>handoff</h4>
-              <div className="effort-zone-readout">
-                <p>{task.handoffSummary ?? 'no handoff yet'}</p>
-              </div>
-            </section>
-
-            <section className="effort-zone-section">
-              <h4>artifact</h4>
-              <div className="effort-zone-readout">
-                <p>{task.artifact ?? 'no artifact yet'}</p>
-              </div>
-            </section>
-          </div>
+          <section className="effort-zone-section">
+            <h4>artifact</h4>
+            <div className="effort-zone-readout">
+              <p>{task.artifact ?? 'no artifact yet'}</p>
+            </div>
+          </section>
 
           <section className="effort-zone-section">
             <h4>review</h4>

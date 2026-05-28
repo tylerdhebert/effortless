@@ -1,44 +1,55 @@
 .comment-stream {
   display: grid;
-  gap: 8px;
-  max-height: 220px;
-  overflow: auto;
+  gap: 2px;
+  max-height: 320px;
+  overflow-y: auto;
 }
 
 .comment {
-  padding: 10px 0;
-  border-bottom: 1px solid color-mix(in srgb, var(--line) 55%, transparent);
-  background: transparent;
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.018);
+  transition: background 120ms ease;
 }
 
-.comment:last-child {
-  border-bottom: none;
+.comment:hover {
+  background: rgba(255, 255, 255, 0.032);
 }
 
-.comment p {
-  margin-bottom: 0;
-  color: var(--text);
-  white-space: pre-wrap;
-}
-
-.comment div {
+.comment-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
 }
 
-.comment small {
-  color: var(--muted);
-  font-size: 0.69rem;
-  letter-spacing: 0.04em;
+.comment-kind {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border: 1px solid color-mix(in srgb, var(--accent) 18%, var(--line));
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  color: var(--text-strong);
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
 }
 
-.comment code {
-  display: block;
-  margin-top: 7px;
+.comment-meta {
   color: var(--muted);
-  font-size: 0.72rem;
-  font-family: "Cascadia Code", Consolas, "Courier New", monospace;
-  word-break: break-all;
+  font-size: 0.66rem;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.comment-body {
+  margin: 0;
+  color: var(--text);
+  font-size: 0.82rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
 }

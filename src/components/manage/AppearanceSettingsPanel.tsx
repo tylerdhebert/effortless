@@ -251,7 +251,7 @@ export function AppearanceSettingsPanel({
         </button>
       </div>
 
-      <section className={styles.customEditor}>
+      {customThemeActive ? <section className={styles.customEditor}>
         <div className={styles.customHeader}>
           <div className={styles.customHeaderCopy}>
             <h4>custom theme</h4>
@@ -321,7 +321,7 @@ export function AppearanceSettingsPanel({
             </section>
           ))}
         </div>
-      </section>
+      </section> : null}
     </section>
   )
 }

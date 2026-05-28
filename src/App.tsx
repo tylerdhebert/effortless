@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { applyTheme, applyThemePalette, cloneThemePalette, THEME_PALETTES, type ThemePalette } from './themes'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
@@ -10,7 +11,6 @@ import {
   ListOrdered,
   Plus,
   ScrollText,
-  Settings,
   Trash2,
   X,
 } from 'lucide-react'
@@ -73,6 +73,31 @@ function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [activeTerminalTabKey, setActiveTerminalTabKey] = useState('main')
   const [activeEffortDrawer, setActiveEffortDrawer] = useState<EffortRailDrawer | null>(null)
+  const [drawerWidth, setDrawerWidth] = useState<number | null>(null)
+  const [drawerResizing, setDrawerResizing] = useState(false)
+
+  const handleDrawerResizeStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+    setDrawerResizing(true)
+    const startX = e.clientX
+    const startWidth = drawerWidth ?? getDefaultDrawerWidth(activeEffortDrawer)
+
+    const onMove = (ev: MouseEvent) => {
+      const delta = startX - ev.clientX
+      setDrawerWidth(Math.max(320, Math.min(startWidth + delta, window.innerWidth * 0.7)))
+    }
+    const onUp = () => {
+      setDrawerResizing(false)
+      document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mouseup', onUp)
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+    }
+    document.body.style.cursor = 'col-resize'
+    document.body.style.userSelect = 'none'
+    document.addEventListener('mousemove', onMove)
+    document.addEventListener('mouseup', onUp)
+  }, [drawerWidth, activeEffortDrawer])
   const [taskCreateOpen, setTaskCreateOpen] = useState(false)
   const [focusedInputId, setFocusedInputId] = useState<number | null>(null)
   const [terminalMenuOpen, setTerminalMenuOpen] = useState(false)
@@ -776,6 +801,7 @@ function App() {
     if (drawer === 'plan' && !supportsPlans) return
     if (drawer === 'tasks' && !supportsTasks) return
     setTerminalMenuOpen(false)
+    setDrawerWidth(null)
     setActiveEffortDrawer((current) => {
       if (current === drawer) {
         setDrawerClosedAt((n) => n + 1)
@@ -925,7 +951,7 @@ function App() {
 
   return (
     <main className={`app-shell ${sidebarCollapsed ? 'app-shell--sidebar-collapsed' : ''}`}>
-      <TitleBar />
+      <TitleBar surfaceMode={surfaceMode} onSetSurfaceMode={setSurfaceMode} />
       {sidebarCollapsed ? (
         <aside className="collapsed-sidebar" aria-label="collapsed sidebar">
           <div className="collapsed-sidebar-stack">
@@ -938,26 +964,19 @@ function App() {
             >
               <ChevronsRight size={16} />
             </button>
+            <NotificationFooter
+              count={notificationCount}
+              notifications={notifications}
+              onNavigate={handleNotificationNavigate}
+            />
             <button
               type="button"
-              className={`collapsed-sidebar-button ${surfaceMode === 'effort' ? 'active' : ''}`}
-              aria-label="efforts"
-              title="efforts"
-              onClick={() => setSurfaceMode('effort')}
+              className="collapsed-sidebar-button"
+              aria-label="create effort"
+              title="create effort"
+              onClick={() => setCreateEffortOpen(true)}
             >
-              <Home size={16} />
-            </button>
-            <button
-              type="button"
-              className={`collapsed-sidebar-button ${surfaceMode === 'manage' ? 'active' : ''}`}
-              aria-label="manage"
-              title="manage"
-              onClick={() => {
-                setSurfaceMode('manage')
-                setManageSection(manageSection)
-              }}
-            >
-              <Settings size={16} />
+              <Plus size={16} />
             </button>
             {surfaceMode === 'manage' ? (
               <div className="collapsed-sidebar-manage-nav" aria-label="manage sections">
@@ -978,23 +997,21 @@ function App() {
                 ))}
               </div>
             ) : null}
-            <button
-              type="button"
-              className="collapsed-sidebar-button"
-              aria-label="create effort"
-              title="create effort"
-              onClick={() => setCreateEffortOpen(true)}
-            >
-              <Plus size={16} />
-            </button>
           </div>
-          <div className="collapsed-sidebar-footer">
-            <NotificationFooter
-              count={notificationCount}
-              notifications={notifications}
-              onNavigate={handleNotificationNavigate}
-            />
+          <div className="collapsed-sidebar-efforts" aria-label="efforts">
+            {(effortsQuery.data ?? []).map((effort) => (
+              <CollapsedEffortDot
+                key={effort.id}
+                effort={effort}
+                active={effort.id === selectedEffort?.id}
+                onClick={() => {
+                  setSelectedEffortId(effort.id)
+                  setSurfaceMode('effort')
+                }}
+              />
+            ))}
           </div>
+          <div className="collapsed-sidebar-footer" />
         </aside>
       ) : (
         <div className="sidebar-frame">
@@ -1235,7 +1252,12 @@ function App() {
                 <section
                   className={`effort-drawer effort-drawer--${activeEffortDrawer}`}
                   aria-label={`${activeEffortDrawer} drawer`}
+                  style={drawerWidth ? { ['--drawer-width' as string]: `${drawerWidth}px` } : undefined}
                 >
+                  <div
+                    className={`drawer-resize-handle ${drawerResizing ? 'dragging' : ''}`}
+                    onMouseDown={handleDrawerResizeStart}
+                  />
                   <header className="effort-drawer-header">
                     <div>
                       <span>view</span>
@@ -1560,6 +1582,56 @@ function buildTaskWorkPrompt(task: Task): string {
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => window.setTimeout(resolve, ms))
+}
+
+function CollapsedEffortDot({ effort, active, onClick }: { effort: { id: number; title: string; shortRef: string; status: string }; active: boolean; onClick: () => void }) {
+  const [flyout, setFlyout] = useState<{ top: number; left: number } | null>(null)
+  const btnRef = useRef<HTMLButtonElement>(null)
+
+  return (
+    <>
+      <button
+        ref={btnRef}
+        type="button"
+        className={`collapsed-sidebar-effort ${active ? 'active' : ''}`}
+        aria-label={effort.title}
+        onClick={onClick}
+        onMouseEnter={() => {
+          const rect = btnRef.current?.getBoundingClientRect()
+          if (rect) setFlyout({ top: rect.top + rect.height / 2, left: rect.right + 8 })
+        }}
+        onMouseLeave={() => setFlyout(null)}
+      >
+        <span
+          className="collapsed-sidebar-effort-dot"
+          style={{ background: effortStatusColor(effort.status) }}
+        />
+      </button>
+      {flyout ? createPortal(
+        <div
+          className="collapsed-sidebar-effort-flyout"
+          style={{ top: flyout.top, left: flyout.left }}
+        >
+          <span className="collapsed-sidebar-effort-flyout-title">{effort.title}</span>
+          <span className="collapsed-sidebar-effort-flyout-meta">{effort.shortRef} · {effort.status}</span>
+        </div>,
+        document.body,
+      ) : null}
+    </>
+  )
+}
+
+function getDefaultDrawerWidth(drawer: EffortRailDrawer | null): number {
+  switch (drawer) {
+    case 'plan':
+    case 'tasks':
+      return 720
+    case 'references':
+    case 'inputs':
+      return 540
+    default:
+      return 480
+  }
 }
 
 function effortDrawerTitle(drawer: EffortRailDrawer): string {

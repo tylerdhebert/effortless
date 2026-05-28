@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { AlertTriangle, Clock } from 'lucide-react'
 import { formatNotificationKind, type PendingNotification } from '../../../core/notifications'
 import styles from './NotificationFooter.module.css'
@@ -11,7 +12,25 @@ type NotificationFooterProps = {
 
 export function NotificationFooter({ count, notifications, onNavigate }: NotificationFooterProps) {
   const [open, setOpen] = useState(false)
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
   const hasNotifications = count > 0
+
+  function handleToggle() {
+    setOpen((prev) => {
+      const next = !prev
+      if (next && triggerRef.current) {
+        const rect = triggerRef.current.getBoundingClientRect()
+        const isCollapsed = triggerRef.current.closest('.collapsed-sidebar') != null
+        if (isCollapsed) {
+          setMenuPos({ top: rect.top, left: rect.right + 10 })
+        } else {
+          setMenuPos({ top: rect.bottom + 4, left: rect.right - 268 })
+        }
+      }
+      return next
+    })
+  }
 
   function handleNavigate(notification: PendingNotification) {
     setOpen(false)
@@ -32,9 +51,10 @@ export function NotificationFooter({ count, notifications, onNavigate }: Notific
   return (
     <div className={styles.footer}>
       <button
+        ref={triggerRef}
         type="button"
         className={`${styles.trigger} ${hasNotifications ? styles.active : ''}`}
-        onClick={() => setOpen((prev) => !prev)}
+        onClick={handleToggle}
         aria-label={`${count} notifications`}
         aria-pressed={open}
       >
@@ -44,8 +64,8 @@ export function NotificationFooter({ count, notifications, onNavigate }: Notific
         )}
       </button>
 
-      {open && (
-        <div className={styles.menu}>
+      {open && menuPos && createPortal(
+        <div className={styles.menu} style={{ position: 'fixed', top: menuPos.top, left: Math.max(0, menuPos.left) }}>
           {notifications.length === 0 ? (
             <div className={styles.empty}>no notifications</div>
           ) : (
@@ -73,7 +93,8 @@ export function NotificationFooter({ count, notifications, onNavigate }: Notific
               ))}
             </ul>
           )}
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   )

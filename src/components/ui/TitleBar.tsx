@@ -1,8 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Minus, Square, X } from 'lucide-react'
+import { Home, Minus, Settings, Square, X } from 'lucide-react'
 import styles from './TitleBar.module.css'
 
-export function TitleBar() {
+type TitleBarProps = {
+  surfaceMode: 'effort' | 'manage'
+  onSetSurfaceMode: (mode: 'effort' | 'manage') => void
+}
+
+export function TitleBar({ surfaceMode, onSetSurfaceMode }: TitleBarProps) {
   const [isMaximized, setIsMaximized] = useState(false)
   const platform = window.effortless.platform
   const isMac = platform === 'darwin'
@@ -28,6 +33,26 @@ export function TitleBar() {
       ) : null}
       <div className={styles['title-bar-content']}>
         <span className={styles['app-title']}>effortless</span>
+        <div className={styles['mode-switch']}>
+          <button
+            type="button"
+            className={`${styles['mode-btn']} ${surfaceMode === 'effort' ? styles.active : ''}`}
+            aria-label="efforts"
+            title="efforts"
+            onClick={() => onSetSurfaceMode('effort')}
+          >
+            <Home size={13} />
+          </button>
+          <button
+            type="button"
+            className={`${styles['mode-btn']} ${surfaceMode === 'manage' ? styles.active : ''}`}
+            aria-label="manage"
+            title="manage"
+            onClick={() => onSetSurfaceMode('manage')}
+          >
+            <Settings size={13} />
+          </button>
+        </div>
       </div>
       {isMac ? null : (
         <div className={styles['window-controls']}>

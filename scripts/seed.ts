@@ -5,12 +5,19 @@ import { fileURLToPath } from 'node:url'
 import { openDatabase } from '../core/db'
 import { getAppPaths } from '../core/appPaths'
 import { acceptPlan, createPlan, markPlanReady, requestPlanChanges } from '../core/plans'
-import { submitReview } from '../core/reviews'
-import { checkpointTask, createTask, updateTaskDetails } from '../core/tasks'
+import { applyReview, submitReview } from '../core/reviews'
+import {
+  addTaskComment,
+  checkpointTask,
+  createTask,
+  markTaskReady,
+  updateTaskDetails,
+} from '../core/tasks'
 import { answerInputRequest, createInputRequest } from '../core/inputs'
 import { createMandate } from '../core/mandates'
 import { createReference } from '../core/references'
 import { createRepo } from '../core/repos'
+import { createEffort, getEffort, updateEffortStatus, updateEffortSummary } from '../core/efforts'
 import { worktreePath } from '../core/git'
 import type { AppDatabase } from '../core/db'
 import type { Effort, Repo, Task } from '../core/types'
@@ -86,15 +93,17 @@ function seedRepos(db: AppDatabase): { effortlessRepo: Repo; agentsyncboardRepo:
 }
 
 function seedInvestigationEffort(db: AppDatabase): Effort {
-  const effort = insertEffort(db, {
+  const effort = createEffort(db, {
     title: 'investigate CLI packaging overhead',
     description:
       'Profile why the CLI bundle grew after adding mandate and reference commands. Identify low-hanging reductions.',
     template: 'investigation',
-    planRequiresReview: true,
-    needsTasks: false,
-    summary: 'Eager module loading is the primary overhead. Recommend lazy imports and splitting render.ts by domain.',
   })
+  updateEffortSummary(
+    db,
+    effort.id,
+    'Eager module loading is the primary overhead. Recommend lazy imports and splitting render.ts by domain.',
+  )
 
   const plan = createPlan(db, {
     effortId: effort.id,
@@ -108,14 +117,12 @@ Recommendations:
 - Split render.ts into per-domain renderers.
 - Extract shared planState into a core helper.
 `,
-    authorAgentId: 'planner-1',
   })
 
   markPlanReady(db, plan.id)
 
   const input = createInputRequest(db, {
-    planId: plan.id,
-    agentId: 'planner-1',
+    effortId: effort.id,
     type: 'choice',
     prompt: 'Which recommendation should we implement first?',
     choices: [
@@ -137,15 +144,17 @@ async function seedBugfixEffort(
   db: AppDatabase,
   repos: { effortlessRepo: Repo; agentsyncboardRepo: Repo | null },
 ): Promise<Effort> {
-  const effort = insertEffort(db, {
+  const effort = createEffort(db, {
     title: 'fix dropped reattach guidance after wait interruptions',
     description:
       'Agents should always see the reattach command and end-turn warning when an approval wait is interrupted.',
     template: 'bugfix',
-    planRequiresReview: false,
-    needsTasks: true,
-    summary: 'Restored reattach output for task, review, and input wait interruptions. Build currently failing due to copy mismatch.',
   })
+  updateEffortSummary(
+    db,
+    effort.id,
+    'Restored reattach output for task, review, and input wait interruptions. Build currently failing due to copy mismatch.',
+  )
 
   const task = createTask(db, {
     effortId: effort.id,
@@ -173,7 +182,6 @@ async function seedBugfixEffort(
 
   createInputRequest(db, {
     taskId: task.id,
-    agentId: 'impl-hotfix',
     type: 'text',
     prompt: 'Do you want the interrupted copy to remain identical across task, plan, review, and input waits?',
   })
@@ -191,20 +199,21 @@ async function seedDeliveryEffort(
   db: AppDatabase,
   repos: { effortlessRepo: Repo; agentsyncboardRepo: Repo | null },
 ): Promise<Effort> {
-  const effort = insertEffort(db, {
+  const effort = createEffort(db, {
     title: 'stabilize review orchestration',
     description:
-      'Tighten the plan, task, review, and input loops so agents and humans see a consistent handoff model.',
+      'Tighten the plan, task, review, and input loops so agents and humans see a consistent artifact model.',
     template: 'delivery',
-    planRequiresReview: true,
-    needsTasks: true,
-    status: 'complete',
-    summary: 'Plan review flow, repo-backed task detail, and input requests are all wired. One task accepted, one task returned for changes, one task waiting for human review.',
   })
+  updateEffortSummary(
+    db,
+    effort.id,
+    'Plan review flow, repo-backed task detail, and input requests are all wired. One task accepted, one task returned for changes, one task waiting for human review.',
+  )
+  updateEffortStatus(db, effort.id, 'complete')
 
   const firstPlan = createPlan(db, {
     effortId: effort.id,
-    authorAgentId: 'planner-1',
     body: [
       '1. Add plan ready/wait with a plan history stream.',
       '2. Bind tasks to repos and show real workspace state.',
@@ -218,8 +227,7 @@ async function seedDeliveryEffort(
     body: 'Break out the rollback story and be more explicit about build verification.',
   })
   const planInput = createInputRequest(db, {
-    planId: firstPlan.id,
-    agentId: 'planner-1',
+    effortId: effort.id,
     type: 'choice',
     prompt: 'Which rollout should the revised plan assume?',
     choices: [
@@ -234,7 +242,6 @@ async function seedDeliveryEffort(
 
   const acceptedPlan = createPlan(db, {
     effortId: effort.id,
-    authorAgentId: 'planner-1',
     body: [
       '1. Land plan review flow with feedback history and strict wait ergonomics.',
       '2. Bind tasks to repos and surface worktree/build state in the task card.',
@@ -275,7 +282,6 @@ async function seedDeliveryEffort(
   })
   const taskInput = createInputRequest(db, {
     taskId: acceptedTask.id,
-    agentId: 'impl-plan',
     type: 'text',
     prompt: 'Should the plan history show timestamps inline or stay terse?',
   })
@@ -283,14 +289,13 @@ async function seedDeliveryEffort(
     inputRequestId: taskInput.id,
     answer: 'stay terse for now',
   })
-  markSeedTaskReady(db, acceptedTask, 'impl-plan')
+  await markTaskReady(db, acceptedTask.id)
   const acceptedReview = await submitReview(db, {
     taskId: acceptedTask.id,
     verdict: 'approve',
     body: 'Plan review flow is coherent and the wait path returns human feedback correctly.',
-    authorAgentId: 'review-plan',
   })
-  applySeedReview(db, acceptedTask.id, acceptedReview.id, 'accepted', '6d6a2b19c2a94d1ca98755d4c99194bb8ef4fa19')
+  await applyReview(db, { reviewId: acceptedReview.id })
   insertBuildResult(db, acceptedTask.id, 'passed', [
     '$ bun run build',
     'renderer build complete',
@@ -320,16 +325,14 @@ async function seedDeliveryEffort(
     agentId: 'impl-repo',
     body: 'Task overlay now shows repo metadata and latest build state.',
   })
-  markSeedTaskReady(db, changesTask, 'impl-repo')
+  await markTaskReady(db, changesTask.id)
   const rejectedReview = await submitReview(db, {
     taskId: changesTask.id,
     verdict: 'request-changes',
     body: 'The task detail card still needs diff and commit views before this is complete.',
-    authorAgentId: 'review-repo',
   })
   const reviewInput = createInputRequest(db, {
-    reviewId: rejectedReview.id,
-    agentId: 'review-repo',
+    taskId: changesTask.id,
     type: 'yesno',
     prompt: 'Should missing diff and commit tabs block approval?',
   })
@@ -337,7 +340,7 @@ async function seedDeliveryEffort(
     inputRequestId: reviewInput.id,
     answer: 'yes',
   })
-  applySeedReview(db, changesTask.id, rejectedReview.id, 'changes-requested')
+  await applyReview(db, { reviewId: rejectedReview.id })
   insertBuildResult(db, changesTask.id, 'failed', [
     '$ bun run --cwd client build',
     'Missing task detail tabs: diff, commit',
@@ -366,11 +369,10 @@ async function seedDeliveryEffort(
     agentId: 'impl-seed',
     body: 'Sketching a reset-and-seed flow that does not mutate real git worktrees.',
   })
-  markSeedTaskReady(db, waitingTask, 'impl-seed')
+  await markTaskReady(db, waitingTask.id)
   createInputRequest(db, {
     effortId: effort.id,
     taskId: waitingTask.id,
-    agentId: 'impl-seed',
     type: 'choice',
     prompt: 'Should the demo seed reset the default DB or require a dedicated flag?',
     choices: [
@@ -383,78 +385,11 @@ async function seedDeliveryEffort(
   return effort
 }
 
-function insertEffort(
-  db: AppDatabase,
-  input: {
-    title: string
-    description: string
-    template: Effort['template']
-    planRequiresReview: boolean
-    needsTasks: boolean
-    summary?: string
-    status?: Effort['status']
-  },
-): Effort {
-  const now = new Date().toISOString()
-  const result = db
-    .prepare(
-      `
-      INSERT INTO efforts (
-        title, description, template, accepted_plan_id, plan_requires_review, needs_tasks, status, summary, created_at, updated_at
-      )
-      VALUES (?, ?, ?, NULL, ?, ?, ?, ?, ?, ?)
-    `,
-    )
-    .run(input.title, input.description, input.template, input.planRequiresReview ? 1 : 0, input.needsTasks ? 1 : 0, input.status ?? 'active', input.summary ?? null, now, now)
-
-  const id = Number(result.lastInsertRowid)
-  db.prepare(`UPDATE efforts SET short_ref = ? WHERE id = ?`).run(`eff-${id}`, id)
-  return getEffortRecord(db, id)
-}
-
-function getEffortRecord(db: AppDatabase, effortId: number): Effort {
-  const row = db
-    .prepare<{
-      id: number
-      short_ref: string
-      title: string
-      description: string
-      template: Effort['template']
-      accepted_plan_id: number | null
-      plan_requires_review: number
-      needs_tasks: number
-      status: Effort['status']
-      summary: string | null
-      created_at: string
-      updated_at: string
-    }>(`SELECT * FROM efforts WHERE id = ?`)
-    .get(effortId)
-
-  if (!row) {
-    throw new Error(`Effort ${effortId} was not found`)
-  }
-
-  return {
-    id: row.id,
-    shortRef: row.short_ref,
-    title: row.title,
-    description: row.description,
-    template: row.template,
-    acceptedPlanId: row.accepted_plan_id,
-    planRequiresReview: Boolean(row.plan_requires_review),
-    needsTasks: Boolean(row.needs_tasks),
-    status: row.status,
-    summary: row.summary,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-  }
-}
-
 function attachTaskWorkspace(
   db: AppDatabase,
   task: Task,
   repo: Repo,
-  ownerAgentId: string,
+  agentId: string,
   status: Task['status'],
 ) {
   const resolvedWorktreePath = worktreePath(repo.path, task.branchName ?? `task/${task.shortRef}`)
@@ -462,57 +397,14 @@ function attachTaskWorkspace(
   db.prepare(
     `
     UPDATE tasks
-    SET owner_agent_id = ?,
-        status = ?,
+    SET status = ?,
         worktree_path = ?,
         updated_at = ?
     WHERE id = ?
   `,
-  ).run(ownerAgentId, status, resolvedWorktreePath, new Date().toISOString(), task.id)
+  ).run(status, resolvedWorktreePath, new Date().toISOString(), task.id)
 
-  db.prepare(
-    `
-    INSERT INTO task_comments (task_id, author, agent_id, kind, body, commit_hash, created_at)
-    VALUES (?, 'agent', ?, 'comment', ?, NULL, ?)
-  `,
-  ).run(task.id, ownerAgentId, `claimed by ${ownerAgentId}`, new Date().toISOString())
-}
-
-function markSeedTaskReady(db: AppDatabase, task: Task, agentId: string) {
-  db.prepare(`UPDATE tasks SET status = 'reviewing', updated_at = ? WHERE id = ?`).run(
-    new Date().toISOString(),
-    task.id,
-  )
-  db.prepare(
-    `
-    INSERT INTO task_comments (task_id, author, agent_id, kind, body, commit_hash, created_at)
-    VALUES (?, 'agent', ?, 'checkpoint', 'ready for human review', NULL, ?)
-  `,
-  ).run(task.id, agentId, new Date().toISOString())
-}
-
-function applySeedReview(
-  db: AppDatabase,
-  taskId: number,
-  reviewId: number,
-  status: 'accepted' | 'changes-requested',
-  commitHash: string | null = null,
-) {
-  const now = new Date().toISOString()
-  db.prepare(`UPDATE reviews SET applied_at = ? WHERE id = ?`).run(now, reviewId)
-  db.prepare(`UPDATE tasks SET status = ?, updated_at = ? WHERE id = ?`).run(status, now, taskId)
-  db.prepare(
-    `
-    INSERT INTO task_comments (task_id, author, agent_id, kind, body, commit_hash, created_at)
-    VALUES (?, 'user', NULL, ?, ?, ?, ?)
-  `,
-  ).run(
-    taskId,
-    status === 'accepted' ? 'approval' : 'comment',
-    status === 'accepted' ? 'lgtm' : 'The task detail card still needs diff and commit views before this is complete.',
-    commitHash,
-    now,
-  )
+  addTaskComment(db, task.id, 'agent', agentId, 'comment', `claimed by ${agentId}`)
 }
 
 function insertBuildResult(
@@ -554,19 +446,17 @@ function seedMandates(db: AppDatabase, repos: { effortlessRepo: Repo; agentsyncb
 
 function seedReferences(db: AppDatabase, deliveryEffort: Effort, bugfixEffort: Effort) {
   const deliveryTasks = db
-    .prepare<{ id: number; effort_id: number }>(`SELECT id, effort_id FROM tasks WHERE effort_id = ?`)
-    .all(deliveryEffort.id) as { id: number; effort_id: number }[]
+    .prepare<{ id: number }>(`SELECT id FROM tasks WHERE effort_id = ?`)
+    .all(deliveryEffort.id)
 
-  const acceptedPlanRows = db
-    .prepare<{ id: number }>(`SELECT id FROM plans WHERE effort_id = ? AND accepted_at IS NOT NULL`)
-    .all(deliveryEffort.id) as { id: number }[]
+  const effort = getEffort(db, deliveryEffort.id)
 
-  if (acceptedPlanRows.length > 0 && deliveryTasks.length > 0) {
+  if (effort.acceptedPlanId && deliveryTasks.length > 0) {
     createReference(db, {
       ownerType: 'task',
       ownerId: deliveryTasks[0].id,
       targetType: 'plan',
-      targetId: acceptedPlanRows[0].id,
+      targetId: effort.acceptedPlanId,
       label: 'accepted plan',
     })
   }

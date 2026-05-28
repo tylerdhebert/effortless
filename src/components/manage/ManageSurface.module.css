@@ -26,11 +26,15 @@
   grid-template-columns: minmax(0, 1fr);
 }
 
+.manage-surface-notifications {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .manage-panel {
   display: grid;
   gap: 14px;
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: 12px;
   background: color-mix(in srgb, var(--panel) 82%, transparent);
   padding: 18px;
   width: 100%;

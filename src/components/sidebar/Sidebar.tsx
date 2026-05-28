@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import type { Effort, Task } from '../../../core/types'
 import type { PendingNotification } from '../../../core/notifications'
-import { ChevronsLeft, Home, Plus, Settings, Filter } from 'lucide-react'
+import { ChevronsLeft, Plus, Filter } from 'lucide-react'
 import { formatTemplate, effortStatusColor } from '../../lib/helpers'
 import { MANAGE_SECTIONS, type ManageSection } from '../../lib/manageSections'
 import { WarningIndicator } from '../notifications/WarningIndicator'
@@ -120,26 +120,20 @@ export function Sidebar({
           >
             <ChevronsLeft size={16} />
           </button>
+          <NotificationFooter
+            count={notificationCount}
+            notifications={notifications}
+            onNavigate={onNavigateNotification}
+          />
           <button
             type="button"
-            className={`icon-btn ${surfaceMode === 'effort' ? styles.active : ''}`}
-            aria-label="home"
+            className={`icon-btn ${styles['add-effort-btn']}`}
+            aria-label="create effort"
             onClick={() => {
-              onSetSurfaceMode('effort')
+              onOpenCreateEffort()
             }}
           >
-            <Home size={16} />
-          </button>
-          <button
-            type="button"
-            className={`icon-btn ${surfaceMode === 'manage' ? styles.active : ''}`}
-            aria-label="open manage"
-            onClick={() => {
-              onSetSurfaceMode('manage')
-              onSetManageSection(manageSection)
-            }}
-          >
-            <Settings size={16} />
+            <Plus size={16} />
           </button>
         </div>
       </div>
@@ -276,23 +270,6 @@ export function Sidebar({
         )}
       </div>
 
-      <div className={styles['sidebar-footer']}>
-        <button
-          type="button"
-          className={`icon-btn ${styles['add-effort-btn']}`}
-          aria-label="create effort"
-          onClick={() => {
-            onOpenCreateEffort()
-          }}
-        >
-          <Plus size={16} />
-        </button>
-        <NotificationFooter
-          count={notificationCount}
-          notifications={notifications}
-          onNavigate={onNavigateNotification}
-        />
-      </div>
     </aside>
   )
 }
