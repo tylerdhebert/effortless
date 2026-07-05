@@ -244,7 +244,7 @@ export type UpdateRepoInput = {
 
 export type RunEnvironment = 'windows' | 'wsl'
 export type AgentProvider = 'codex' | 'claude' | 'opencode' | 'cursor' | 'copilot'
-export type AgentRunPurpose = 'main' | 'fork' | 'side' | 'side-investigation' | 'implementation' | 'review'
+export type AgentRunPurpose = 'main' | 'fork' | 'extra'
 export type AgentRunStatus = 'prepared' | 'running' | 'orphaned' | 'exited' | 'failed' | 'cancelled'
 export type LiveAgentRunSession = {
   attachmentId: string

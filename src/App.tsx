@@ -594,7 +594,7 @@ function App() {
         taskId: task.id,
         provider,
         profileId,
-        purpose: 'implementation',
+        purpose: 'extra',
       })
       await window.effortless.startAgentRun(prepared.run.id, terminalStartSize)
       return prepared
@@ -611,7 +611,7 @@ function App() {
         taskId: task.id,
         provider,
         profileId,
-        purpose: 'implementation',
+        purpose: 'extra',
         label: 'rerun',
       })
       await window.effortless.startAgentRun(prepared.run.id, terminalStartSize)

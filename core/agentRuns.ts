@@ -118,7 +118,7 @@ export async function prepareTaskRun(db: AppDatabase, input: PrepareTaskRunInput
   const cwd = resolveTaskRunCwd(db, task, profile)
   const now = new Date().toISOString()
   const providerSessionId = providerConfig.preseedSessionId ? randomUUID() : null
-  const purpose = input.purpose ?? 'implementation'
+  const purpose = input.purpose ?? 'extra'
   const label = input.label?.trim() || `${purpose}-${Date.now()}`
 
   const result = insertPreparedAgentRun(db, {
@@ -530,9 +530,7 @@ function resolveTaskRunCwd(db: AppDatabase, task: Task, profile: AgentProfile): 
   return task.worktreePath
 }
 
-function resolveTaskRunTerminalTabKey(purpose: AgentRunPurpose, taskRef: string): string {
-  if (purpose === 'review') return `review-${taskRef}`
-  if (purpose === 'side-investigation') return `side-${taskRef}`
+function resolveTaskRunTerminalTabKey(_purpose: AgentRunPurpose, taskRef: string): string {
   return `task-${taskRef}`
 }
 

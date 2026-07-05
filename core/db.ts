@@ -201,6 +201,8 @@ export function initializeSchema(db: AppDatabase): void {
 
   `)
 
+  db.exec(`UPDATE agent_runs SET purpose = 'extra' WHERE purpose NOT IN ('main', 'fork', 'extra')`)
+
   const addedEffortProvider = ensureColumn(db, 'efforts', 'default_provider', `TEXT NOT NULL DEFAULT '${DEFAULT_AGENT_PROVIDER}'`)
   ensureColumn(db, 'efforts', 'default_profile_id', 'INTEGER')
   ensureColumn(db, 'agent_profiles', 'fork_command_template', 'TEXT')
