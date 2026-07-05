@@ -1,4 +1,4 @@
-import { createPlan, getPlanByRef, listPlanComments, listPlans, markPlanReady } from '../../../core/plans'
+import { createPlan, getPlanByRef, listPlanComments, listPlans } from '../../../core/plans'
 import { getEffort } from '../../../core/efforts'
 import { listTasks } from '../../../core/tasks'
 import { requiredOption, bodyArg, isBrief } from '../args'
@@ -81,20 +81,6 @@ export async function handlePlan(surface: string, command: string): Promise<bool
       printComments(comments)
     }
 
-    return true
-  }
-
-  if (command === 'ready') {
-    const plan = getPlanByRef(db, requiredOption('--plan'))
-    const updated = markPlanReady(db, plan.id)
-    printPlan(updated)
-
-    return true
-  }
-
-  if (command === 'wait') {
-    const plan = getPlanByRef(db, requiredOption('--plan'))
-    printPlan(plan)
     return true
   }
 

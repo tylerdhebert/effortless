@@ -22,15 +22,6 @@ export function usePlanMutations(selectedEffortId: number | null, selectedPlanId
     },
   })
 
-  const readyPlan = useMutation({
-    mutationFn: (planId: number) => window.effortless.markPlanReady(planId),
-    onSuccess: async (plan) => {
-      await queryClient.invalidateQueries({ queryKey: ['plans', plan.effortId] })
-      await queryClient.invalidateQueries({ queryKey: ['plan-comments', plan.id] })
-      await queryClient.invalidateQueries({ queryKey: ['efforts'] })
-    },
-  })
-
   const requestPlanChanges = useMutation({
     mutationFn: (input: { planId: number; body: string }) =>
       window.effortless.requestPlanChanges(input),
@@ -42,5 +33,5 @@ export function usePlanMutations(selectedEffortId: number | null, selectedPlanId
     },
   })
 
-  return { createPlan, acceptPlan, readyPlan, requestPlanChanges }
+  return { createPlan, acceptPlan, requestPlanChanges }
 }

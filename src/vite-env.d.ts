@@ -94,7 +94,6 @@ interface Window {
       listPlanComments: (planId: number) => Promise<ActivityEvent[]>
       createPlan: (input: CreatePlanInput) => Promise<Plan>
       acceptPlan: (planId: number) => Promise<Plan>
-      markPlanReady: (planId: number) => Promise<Plan>
       requestPlanChanges: (input: RequestPlanChangesInput) => Promise<Plan>
       listTaskComments: (taskId: number) => Promise<ActivityEvent[]>
       getLatestTaskBuild: (taskId: number) => Promise<TaskBuildResult | null>

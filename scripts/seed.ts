@@ -4,7 +4,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { openDatabase } from '../core/db'
 import { getAppPaths } from '../core/appPaths'
-import { acceptPlan, createPlan, markPlanReady, requestPlanChanges } from '../core/plans'
+import { acceptPlan, createPlan, requestPlanChanges } from '../core/plans'
 import { applyReview, submitReview } from '../core/reviews'
 import {
   addTaskComment,
@@ -117,7 +117,7 @@ Recommendations:
 `,
   })
 
-  markPlanReady(db, plan.id)
+  acceptPlan(db, plan.id)
 
   const input = createInputRequest(db, {
     effortId: effort.id,
@@ -213,13 +213,12 @@ async function seedDeliveryEffort(
   const firstPlan = createPlan(db, {
     effortId: effort.id,
     body: [
-      '1. Add plan ready/wait with a plan history stream.',
+      '1. Add plan feedback with a plan history stream.',
       '2. Bind tasks to repos and show real workspace state.',
       '3. Add input requests for plan, task, and review.',
     ].join('\n'),
     summary: 'first pass',
   })
-  markPlanReady(db, firstPlan.id)
   requestPlanChanges(db, {
     planId: firstPlan.id,
     body: 'Break out the rollback story and be more explicit about build verification.',
@@ -248,13 +247,12 @@ async function seedDeliveryEffort(
     ].join('\n'),
     summary: 'approved plan',
   })
-  markPlanReady(db, acceptedPlan.id)
   acceptPlan(db, acceptedPlan.id)
 
   const acceptedTask = createTask(db, {
     effortId: effort.id,
     title: 'wire plan review loop',
-    description: 'Add plan ready, wait, feedback, and acceptance history.',
+    description: 'Add plan feedback and acceptance history.',
     repoId: repos.effortlessRepo.id,
     branchName: 'task/plan-review-loop',
     baseBranch: repos.effortlessRepo.baseBranch,
@@ -265,7 +263,7 @@ async function seedDeliveryEffort(
     branchName: 'task/plan-review-loop',
     baseBranch: repos.effortlessRepo.baseBranch,
     artifact:
-      'Plan submissions now have ready and accepted timestamps plus a plan comment stream for feedback.\n\nscreens checked\n- accepted plan visible\n- changes requested plan visible\n- plan wait responds to approval and feedback',
+      'Plan submissions now have acceptance state plus a plan comment stream for feedback.\n\nscreens checked\n- accepted plan visible\n- changes requested plan visible\n- plan feedback visible in history',
   })
   attachTaskWorkspace(db, acceptedTask, repos.effortlessRepo, 'impl-plan', 'in-flight')
   checkpointTask(db, {

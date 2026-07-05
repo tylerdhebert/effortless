@@ -177,8 +177,6 @@ function printPlanHelp(): void {
     { name: 'efl plan list', description: '--effort <eff-ref>' },
     { name: 'efl plan show', description: '--plan <plan-ref>' },
     { name: 'efl plan context', description: '--plan <plan-ref> [--brief]' },
-    { name: 'efl plan ready', description: '--plan <plan-ref>' },
-    { name: 'efl plan wait', description: '--plan <plan-ref>' },
   ])
 
   printSharedOptions([

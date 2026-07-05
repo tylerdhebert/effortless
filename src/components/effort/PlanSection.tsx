@@ -12,10 +12,8 @@ type PlanSectionProps = {
   onSelectPlan: (planId: number) => void
   planComments: Awaited<ReturnType<typeof window.effortless.listPlanComments>>
   onAcceptPlan: (planId: number) => void
-  onReadyPlan: (planId: number) => void
   onRequestPlanChanges: (input: { planId: number; body: string }) => void
   isAcceptingPlan: boolean
-  isReadyingPlan: boolean
   isRequestingPlanChanges: boolean
 }
 
@@ -25,10 +23,8 @@ export function PlanSection({
   onSelectPlan,
   planComments,
   onAcceptPlan,
-  onReadyPlan,
   onRequestPlanChanges,
   isAcceptingPlan,
-  isReadyingPlan,
   isRequestingPlanChanges,
 }: PlanSectionProps) {
   const [planFeedbackDrafts, setPlanFeedbackDrafts] = useState<Record<number, string>>({})
@@ -107,15 +103,6 @@ export function PlanSection({
               <strong>{planStatus(plan)}</strong>
             </div>
             <div className={styles['plan-card-actions']}>
-              {!plan.accepted && !hasAcceptedPlan ? (
-                <button
-                  type="button"
-                  onClick={() => onReadyPlan(plan.id)}
-                  disabled={isReadyingPlan}
-                >
-                  ready
-                </button>
-              ) : null}
               {!plan.accepted && !hasAcceptedPlan ? (
                 <button
                   type="button"

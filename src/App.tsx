@@ -1222,10 +1222,8 @@ function App() {
                           onSelectPlan={setSelectedPlanId}
                           planComments={planCommentsQuery.data ?? []}
                           onAcceptPlan={(planId) => planMutations.acceptPlan.mutate(planId)}
-                          onReadyPlan={(planId) => planMutations.readyPlan.mutate(planId)}
                           onRequestPlanChanges={(input) => planMutations.requestPlanChanges.mutate(input)}
                           isAcceptingPlan={planMutations.acceptPlan.isPending}
-                          isReadyingPlan={planMutations.readyPlan.isPending}
                           isRequestingPlanChanges={planMutations.requestPlanChanges.isPending}
                         />
                       ) : (

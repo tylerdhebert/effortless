@@ -34,7 +34,7 @@ import {
   listInstructions,
   setInstructions,
 } from '../core/instructions'
-import { acceptPlan, createPlan, getPlanByRef, listPlanComments, listPlans, markPlanReady, requestPlanChanges } from '../core/plans'
+import { acceptPlan, createPlan, getPlanByRef, listPlanComments, listPlans, requestPlanChanges } from '../core/plans'
 import { createRepo, deleteRepo, listRepos, updateRepo } from '../core/repos'
 import { applyReview, getReviewByRef, listReviews, requestReviewChanges, submitReview } from '../core/reviews'
 import {
@@ -186,7 +186,6 @@ ipcMain.handle('plans:show', (_event, planRef: string) => getPlanByRef(db, planR
 ipcMain.handle('plans:comments', (_event, planId: number) => listPlanComments(db, planId))
 ipcMain.handle('plans:create', (_event, input: CreatePlanInput) => createPlan(db, input))
 ipcMain.handle('plans:accept', (_event, planId: number) => acceptPlan(db, planId))
-ipcMain.handle('plans:ready', (_event, planId: number) => markPlanReady(db, planId))
 ipcMain.handle('plans:requestChanges', (_event, input: RequestPlanChangesInput) =>
   requestPlanChanges(db, input),
 )

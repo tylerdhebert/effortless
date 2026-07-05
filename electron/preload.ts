@@ -106,7 +106,6 @@ contextBridge.exposeInMainWorld('effortless', {
     ipcRenderer.invoke('plans:comments', planId) as Promise<ActivityEvent[]>,
   createPlan: (input: CreatePlanInput) => ipcRenderer.invoke('plans:create', input) as Promise<Plan>,
   acceptPlan: (planId: number) => ipcRenderer.invoke('plans:accept', planId) as Promise<Plan>,
-  markPlanReady: (planId: number) => ipcRenderer.invoke('plans:ready', planId) as Promise<Plan>,
   requestPlanChanges: (input: RequestPlanChangesInput) =>
     ipcRenderer.invoke('plans:requestChanges', input) as Promise<Plan>,
   listTaskComments: (taskId: number) =>

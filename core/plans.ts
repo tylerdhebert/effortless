@@ -73,10 +73,6 @@ export function getPlanByRef(db: AppDatabase, planRef: string): Plan {
   return mapPlan(row)
 }
 
-export function markPlanReady(db: AppDatabase, planId: number): Plan {
-  return acceptPlan(db, planId)
-}
-
 export function requestPlanChanges(db: AppDatabase, input: RequestPlanChangesInput): Plan {
   const plan = getPlan(db, input.planId)
   addActivityEvent(db, {
