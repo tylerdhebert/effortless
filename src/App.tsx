@@ -26,6 +26,7 @@ import { Sidebar } from './components/sidebar/Sidebar'
 import { AgentRunTerminal } from './components/task/AgentRunTerminal'
 import { TaskCreationForm } from './components/task/TaskCreationForm'
 import { TaskDetailPane } from './components/task/TaskDetailPane'
+import { TaskWorkPane } from './components/task/TaskWorkPane'
 import { TaskList } from './components/task/TaskList'
 import { getAgentProviderConfig, listAgentProviders } from '../core/agentProviders'
 import { countActiveEffortRuns, pickTaskRunBadge } from './lib/runStatus'
@@ -95,6 +96,7 @@ function App() {
     document.addEventListener('mousemove', onMove)
     document.addEventListener('mouseup', onUp)
   }, [drawerWidth, activeEffortDrawer])
+  const [centerView, setCenterView] = useState<'terminal' | 'work'>('terminal')
   const [taskCreateOpen, setTaskCreateOpen] = useState(false)
   const [focusedInputId, setFocusedInputId] = useState<number | null>(null)
   const [terminalMenuOpen, setTerminalMenuOpen] = useState(false)
@@ -822,6 +824,10 @@ function App() {
   }
 
   useEffect(() => {
+    setCenterView('terminal')
+  }, [selectedTaskId, selectedEffortId])
+
+  useEffect(() => {
     if (!selectedPlanId && plansQuery.data?.[0]) {
       setSelectedPlanId(plansQuery.data[0].id)
     }
@@ -1064,7 +1070,7 @@ function App() {
             </header>
 
             <div className="terminal-first-stage">
-              <div className="terminal-first-canvas">
+              <div className={`terminal-first-canvas ${centerView === 'work' && selectedTask ? 'hidden' : ''}`}>
                 <AgentRunTerminal
                   activeRun={activeTerminalRun}
                   activeRunHasLiveSession={activeTerminalRunHasLiveSession}
@@ -1101,6 +1107,21 @@ function App() {
                   forkMainDisabledReason={forkMainRun.isPending ? 'fork is starting' : forkMainDisabledReason}
                 />
               </div>
+              {centerView === 'work' && selectedTask ? (
+                <div className="terminal-first-canvas work-canvas">
+                  <TaskWorkPane
+                    task={selectedTask}
+                    repos={reposQuery.data ?? []}
+                    taskRuns={selectedTaskRuns}
+                    liveSessionIds={liveSessionIds}
+                    providerLiveRunIds={providerLiveRunIds}
+                    latestBuild={buildQuery.data ?? null}
+                    commitView={commitsQuery.data ?? null}
+                    conflictView={conflictsQuery.data ?? null}
+                    onClose={() => setCenterView('terminal')}
+                  />
+                </div>
+              ) : null}
               <aside className="effort-rail" aria-label="effort views">
                 {[
                   { id: 'description' as const, label: 'description', Icon: ScrollText, badge: selectedEffort.shortRef },
@@ -1275,9 +1296,8 @@ function App() {
                               providerLiveRunIds={providerLiveRunIds}
                               reviews={reviewsQuery.data ?? []}
                               comments={commentsQuery.data ?? []}
-                              latestBuild={buildQuery.data ?? null}
-                              commitView={commitsQuery.data ?? null}
-                              conflictView={conflictsQuery.data ?? null}
+                              workView={centerView === 'work'}
+                              onWorkViewChange={(next) => setCenterView(next ? 'work' : 'terminal')}
                               onRunBuild={(taskId) => taskMutations.runBuild.mutate(taskId)}
                               onWorkOnTask={(input) => sendTaskToEffortSession.mutate(input)}
                               onStartTaskRun={(input) => startTaskRun.mutate(input)}
