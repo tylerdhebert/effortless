@@ -1,9 +1,5 @@
 import type { EffortTemplate, Plan } from '../../core/types'
 
-export function isPlanWaiting(plan: Plan) {
-  return planStatus(plan) === 'draft' && !plan.accepted
-}
-
 export function planStatus(plan: Plan) {
   if (plan.accepted) {
     return 'accepted'

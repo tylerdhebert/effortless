@@ -367,3 +367,14 @@ The core loop is:
 - [x] Build Electron run manager.
 - [x] Render embedded terminal.
 - [x] Trim schema for single-agent plus bounded side-run workflow.
+
+## v2.1 pruning (2026-07-05)
+
+- references removed (`efl ref`, DB table, UI drawer)
+- mandates and playbooks collapsed to instructions (global + optional per-repo override; manage tab)
+- run purposes narrowed to main / fork / extra
+- plan ready/wait removed; plan acceptance is a human UI action
+- positional ref sugar (`efl context <ref>`, `efl show <ref>`, refs after `<domain> <command>`)
+- chip rows replaced with meta lines in detail panes
+- designed git error states in git panels
+- task work view swaps into the center pane

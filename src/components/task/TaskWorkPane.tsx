@@ -143,8 +143,9 @@ export function TaskWorkPane({
         {latestBuild ? (
           <div className={styles['build-result']}>
             <div className={styles['expanded-meta']}>
-              <span>{latestBuild.shortRef}</span>
-              <span>{latestBuild.status}</span>
+              <span className="meta-line">
+                {latestBuild.shortRef} · {latestBuild.status}
+              </span>
             </div>
             <pre>{latestBuild.output || 'no output'}</pre>
           </div>

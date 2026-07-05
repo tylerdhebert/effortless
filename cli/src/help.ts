@@ -142,10 +142,10 @@ function printEffortHelp(): void {
   printBlock('Commands', [
     { name: 'efl effort create', description: '--title --description [--template bugfix|delivery|investigation]' },
     { name: 'efl effort list', description: 'list efforts' },
-    { name: 'efl effort show', description: '--effort <eff-ref>' },
-    { name: 'efl effort context', description: '--effort <eff-ref> [--brief]' },
-    { name: 'efl effort summary', description: '--effort <eff-ref> --body ... [--from-file]' },
-    { name: 'efl effort complete', description: '--effort <eff-ref>' },
+    { name: 'efl effort show', description: 'eff-1 | --effort <eff-ref>' },
+    { name: 'efl effort context', description: 'eff-1 [--brief] | --effort <eff-ref>' },
+    { name: 'efl effort summary', description: 'eff-1 --body ... [--from-file]' },
+    { name: 'efl effort complete', description: 'eff-1 | --effort <eff-ref>' },
   ])
 
   printSharedOptions([{ name: '--effort <eff-ref>', description: 'effort short ref (eff-1)' }])
@@ -156,16 +156,16 @@ function printTaskHelp(): void {
 
   printBlock('Commands', [
     { name: 'efl task create', description: '--effort --title [--description] [--repo] [--branch] [--base-branch]' },
-    { name: 'efl task list', description: '--effort <eff-ref>' },
-    { name: 'efl task show', description: '--task <task-ref>' },
-    { name: 'efl task context', description: '--task <task-ref> [--brief]  (read before coding)' },
-    { name: 'efl task claim', description: '--task <task-ref>' },
+    { name: 'efl task list', description: 'eff-1 | --effort <eff-ref>' },
+    { name: 'efl task show', description: 'task-1 | --task <task-ref>' },
+    { name: 'efl task context', description: 'task-1 [--brief]  (read before coding)' },
+    { name: 'efl task claim', description: 'task-1 | --task <task-ref>' },
     { name: 'efl task checkpoint', description: '--body ...  (infers --task, author from run label)' },
     { name: 'efl task artifact', description: '--body ...  (checkpoint)' },
-    { name: 'efl task ready', description: '--task  (waits for review unless CLIENT_WAIT=1)' },
-    { name: 'efl task wait', description: '--task  (reattach after disconnect)' },
-    { name: 'efl task merge', description: '--task <task-ref>' },
-    { name: 'efl task worktree', description: '--task  (ensure worktree exists)' },
+    { name: 'efl task ready', description: 'task-1  (waits for review unless CLIENT_WAIT=1)' },
+    { name: 'efl task wait', description: 'task-1  (reattach after disconnect)' },
+    { name: 'efl task merge', description: 'task-1 | --task <task-ref>' },
+    { name: 'efl task worktree', description: 'task-1  (ensure worktree exists)' },
   ])
 
   printSharedOptions([
@@ -180,10 +180,10 @@ function printPlanHelp(): void {
   printHeader('efl plan', 'effort planning artifacts')
 
   printBlock('Commands', [
-    { name: 'efl plan submit', description: '--effort --body ... [--from-file]' },
-    { name: 'efl plan list', description: '--effort <eff-ref>' },
-    { name: 'efl plan show', description: '--plan <plan-ref>' },
-    { name: 'efl plan context', description: '--plan <plan-ref> [--brief]' },
+    { name: 'efl plan submit', description: '--effort --body ... [--from-file]  (human accepts in UI)' },
+    { name: 'efl plan list', description: 'eff-1 | --effort <eff-ref>' },
+    { name: 'efl plan show', description: 'plan-1 | --plan <plan-ref>' },
+    { name: 'efl plan context', description: 'plan-1 [--brief] | --plan <plan-ref>' },
   ])
 
   printSharedOptions([
@@ -196,12 +196,12 @@ function printReviewHelp(): void {
   printHeader('efl review', 'human review loop')
 
   printBlock('Commands', [
-    { name: 'efl review submit', description: '--task --verdict approve|request-changes --body ...' },
-    { name: 'efl review list', description: '--task <task-ref>' },
-    { name: 'efl review show', description: '--review <rev-ref>' },
-    { name: 'efl review context', description: '--review <rev-ref> [--brief]' },
-    { name: 'efl review ready', description: '--review <rev-ref>' },
-    { name: 'efl review wait', description: '--review <rev-ref>' },
+    { name: 'efl review submit', description: 'task-1 --verdict approve|request-changes --body ...' },
+    { name: 'efl review list', description: 'task-1 | --task <task-ref>' },
+    { name: 'efl review show', description: 'rev-1 | --review <rev-ref>' },
+    { name: 'efl review context', description: 'rev-1 [--brief] | --review <rev-ref>' },
+    { name: 'efl review ready', description: 'rev-1 | --review <rev-ref>' },
+    { name: 'efl review wait', description: 'rev-1 | --review <rev-ref>' },
   ])
 
   printSharedOptions([
@@ -217,17 +217,18 @@ function printRunHelp(): void {
   printBlock('Commands', [
     { name: 'efl run providers', description: 'built-in provider templates' },
     { name: 'efl run profiles', description: 'saved agent profiles' },
-    { name: 'efl run prepare', description: '--task | --effort [--provider] [--profile] [--label]' },
-    { name: 'efl run start', description: '--run  (PTY in app; infers --run)' },
-    { name: 'efl run list', description: '[--task]  (compact; --full for cwd/command)' },
-    { name: 'efl run show', description: '--run [--brief]' },
-    { name: 'efl run env', description: '--run  (env block for shell)' },
-    { name: 'efl run fail', description: '--run --body ...  (manual recovery)' },
-    { name: 'efl run cancel', description: '--run' },
+    { name: 'efl run prepare', description: 'task-1 | eff-1 [--provider] [--profile] [--label]' },
+    { name: 'efl run start', description: 'run-1  (PTY in app; infers --run)' },
+    { name: 'efl run list', description: '[task-1]  (compact; --full for cwd/command)' },
+    { name: 'efl run show', description: 'run-1 [--brief]' },
+    { name: 'efl run env', description: 'run-1  (env block for shell)' },
+    { name: 'efl run fail', description: 'run-1 --body ...  (manual recovery)' },
+    { name: 'efl run cancel', description: 'run-1' },
   ])
 
   printBlock('Options', [
     { name: '--run <run-ref>', description: 'run short ref (or $EFFORTLESS_RUN_ID)' },
+    { name: 'purpose', description: 'main | fork | extra (set at prepare time)' },
     { name: '--provider <key>', description: 'codex | cursor | opencode | claude' },
     { name: '--profile <id>', description: 'agent_profiles numeric id' },
     { name: '--label <name>', description: 'run label (checkpoint author)' },

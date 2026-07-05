@@ -15,7 +15,7 @@ Agent sessions are fast. **Coordination is not.** Without a spine, you end up wi
 - “done” that meant different things to you and the agent
 - reviews and human choices scattered across chat
 
-effortless treats an **effort** as the unit of work: your original request plus plans, tasks, reviews, references, structured input requests, runs, and a final summary. Tasks are repo-backed when they need to be; runs happen in embedded terminals; agents update state through `efl` while you steer from the app.
+effortless treats an **effort** as the unit of work: your original request plus plans, tasks, reviews, structured input requests, runs, and a final summary. Global and per-repo **instructions** shape agent behavior; tasks are repo-backed when they need to be; runs happen in embedded terminals; agents update state through `efl` while you steer from the app.
 
 **Good fit:** multi-step delivery, explicit review/merge discipline, human gates, local auditability.
 
@@ -35,12 +35,12 @@ Agents work in **worktrees** where it matters. You answer **input requests** (ye
 
 | surface | for |
 |---------|-----|
-| effort | the request, summary, references, overall status |
+| effort | the request, summary, overall status |
 | plan | approach and decomposition (delivery / investigation) |
 | task | implementation on a branch/worktree |
 | review | independent assessment before merge |
 | input | blocking human decisions |
-| run | live agent execution in the terminal |
+| run | live agent execution in the terminal (purpose: main, fork, or extra) |
 
 See `docs/agent-definitions/AGENT-effortless.md` for how an agent should behave inside this model.
 
@@ -61,7 +61,9 @@ bun run dev:playwright
 
 ```bash
 bun run efl -- effort list
-bun run efl -- task context --task task-1
+bun run efl -- task context task-1
+bun run efl -- context eff-1
+bun run efl -- instructions show
 ```
 
 **Build / seed:**
