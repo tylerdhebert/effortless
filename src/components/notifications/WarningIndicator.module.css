@@ -1,7 +1,7 @@
 .indicator {
   display: inline-grid;
   place-items: center;
-  color: rgb(234, 179, 8);
+  color: var(--accent);
   flex-shrink: 0;
 }
 

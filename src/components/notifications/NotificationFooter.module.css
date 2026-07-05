@@ -116,7 +116,7 @@
 .itemRefs {
   font-size: 0.75rem;
   font-weight: 600;
-  color: rgb(234, 179, 8);
+  color: var(--accent);
 }
 
 .itemElapsed {
