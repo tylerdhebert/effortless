@@ -100,6 +100,7 @@ async function main() {
   const dbPath = path.join(homeDir, 'effortless.db')
 
   mkdirSync(homeDir, { recursive: true })
+  mkdirSync(path.join(homeDir, 'electron', 'session'), { recursive: true })
 
   const env = {
     ...process.env,

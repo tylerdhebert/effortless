@@ -74,3 +74,5 @@ bun run seed -- --replace
 Agent and automation notes: `AGENTS.md`.
 
 Runner docs: `docs/run-profiles.md`, `docs/native-deps.md`.
+
+Electron UI debugging and visual verification: `docs/electron-ui-debugging.md`.

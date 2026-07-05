@@ -476,7 +476,7 @@ export function TaskDetailPane({
                 </div>
               </div>
             ) : (
-              <p className="empty-state">no diff output</p>
+              diffView?.output ? <pre>{diffView.output}</pre> : <p className="empty-state">no diff output</p>
             )}
 
             <div className={styles['implementation-grid']}>
@@ -491,7 +491,13 @@ export function TaskDetailPane({
                 <div className={styles['implementation-card-header']}>
                   <strong>conflicts</strong>
                   {conflictView ? (
-                    <small>{conflictView.hasConflicts ? 'conflicts found' : 'merge is clean'}</small>
+                    <small>
+                      {conflictView.hasConflicts
+                        ? 'conflicts found'
+                        : conflictView.details
+                          ? 'merge status unavailable'
+                          : 'merge is clean'}
+                    </small>
                   ) : null}
                 </div>
                 {conflictView?.hasConflicts ? (
@@ -501,6 +507,8 @@ export function TaskDetailPane({
                     ) : null}
                     {conflictView.details ? <pre>{conflictView.details}</pre> : null}
                   </div>
+                ) : conflictView?.details ? (
+                  <pre>{conflictView.details}</pre>
                 ) : (
                   <p>no conflicts detected</p>
                 )}

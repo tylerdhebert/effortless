@@ -183,19 +183,28 @@ export async function ensureTaskWorktree(db: AppDatabase, taskId: number): Promi
 
 export async function getTaskDiffView(db: AppDatabase, taskId: number, type: DiffType): Promise<TaskDiffView> {
   const context = resolveTaskRepoContext(db, taskId)
-  const output = await getDiff(context.repo.path, context.branchName, context.baseBranch, type)
+  const output = await readGitView(() => getDiff(context.repo.path, context.branchName, context.baseBranch, type))
   return { taskId, type, output: output.trimEnd() }
 }
 
 export async function getTaskCommitView(db: AppDatabase, taskId: number): Promise<TaskCommitView> {
   const context = resolveTaskRepoContext(db, taskId)
-  const output = await getCommits(context.repo.path, context.branchName, context.baseBranch)
+  const output = await readGitView(() => getCommits(context.repo.path, context.branchName, context.baseBranch))
   return { taskId, output: output.trimEnd() }
 }
 
 export async function getTaskConflictView(db: AppDatabase, taskId: number): Promise<TaskConflictView> {
   const context = resolveTaskRepoContext(db, taskId)
-  const result = await checkConflicts(context.repo.path, context.branchName, context.baseBranch)
+  const result = await readGitView(() => checkConflicts(context.repo.path, context.branchName, context.baseBranch))
+  if (typeof result === 'string') {
+    return {
+      taskId,
+      hasConflicts: false,
+      files: [],
+      details: result.trimEnd(),
+    }
+  }
+
   return {
     taskId,
     hasConflicts: result.hasConflicts,
@@ -258,6 +267,15 @@ export async function mergeTask(db: AppDatabase, taskId: number): Promise<Task> 
   addTaskComment(db, taskId, 'user', null, 'approval', `merged ${task.branchName} into ${task.baseBranch}`)
   bumpAppState(db)
   return getTask(db, taskId)
+}
+
+async function readGitView<T>(read: () => Promise<T>): Promise<T | string> {
+  try {
+    return await read()
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    return `git data unavailable\n${message.trim()}`
+  }
 }
 
 export function updateTaskStatus(db: AppDatabase, taskId: number, status: Task['status']): void {

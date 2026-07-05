@@ -1,22 +1,8 @@
-import fs from 'node:fs'
 import path from 'node:path'
 import http from 'node:http'
-import { fileURLToPath } from 'node:url'
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const repoRoot = path.resolve(__dirname, '..')
-
-function pad(value) {
-  return String(value).padStart(2, '0')
-}
-
-function todaySlug() {
-  const now = new Date()
-  return `${pad(now.getMonth() + 1)}-${pad(now.getDate())}-diff-inspect`
-}
 
 function parseArgs(argv) {
-  let outDir = path.join('.playwright-mcp', todaySlug())
+  let outDir = 'screenshots'
   let shotName = `capture-${Date.now()}.png`
   let port = '9222'
   let runScenario = false
@@ -51,9 +37,11 @@ function parseArgs(argv) {
 function printHelp() {
   console.log(`Usage: node scripts/capture-electron-shot.mjs [options]
 
+Requires a running dev:playwright Electron app with CDP exposed.
+
 Options:
-  --out-dir <path>   Relative artifact directory under repo root.
-                     Default: .playwright-mcp/{mm-dd-diff-inspect}
+  --out-dir <path>   Relative path under the running Electron app's
+                     artifact directory. Default: screenshots
   --name <file>      Screenshot filename.
                      Default: capture-{timestamp}.png
   --port <number>    CDP port exposed by dev:playwright. Default: 9222
@@ -226,9 +214,6 @@ async function main() {
     printHelp()
     return
   }
-
-  const absoluteOutDir = path.resolve(repoRoot, options.outDir)
-  fs.mkdirSync(absoluteOutDir, { recursive: true })
 
   const targets = await getTargets(options.port)
   const target =

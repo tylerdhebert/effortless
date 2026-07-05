@@ -11,6 +11,7 @@ import {
   checkpointTask,
   createTask,
   markTaskReady,
+  updateTaskStatus,
   updateTaskDetails,
 } from '../core/tasks'
 import { answerInputRequest, createInputRequest } from '../core/inputs'
@@ -290,12 +291,12 @@ async function seedDeliveryEffort(
     answer: 'stay terse for now',
   })
   await markTaskReady(db, acceptedTask.id)
-  const acceptedReview = await submitReview(db, {
+  await submitReview(db, {
     taskId: acceptedTask.id,
     verdict: 'approve',
     body: 'Plan review flow is coherent and the wait path returns human feedback correctly.',
   })
-  await applyReview(db, { reviewId: acceptedReview.id })
+  acceptSeedReview(db, acceptedTask.id)
   insertBuildResult(db, acceptedTask.id, 'passed', [
     '$ bun run build',
     'renderer build complete',
@@ -405,6 +406,11 @@ function attachTaskWorkspace(
   ).run(status, resolvedWorktreePath, new Date().toISOString(), task.id)
 
   addTaskComment(db, task.id, 'agent', agentId, 'comment', `claimed by ${agentId}`)
+}
+
+function acceptSeedReview(db: AppDatabase, taskId: number) {
+  addTaskComment(db, taskId, 'user', null, 'approval', 'lgtm')
+  updateTaskStatus(db, taskId, 'accepted')
 }
 
 function insertBuildResult(
