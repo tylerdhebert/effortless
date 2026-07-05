@@ -13,7 +13,7 @@ The core loop is:
 3. Effortless builds an effort context prompt and launches the configured main agent in the effort terminal.
 4. Let the agent read generated context and update Effortless through `efl`.
 5. Review diffs, builds, conflicts, inputs, reviews, and merge state in the app.
-6. Keep durable state in efforts, plans, tasks, reviews, inputs, references, mandates, and runs.
+6. Keep durable state in efforts, plans, tasks, reviews, inputs, instructions, and runs.
 
 ## Phase 1: Single-Agent Cleanup
 
@@ -23,12 +23,11 @@ The core loop is:
 - [x] Remove `efl discuss`.
 - [x] Remove discussion service code.
 - [x] Remove `discussion` from effort templates.
-- [x] Remove `discussion` from default template playbooks.
-- [x] Remove `discussion` from default mandates.
-- [x] Add `run` as a mandate surface.
-- [x] Remove discussion mandates/playbooks from built-in defaults.
+- [x] Remove `discussion` from default instructions.
+- [x] Keep run guidance in default instructions.
+- [x] Remove discussion guidance from built-in defaults.
 - [x] Validate effort templates at runtime.
-- [x] Validate mandate work surfaces at runtime.
+- [x] Validate instruction scopes at runtime.
 - [x] Update seed and migration scripts away from discussion rows.
 - [x] Replace `ORCHESTRATOR-effortless.md` with `AGENT-effortless.md`.
 - [x] Build verification: `bun run build`.
@@ -277,7 +276,7 @@ The core loop is:
 - [ ] Prepare review run from a task.
 - [ ] Generate review-specific context pack.
 - [ ] Include task diff/build/commit context.
-- [ ] Use review mandate.
+- [ ] Use effective instructions.
 - [ ] Support read-only review command profile guidance.
 - [ ] Allow review run to create `Review` records.
 - [ ] Show review runs in task detail.
@@ -287,7 +286,7 @@ The core loop is:
 
 - [x] Prepare true effort-level main run.
 - [x] Generate effort-level context pack.
-- [x] Use effort and run mandates.
+- [x] Use effective instructions.
 - [x] Support main runs not tied to a task.
 - [ ] Support investigation/planning side runs not tied to a task.
 - [ ] Show effort-level run list.

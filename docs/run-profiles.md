@@ -27,7 +27,7 @@ Templates are expanded when a run is prepared. Primary variables:
 
 | variable | meaning |
 |----------|---------|
-| `{prompt}` | generated startup context (mandates, effort/task state, run bootstrap) |
+| `{prompt}` | generated startup context (instructions, effort/task state, run bootstrap) |
 | `{provider_session_id}` | provider resume id when known |
 | `{run_ref}` | run short ref, e.g. `run-12` |
 

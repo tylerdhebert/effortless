@@ -12,15 +12,13 @@ import type {
   CreateEffortInput,
   DiffType,
   CreateInputRequestInput,
-  CreateMandateInput,
   CreatePlanInput,
   CreateRepoInput,
   CreateTaskInput,
   Effort,
-  EffortTemplate,
   InputRequest,
+  Instructions,
   LiveAgentRunSession,
-  Mandate,
   Plan,
   ActivityEvent,
   Repo,
@@ -34,17 +32,14 @@ import type {
   TaskCommitView,
   TaskConflictView,
   TaskDiffView,
-  TemplatePlaybook,
   PrepareEffortRunInput,
   PrepareForkRunInput,
   PrepareResumeRunInput,
   PrepareTaskRunInput,
+  SetInstructionsInput,
   UpdateAgentProfileInput,
-  UpdateMandateInput,
   UpdateRepoInput,
   UpdateTaskDetailsInput,
-  UpdateTemplatePlaybookInput,
-  WorkSurface,
 } from '../core/types'
 import type { PendingNotification } from '../core/notifications'
 import type { NotificationSettings } from '../core/db'
@@ -223,22 +218,12 @@ contextBridge.exposeInMainWorld('effortless', {
     ipcRenderer.invoke('tasks:approve', input) as Promise<Task>,
   requestTaskChanges: (input: RequestTaskChangesInput) =>
     ipcRenderer.invoke('tasks:requestChanges', input) as Promise<Task>,
-  listMandates: () => ipcRenderer.invoke('mandates:list') as Promise<Mandate[]>,
-  listMandatesBySurface: (workSurface: WorkSurface, repoId: number | null) =>
-    ipcRenderer.invoke('mandates:listBySurface', workSurface, repoId) as Promise<Mandate[]>,
-  createMandate: (input: CreateMandateInput) =>
-    ipcRenderer.invoke('mandates:create', input) as Promise<Mandate>,
-  updateMandate: (input: UpdateMandateInput) =>
-    ipcRenderer.invoke('mandates:update', input) as Promise<Mandate>,
-  deleteMandate: (mandateId: number) => ipcRenderer.invoke('mandates:delete', mandateId) as Promise<void>,
-  resolveMandateText: (workSurface: WorkSurface, repoId: number | null) =>
-    ipcRenderer.invoke('mandates:resolve', workSurface, repoId) as Promise<string | null>,
-  listTemplatePlaybooks: () =>
-    ipcRenderer.invoke('playbooks:list') as Promise<TemplatePlaybook[]>,
-  updateTemplatePlaybook: (input: UpdateTemplatePlaybookInput) =>
-    ipcRenderer.invoke('playbooks:update', input) as Promise<TemplatePlaybook>,
-  resetTemplatePlaybook: (template: EffortTemplate) =>
-    ipcRenderer.invoke('playbooks:reset', template) as Promise<TemplatePlaybook>,
+  listInstructions: () =>
+    ipcRenderer.invoke('instructions:list') as Promise<Instructions[]>,
+  setInstructions: (input: SetInstructionsInput) =>
+    ipcRenderer.invoke('instructions:set', input) as Promise<Instructions>,
+  deleteInstructions: (id: number) =>
+    ipcRenderer.invoke('instructions:delete', id) as Promise<void>,
   captureDebugScreenshot: (relativePath?: string) =>
     ipcRenderer.invoke('debug:capture-screenshot', relativePath) as Promise<{ path: string; sha256: string }>,
   listPendingNotifications: () =>

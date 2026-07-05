@@ -14,15 +14,13 @@ import type {
   CreateEffortInput,
   DiffType,
   CreateInputRequestInput,
-  CreateMandateInput,
   CreatePlanInput,
   CreateRepoInput,
   CreateTaskInput,
   Effort,
-  EffortTemplate,
   InputRequest,
+  Instructions,
   LiveAgentRunSession,
-  Mandate,
   Plan,
   ActivityEvent,
   Repo,
@@ -36,17 +34,14 @@ import type {
   TaskCommitView,
   TaskConflictView,
   TaskDiffView,
-  TemplatePlaybook,
   PrepareEffortRunInput,
   PrepareForkRunInput,
   PrepareResumeRunInput,
   PrepareTaskRunInput,
+  SetInstructionsInput,
   UpdateAgentProfileInput,
-  UpdateMandateInput,
   UpdateRepoInput,
   UpdateTaskDetailsInput,
-  UpdateTemplatePlaybookInput,
-  WorkSurface,
 } from '../core/types'
 
 declare global {
@@ -167,15 +162,9 @@ interface Window {
       }) => void) => () => void
       approveTask: (input: ApproveTaskInput) => Promise<Task>
       requestTaskChanges: (input: RequestTaskChangesInput) => Promise<Task>
-      listMandates: () => Promise<Mandate[]>
-      listMandatesBySurface: (workSurface: WorkSurface, repoId: number | null) => Promise<Mandate[]>
-      createMandate: (input: CreateMandateInput) => Promise<Mandate>
-      updateMandate: (input: UpdateMandateInput) => Promise<Mandate>
-      deleteMandate: (mandateId: number) => Promise<void>
-      resolveMandateText: (workSurface: WorkSurface, repoId: number | null) => Promise<string | null>
-      listTemplatePlaybooks: () => Promise<TemplatePlaybook[]>
-      updateTemplatePlaybook: (input: UpdateTemplatePlaybookInput) => Promise<TemplatePlaybook>
-      resetTemplatePlaybook: (template: EffortTemplate) => Promise<TemplatePlaybook>
+      listInstructions: () => Promise<Instructions[]>
+      setInstructions: (input: SetInstructionsInput) => Promise<Instructions>
+      deleteInstructions: (id: number) => Promise<void>
       captureDebugScreenshot: (relativePath?: string) => Promise<{ path: string; sha256: string }>
       listPendingNotifications: () => Promise<PendingNotification[]>
       countPendingNotifications: () => Promise<number>

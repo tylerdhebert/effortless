@@ -4,10 +4,9 @@ import { rawArgs, setRawArgs, wantsHelp } from './args'
 import { printHelp, resolveHelpDomain } from './help'
 import { handleBuild } from './commands/build'
 import { handleEffort } from './commands/effort'
+import { handleInstructions } from './commands/instructions'
 import { handleInput } from './commands/input'
-import { handleMandate } from './commands/mandate'
 import { handlePlan } from './commands/plan'
-import { handlePlaybook } from './commands/playbook'
 import { handleRepo } from './commands/repo'
 import { handleResume } from './commands/resume'
 import { handleReview } from './commands/review'
@@ -50,9 +49,8 @@ export async function runCli(args = rawArgs, database?: AppDatabase): Promise<vo
     handleBuild,
     handleRepo,
     handleInput,
-    handleMandate,
+    handleInstructions,
     handleEffort,
-    handlePlaybook,
     handleSession,
     handleResume,
   ]

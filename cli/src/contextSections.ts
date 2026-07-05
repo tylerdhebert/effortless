@@ -1,11 +1,9 @@
 import type { AppDatabase } from '../../core/db'
-import { resolveMandate } from '../../core/mandates'
-import { getTemplatePlaybook } from '../../core/templatePlaybooks'
+import { resolveInstructionsText } from '../../core/instructions'
 import type {
   Effort,
   EffortTemplate,
   ActivityEvent,
-  WorkSurface,
 } from '../../core/types'
 
 const PREVIEW_LIMIT = 900
@@ -14,52 +12,18 @@ export type ContextPrintOptions = {
   brief?: boolean
 }
 
-export function printSurfaceMandate(
+export function printInstructions(
   db: AppDatabase,
-  surface: WorkSurface,
   repoId: number | null = null,
   options: ContextPrintOptions = {},
 ): void {
   if (options.brief) return
-  const mandate = resolveMandate(db, surface, repoId)
-  if (!mandate) return
+  const text = resolveInstructionsText(db, repoId)
+  if (!text) return
 
   console.log('')
-  console.log(`${surface} mandate (${mandate.source})`)
-  console.log(mandate.text)
-}
-
-export function printRelatedMandates(
-  db: AppDatabase,
-  surfaces: WorkSurface[],
-  repoId: number | null = null,
-  options: ContextPrintOptions = {},
-): void {
-  if (options.brief) return
-  const mandates = surfaces
-    .map((surface) => ({ surface, resolved: resolveMandate(db, surface, repoId) }))
-    .filter((entry) => entry.resolved != null)
-
-  if (mandates.length === 0) return
-
-  console.log('')
-  console.log('related mandates')
-  for (const { surface, resolved } of mandates) {
-    console.log(`${surface} (${resolved!.source})`)
-  }
-}
-
-export function printTemplatePlaybook(
-  db: AppDatabase,
-  template: EffortTemplate,
-  options: ContextPrintOptions = {},
-): void {
-  if (options.brief) return
-  const playbook = getTemplatePlaybook(db, template)
-
-  console.log('')
-  console.log(`template playbook (${playbook.template})`)
-  console.log(playbook.body)
+  console.log('instructions')
+  console.log(text)
 }
 
 export function printTemplateWorkflow(

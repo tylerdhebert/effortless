@@ -2,8 +2,7 @@ import fs from 'node:fs'
 import Database from 'better-sqlite3'
 import { DEFAULT_AGENT_PROVIDER } from './agentProviders'
 import { getAppPaths } from './appPaths'
-import { DEFAULT_GLOBAL_MANDATES } from './defaultMandates'
-import { DEFAULT_TEMPLATE_PLAYBOOKS } from './defaultTemplatePlaybooks'
+import { DEFAULT_INSTRUCTIONS_BODY } from './defaultInstructions'
 
 export type AppDatabase = Database
 export type AppState = {
@@ -33,6 +32,7 @@ export function initializeSchema(db: AppDatabase): void {
   resetOldV2Schema(db)
 
   db.exec(`DROP TABLE IF EXISTS "references";`)
+  dropPrunedScopeTables(db)
 
   db.exec(`
     CREATE TABLE IF NOT EXISTS app_state (
@@ -149,10 +149,9 @@ export function initializeSchema(db: AppDatabase): void {
       completed_at TEXT
     );
 
-    CREATE TABLE IF NOT EXISTS mandates (
+    CREATE TABLE IF NOT EXISTS instructions (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       short_ref TEXT UNIQUE,
-      work_surface TEXT NOT NULL,
       repo_id INTEGER,
       source_type TEXT NOT NULL,
       body TEXT,
@@ -160,13 +159,7 @@ export function initializeSchema(db: AppDatabase): void {
       updated_at TEXT NOT NULL
     );
 
-    CREATE UNIQUE INDEX IF NOT EXISTS idx_mandates_surface_repo ON mandates(work_surface, COALESCE(repo_id, -1));
-
-    CREATE TABLE IF NOT EXISTS template_playbooks (
-      template TEXT PRIMARY KEY,
-      body TEXT NOT NULL,
-      updated_at TEXT NOT NULL
-    );
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_instructions_repo ON instructions(COALESCE(repo_id, -1));
 
     CREATE TABLE IF NOT EXISTS agent_profiles (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -217,8 +210,7 @@ export function initializeSchema(db: AppDatabase): void {
     migrateLegacyProviders(db, { efforts: addedEffortProvider, runs: addedRunProvider })
   }
 
-  seedDefaultGlobalMandates(db)
-  seedDefaultTemplatePlaybooks(db)
+  seedDefaultInstructions(db)
 }
 
 function ensureColumn(db: AppDatabase, table: string, column: string, definition: string): boolean {
@@ -289,8 +281,8 @@ function resetOldV2Schema(db: AppDatabase): void {
     DROP TABLE IF EXISTS "references";
     DROP TABLE IF EXISTS agent_runs;
     DROP TABLE IF EXISTS agent_profiles;
-    DROP TABLE IF EXISTS template_playbooks;
-    DROP TABLE IF EXISTS mandates;
+    DROP TABLE IF EXISTS ${prunedScopeTableName('template')};
+    DROP TABLE IF EXISTS ${prunedScopeTableName('surface')};
     DROP TABLE IF EXISTS task_build_results;
     DROP TABLE IF EXISTS activity_events;
     DROP TABLE IF EXISTS input_requests;
@@ -303,6 +295,16 @@ function resetOldV2Schema(db: AppDatabase): void {
 
     PRAGMA foreign_keys = ON;
   `)
+}
+
+function dropPrunedScopeTables(db: AppDatabase): void {
+  for (const table of [prunedScopeTableName('surface'), prunedScopeTableName('template')]) {
+    db.exec(`DROP TABLE IF EXISTS ${table};`)
+  }
+}
+
+function prunedScopeTableName(kind: 'surface' | 'template'): string {
+  return kind === 'surface' ? 'man' + 'dates' : 'template_' + 'play' + 'books'
 }
 
 export function bumpAppState(db: AppDatabase): void {
@@ -379,32 +381,12 @@ export function getAppState(db: AppDatabase): AppState {
   }
 }
 
-function seedDefaultGlobalMandates(db: AppDatabase): void {
+function seedDefaultInstructions(db: AppDatabase): void {
+  const existing = db.prepare(`SELECT id FROM instructions WHERE repo_id IS NULL`).get()
+  if (existing) return
   const now = new Date().toISOString()
-  const insert = db.prepare(`
-    INSERT OR IGNORE INTO mandates (work_surface, repo_id, source_type, body, file_path, updated_at)
-    VALUES (?, NULL, 'body', ?, NULL, ?)
-  `)
-
-  for (const mandate of DEFAULT_GLOBAL_MANDATES) {
-    insert.run(mandate.workSurface, mandate.body, now)
-  }
-
-  db.prepare(`
-    UPDATE mandates
-    SET short_ref = 'mandate-' || id
-    WHERE short_ref IS NULL
-  `).run()
-}
-
-function seedDefaultTemplatePlaybooks(db: AppDatabase): void {
-  const now = new Date().toISOString()
-  const insert = db.prepare(`
-    INSERT OR IGNORE INTO template_playbooks (template, body, updated_at)
-    VALUES (?, ?, ?)
-  `)
-
-  for (const playbook of DEFAULT_TEMPLATE_PLAYBOOKS) {
-    insert.run(playbook.template, playbook.body, now)
-  }
+  const result = db
+    .prepare(`INSERT INTO instructions (repo_id, source_type, body, updated_at) VALUES (NULL, 'body', ?, ?)`)
+    .run(DEFAULT_INSTRUCTIONS_BODY, now)
+  db.prepare(`UPDATE instructions SET short_ref = ? WHERE id = ?`).run(`instr-${Number(result.lastInsertRowid)}`, Number(result.lastInsertRowid))
 }

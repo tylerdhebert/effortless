@@ -1,5 +1,5 @@
 import type { AgentProviderConfig } from '../../core/agentProviders'
-import type { AgentProfile, AgentRun, InputRequest, Mandate, Plan, Repo, Review, Task } from '../../core/types'
+import type { AgentProfile, AgentRun, InputRequest, Plan, Repo, Review, Task } from '../../core/types'
 import type { runTaskBuild } from '../../core/builds'
 
 export function printTask(task: Task): void {
@@ -44,21 +44,6 @@ export function printInputRequest(inputRequest: InputRequest): void {
   console.log(inputRequest.prompt)
   if (inputRequest.answer) {
     console.log(`answer ${inputRequest.answer}`)
-  }
-}
-
-export function printMandate(mandate: Mandate): void {
-  console.log(`${mandate.shortRef} ${mandate.workSurface}`)
-  if (mandate.repoId) {
-    console.log(`repo ${mandate.repoId}`)
-  } else {
-    console.log('global')
-  }
-  console.log(`source ${mandate.sourceType}`)
-  if (mandate.sourceType === 'body' && mandate.body) {
-    console.log(mandate.body.length > 200 ? mandate.body.slice(0, 200) + '...' : mandate.body)
-  } else if (mandate.sourceType === 'file' && mandate.filePath) {
-    console.log(mandate.filePath)
   }
 }
 

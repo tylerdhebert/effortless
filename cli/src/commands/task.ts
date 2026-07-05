@@ -20,11 +20,9 @@ import {
   printArtifactPreview,
   printComments,
   endSection,
+  printInstructions,
   printLatestUpdate,
-  printRelatedMandates,
   printSection,
-  printSurfaceMandate,
-  printTemplatePlaybook,
   printTemplateWorkflow,
 } from '../contextSections'
 import { printTask } from '../render'
@@ -93,8 +91,7 @@ export async function handleTask(surface: string, command: string): Promise<bool
     const effortTasks = listTasks(db, effort.id)
     printTask(task)
     console.log(task.title)
-    printTemplatePlaybook(db, effort.template, { brief })
-    printSurfaceMandate(db, 'task', task.repoId, { brief })
+    printInstructions(db, task.repoId, { brief })
     printTemplateWorkflow(effort, {
       plans: plans.length,
       acceptedPlans: plans.filter((plan) => plan.accepted).length,
@@ -102,7 +99,6 @@ export async function handleTask(surface: string, command: string): Promise<bool
       acceptedTasks: effortTasks.filter((candidate) => candidate.status === 'accepted').length,
       mergedTasks: effortTasks.filter((candidate) => candidate.status === 'merged').length,
     })
-    printRelatedMandates(db, ['effort', 'review'], task.repoId, { brief })
     console.log('')
     console.log('description')
     console.log(task.description)

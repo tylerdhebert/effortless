@@ -6,10 +6,8 @@ import { bodyArg, isBrief, option, requiredOption } from '../args'
 import { db } from '../context'
 import {
   printArtifactPreview,
+  printInstructions,
   printSummary,
-  printRelatedMandates,
-  printSurfaceMandate,
-  printTemplatePlaybook,
   printTemplateWorkflow,
 } from '../contextSections'
 import { planState } from '../render'
@@ -66,8 +64,7 @@ export async function handleEffort(surface: string, command: string): Promise<bo
 
     console.log(`${effort.shortRef} ${effort.template} ${effort.status}`)
     console.log(effort.title)
-    printTemplatePlaybook(db, effort.template, { brief })
-    printSurfaceMandate(db, 'effort', null, { brief })
+    printInstructions(db, null, { brief })
     printTemplateWorkflow(effort, {
       plans: plans.length,
       acceptedPlans: plans.filter((plan) => plan.accepted).length,
@@ -75,7 +72,6 @@ export async function handleEffort(surface: string, command: string): Promise<bo
       acceptedTasks: tasks.filter((task) => task.status === 'accepted').length,
       mergedTasks: tasks.filter((task) => task.status === 'merged').length,
     })
-    printRelatedMandates(db, ['plan', 'task', 'review', 'run'], null, { brief })
     console.log('')
     console.log('description')
     console.log(effort.description)

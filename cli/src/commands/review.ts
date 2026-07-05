@@ -8,13 +8,11 @@ import { db, resolveTask } from '../context'
 import {
   printArtifactPreview,
   printComments,
+  printInstructions,
   printSummary,
   printLatestUpdate,
-  printRelatedMandates,
   printSection,
   endSection,
-  printSurfaceMandate,
-  printTemplatePlaybook,
 } from '../contextSections'
 import { printReview } from '../render'
 
@@ -67,9 +65,7 @@ export async function handleReview(surface: string, command: string): Promise<bo
     const task = getTask(db, review.taskId)
     const effort = getEffort(db, task.effortId)
     printReview(review)
-    printTemplatePlaybook(db, effort.template, { brief })
-    printSurfaceMandate(db, 'review', task.repoId, { brief })
-    printRelatedMandates(db, ['effort', 'task'], task.repoId, { brief })
+    printInstructions(db, task.repoId, { brief })
     printSummary(review.summary)
     printArtifactPreview(review.body, `efl review show --review ${review.shortRef}`)
 

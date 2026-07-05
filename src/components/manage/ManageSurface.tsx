@@ -3,52 +3,40 @@ import { Plus, Trash2 } from 'lucide-react'
 import type {
   AgentProfile,
   CreateAgentProfileInput,
-  EffortTemplate,
-  Mandate,
+  Instructions,
   Repo,
-  TemplatePlaybook,
   UpdateAgentProfileInput,
-  UpdateTemplatePlaybookInput,
-  WorkSurface,
-  MandateSourceType,
+  SetInstructionsInput,
 } from '../../../core/types'
 import type { ThemePalette } from '../../themes'
 import { PathPicker } from '../ui/PathPicker'
 import { NotificationSettingsPanel } from '../notifications/NotificationSettingsPanel'
 import { AppearanceSettingsPanel } from './AppearanceSettingsPanel'
 import { AgentProfileTab } from './AgentProfileTab'
-import { MandateTab } from './MandateTab'
-import { TemplatePlaybookTab } from './TemplatePlaybookTab'
+import { InstructionsTab } from './InstructionsTab'
 import styles from './ManageSurface.module.css'
 
 type ManageSurfaceProps = {
   repos: Repo[]
   agentProfiles: AgentProfile[]
-  mandates: Mandate[]
-  playbooks: TemplatePlaybook[]
+  instructions: Instructions[]
   createRepo: (input: { name: string; path: string; baseBranch: string; buildCommand: string | null }) => Promise<Repo>
   updateRepo: (input: { repoId: number; name: string; path: string; baseBranch: string; buildCommand: string | null }) => Promise<Repo>
   deleteRepo: (repoId: number) => Promise<void>
   createAgentProfile: (input: CreateAgentProfileInput) => Promise<AgentProfile>
   updateAgentProfile: (input: UpdateAgentProfileInput) => Promise<AgentProfile>
   deleteAgentProfile: (profileId: number) => Promise<void>
-  createMandate: (input: { workSurface: WorkSurface; repoId: number | null; sourceType: MandateSourceType; body: string | null; filePath: string | null }) => Promise<Mandate>
-  updateMandate: (input: { mandateId: number; workSurface: WorkSurface; repoId: number | null; sourceType: MandateSourceType; body: string | null; filePath: string | null }) => Promise<Mandate>
-  deleteMandate: (mandateId: number) => Promise<void>
-  updateTemplatePlaybook: (input: UpdateTemplatePlaybookInput) => Promise<TemplatePlaybook>
-  resetTemplatePlaybook: (template: EffortTemplate) => Promise<TemplatePlaybook>
+  setInstructions: (input: SetInstructionsInput) => Promise<Instructions>
+  deleteInstructions: (id: number) => Promise<void>
   isCreatingRepo: boolean
   isUpdatingRepo: boolean
   isDeletingRepo: boolean
   isCreatingAgentProfile: boolean
   isUpdatingAgentProfile: boolean
   isDeletingAgentProfile: boolean
-  isCreatingMandate: boolean
-  isUpdatingMandate: boolean
-  isDeletingMandate: boolean
-  isUpdatingPlaybook: boolean
-  isResettingPlaybook: boolean
-  section: 'repos' | 'profiles' | 'mandates' | 'playbooks' | 'notifications' | 'appearance'
+  isSavingInstructions: boolean
+  isClearingInstructions: boolean
+  section: 'repos' | 'profiles' | 'instructions' | 'notifications' | 'appearance'
   notificationSettings?: {
     osNotificationsEnabled: boolean
     bannerNotificationsEnabled: boolean
@@ -75,30 +63,23 @@ type ManageSurfaceProps = {
 export function ManageSurface({
   repos,
   agentProfiles,
-  mandates,
-  playbooks,
+  instructions,
   createRepo,
   updateRepo,
   deleteRepo,
   createAgentProfile,
   updateAgentProfile,
   deleteAgentProfile,
-  createMandate,
-  updateMandate,
-  deleteMandate,
-  updateTemplatePlaybook,
-  resetTemplatePlaybook,
+  setInstructions,
+  deleteInstructions,
   isCreatingRepo,
   isUpdatingRepo,
   isDeletingRepo,
   isCreatingAgentProfile,
   isUpdatingAgentProfile,
   isDeletingAgentProfile,
-  isCreatingMandate,
-  isUpdatingMandate,
-  isDeletingMandate,
-  isUpdatingPlaybook,
-  isResettingPlaybook,
+  isSavingInstructions,
+  isClearingInstructions,
   section,
   notificationSettings,
   onUpdateNotificationSettings,
@@ -334,40 +315,21 @@ export function ManageSurface({
               />
             </section>
           </section>
-        ) : section === 'mandates' ? (
-          <section className={`${styles['manage-surface']} ${styles['manage-surface-mandates']}`}>
+        ) : section === 'instructions' ? (
+          <section className={`${styles['manage-surface']} ${styles['manage-surface-instructions']}`}>
             <section className={`${styles['manage-panel']} ${styles['manage-panel-wide']}`}>
               <div className={styles['manage-panel-header']}>
                 <div>
-                  <h3>mandates</h3>
+                  <h3>instructions</h3>
                 </div>
               </div>
-              <MandateTab
+              <InstructionsTab
                 repos={repos}
-                mandates={mandates}
-                createMandate={createMandate}
-                updateMandate={updateMandate}
-                deleteMandate={deleteMandate}
-                isCreating={isCreatingMandate}
-                isUpdating={isUpdatingMandate}
-                isDeleting={isDeletingMandate}
-              />
-            </section>
-          </section>
-        ) : section === 'playbooks' ? (
-          <section className={`${styles['manage-surface']} ${styles['manage-surface-playbooks']}`}>
-            <section className={`${styles['manage-panel']} ${styles['manage-panel-wide']}`}>
-              <div className={styles['manage-panel-header']}>
-                <div>
-                  <h3>template playbooks</h3>
-                </div>
-              </div>
-              <TemplatePlaybookTab
-                playbooks={playbooks}
-                onSave={updateTemplatePlaybook}
-                onReset={resetTemplatePlaybook}
-                isSaving={isUpdatingPlaybook}
-                isResetting={isResettingPlaybook}
+                instructions={instructions}
+                setInstructions={setInstructions}
+                deleteInstructions={deleteInstructions}
+                isSaving={isSavingInstructions}
+                isClearing={isClearingInstructions}
               />
             </section>
           </section>

@@ -4,8 +4,8 @@ import { getAgentProviderConfig } from './agentProviders'
 import { getAppPaths } from './appPaths'
 import type { AppDatabase } from './db'
 import { getEffort } from './efforts'
+import { resolveInstructionsText } from './instructions'
 import { listInputRequests } from './inputs'
-import { resolveMandateText } from './mandates'
 import { listPlans } from './plans'
 import { getRepo } from './repos'
 import { listTaskComments, listTasks } from './tasks'
@@ -62,13 +62,11 @@ function renderTaskContext(db: AppDatabase, task: Task): string {
   const inputs = listInputRequests(db, effort.id).filter((input) =>
     input.status === 'pending' && (input.taskId === task.id || input.taskId == null)
   )
-  const runMandate = resolveMandateText(db, 'run', task.repoId)
-  const taskMandate = resolveMandateText(db, 'task', task.repoId)
+  const instructions = resolveInstructionsText(db, task.repoId)
   const repo = task.repoId ? getRepo(db, task.repoId) : null
 
   const sections = [
-    heading('Run Mandate', runMandate ?? 'No run mandate is configured.'),
-    heading('Task Mandate', taskMandate ?? 'No task mandate is configured.'),
+    heading('Instructions', instructions ?? 'No instructions are configured.'),
     heading('Effort', [
       `${effort.shortRef} ${effort.template} ${effort.status}`,
       effort.title,
@@ -109,12 +107,10 @@ function renderEffortContext(db: AppDatabase, effortId: number): string {
   const plans = listPlans(db, effort.id)
   const tasks = listTasks(db, effort.id)
   const inputs = listInputRequests(db, effort.id).filter((input) => input.status === 'pending')
-  const runMandate = resolveMandateText(db, 'run', null)
-  const effortMandate = resolveMandateText(db, 'effort', null)
+  const instructions = resolveInstructionsText(db, null)
 
   const sections = [
-    heading('Run Mandate', runMandate ?? 'No run mandate is configured.'),
-    heading('Effort Mandate', effortMandate ?? 'No effort mandate is configured.'),
+    heading('Instructions', instructions ?? 'No instructions are configured.'),
     heading('Effort', [
       `${effort.shortRef} ${effort.template} ${effort.status}`,
       effort.title,

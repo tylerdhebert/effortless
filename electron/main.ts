@@ -30,18 +30,10 @@ import {
   countPendingNotifications,
 } from '../core/notifications'
 import {
-  createMandate,
-  deleteMandate,
-  listMandates,
-  listMandatesBySurface,
-  resolveMandateText,
-  updateMandate,
-} from '../core/mandates'
-import {
-  listTemplatePlaybooks,
-  resetTemplatePlaybook,
-  updateTemplatePlaybook,
-} from '../core/templatePlaybooks'
+  deleteInstructions,
+  listInstructions,
+  setInstructions,
+} from '../core/instructions'
 import { acceptPlan, createPlan, getPlanByRef, listPlanComments, listPlans, markPlanReady, requestPlanChanges } from '../core/plans'
 import { createRepo, deleteRepo, listRepos, updateRepo } from '../core/repos'
 import { applyReview, getReviewByRef, listReviews, requestReviewChanges, submitReview } from '../core/reviews'
@@ -72,7 +64,7 @@ import type {
   CreateTaskInput,
   CreateInputRequestInput,
   CreateAgentProfileInput,
-  CreateMandateInput,
+  SetInstructionsInput,
   CreatePlanInput,
   CreateRepoInput,
   RequestPlanChangesInput,
@@ -84,12 +76,8 @@ import type {
   PrepareTaskRunInput,
   SubmitReviewInput,
   UpdateAgentProfileInput,
-  UpdateMandateInput,
-  UpdateTemplatePlaybookInput,
   UpdateRepoInput,
   UpdateTaskDetailsInput,
-  EffortTemplate,
-  WorkSurface,
   DiffType,
   AgentProvider,
 } from '../core/types'
@@ -275,23 +263,9 @@ ipcMain.handle('tasks:requestChanges', (_event, input: RequestTaskChangesInput) 
   requestTaskChanges(db, input),
 )
 
-ipcMain.handle('mandates:list', () => listMandates(db))
-ipcMain.handle('mandates:listBySurface', (_event, workSurface: WorkSurface, repoId: number | null) =>
-  listMandatesBySurface(db, workSurface, repoId),
-)
-ipcMain.handle('mandates:create', (_event, input: CreateMandateInput) => createMandate(db, input))
-ipcMain.handle('mandates:update', (_event, input: UpdateMandateInput) => updateMandate(db, input))
-ipcMain.handle('mandates:delete', (_event, mandateId: number) => deleteMandate(db, mandateId))
-ipcMain.handle('mandates:resolve', (_event, workSurface: WorkSurface, repoId: number | null) =>
-  resolveMandateText(db, workSurface, repoId),
-)
-ipcMain.handle('playbooks:list', () => listTemplatePlaybooks(db))
-ipcMain.handle('playbooks:update', (_event, input: UpdateTemplatePlaybookInput) =>
-  updateTemplatePlaybook(db, input),
-)
-ipcMain.handle('playbooks:reset', (_event, template: EffortTemplate) =>
-  resetTemplatePlaybook(db, template),
-)
+ipcMain.handle('instructions:list', () => listInstructions(db))
+ipcMain.handle('instructions:set', (_event, input: SetInstructionsInput) => setInstructions(db, input))
+ipcMain.handle('instructions:delete', (_event, id: number) => deleteInstructions(db, id))
 
 ipcMain.handle('debug:capture-screenshot', async (_event, relativePath?: string) => {
   if (!win) {

@@ -6,11 +6,9 @@ import { db } from '../context'
 import {
   printArtifactPreview,
   printComments,
+  printInstructions,
   printSummary,
   printLatestUpdate,
-  printRelatedMandates,
-  printSurfaceMandate,
-  printTemplatePlaybook,
   printTemplateWorkflow,
 } from '../contextSections'
 import { printPlan } from '../render'
@@ -65,8 +63,7 @@ export async function handlePlan(surface: string, command: string): Promise<bool
     printPlan(plan)
     console.log(`effort ${effort.shortRef} ${effort.template} ${effort.status}`)
     console.log(effort.title)
-    printTemplatePlaybook(db, effort.template, { brief })
-    printSurfaceMandate(db, 'plan', null, { brief })
+    printInstructions(db, null, { brief })
     printTemplateWorkflow(effort, {
       plans: plans.length,
       acceptedPlans: plans.filter((candidate) => candidate.accepted).length,
@@ -74,7 +71,6 @@ export async function handlePlan(surface: string, command: string): Promise<bool
       acceptedTasks: tasks.filter((task) => task.status === 'accepted').length,
       mergedTasks: tasks.filter((task) => task.status === 'merged').length,
     })
-    printRelatedMandates(db, ['effort', 'task', 'review', 'run'], null, { brief })
 
     const comments = listPlanComments(db, plan.id)
     printLatestUpdate(comments)

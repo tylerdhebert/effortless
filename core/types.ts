@@ -242,8 +242,6 @@ export type UpdateRepoInput = {
   buildCommand?: string | null
 }
 
-export type WorkSurface = 'effort' | 'plan' | 'task' | 'review' | 'run'
-export type MandateSourceType = 'body' | 'file'
 export type RunEnvironment = 'windows' | 'wsl'
 export type AgentProvider = 'codex' | 'claude' | 'opencode' | 'cursor' | 'copilot'
 export type AgentRunPurpose = 'main' | 'fork' | 'side' | 'side-investigation' | 'implementation' | 'review'
@@ -264,43 +262,21 @@ export type LiveAgentRunSession = {
   rows: number
 }
 
-export type Mandate = {
+export type Instructions = {
   id: number
   shortRef: string
-  workSurface: WorkSurface
   repoId: number | null
-  sourceType: MandateSourceType
+  sourceType: 'body' | 'file'
   body: string | null
   filePath: string | null
   updatedAt: string
 }
 
-export type CreateMandateInput = {
-  workSurface: WorkSurface
+export type SetInstructionsInput = {
   repoId?: number | null
-  sourceType: MandateSourceType
+  sourceType: 'body' | 'file'
   body?: string | null
   filePath?: string | null
-}
-
-export type UpdateMandateInput = {
-  mandateId: number
-  workSurface?: WorkSurface
-  repoId?: number | null
-  sourceType?: MandateSourceType
-  body?: string | null
-  filePath?: string | null
-}
-
-export type TemplatePlaybook = {
-  template: EffortTemplate
-  body: string
-  updatedAt: string
-}
-
-export type UpdateTemplatePlaybookInput = {
-  template: EffortTemplate
-  body: string
 }
 
 export type AgentProfile = {

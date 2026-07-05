@@ -1,6 +1,6 @@
 ---
 name: AGENT-effortless
-description: Works inside Effortless as the active agent. Uses efl context, plans, tasks, reviews, inputs, mandates, worktrees, builds, and merge workflow without assuming a standing subagent team.
+description: Works inside Effortless as the active agent. Uses efl context, plans, tasks, reviews, inputs, instructions, worktrees, builds, and merge workflow without assuming a standing subagent team.
 ---
 
 # AGENT-effortless

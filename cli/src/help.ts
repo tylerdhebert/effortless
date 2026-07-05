@@ -10,8 +10,7 @@ type HelpDomain =
   | 'build'
   | 'input'
   | 'repo'
-  | 'mandate'
-  | 'playbook'
+  | 'instructions'
 
 const DOMAIN_ALIASES: Record<string, HelpDomain> = {
   effort: 'effort',
@@ -24,8 +23,7 @@ const DOMAIN_ALIASES: Record<string, HelpDomain> = {
   build: 'build',
   input: 'input',
   repo: 'repo',
-  mandate: 'mandate',
-  playbook: 'playbook',
+  instructions: 'instructions',
 }
 
 type HelpRow = {
@@ -60,10 +58,8 @@ export function printHelp(domain: HelpDomain = 'root'): void {
       return printInputHelp()
     case 'repo':
       return printRepoHelp()
-    case 'mandate':
-      return printMandateHelp()
-    case 'playbook':
-      return printPlaybookHelp()
+    case 'instructions':
+      return printInstructionsHelp()
     default:
       return printRootHelp()
   }
@@ -95,8 +91,8 @@ function printHeader(title: string, subtitle: string): void {
 
 function printRootHelp(): void {
   printHeader(
-    'efl — effortless workbench cli',
-    'loop: session set → context → checkpoint → input when blocked → artifact/summary',
+    'efl - effortless workbench cli',
+    'loop: session set -> context -> checkpoint -> input when blocked -> artifact/summary',
   )
 
   printBlock('Commands', [
@@ -110,13 +106,12 @@ function printRootHelp(): void {
     { name: 'efl build', description: 'run repo build for a task' },
     { name: 'efl input', description: 'ask the human a question' },
     { name: 'efl repo', description: 'register git repos' },
-    { name: 'efl mandate', description: 'surface instructions (effort/task/run/…)' },
-    { name: 'efl playbook', description: 'effort template playbooks' },
+    { name: 'efl instructions', description: 'global and repo instructions' },
   ])
 
   printBlock('Options', [
     { name: '-h, --help', description: 'help (efl <domain> help for full command list)' },
-    { name: '--brief', description: 'compact context output (skips playbook/mandate dumps)' },
+    { name: '--brief', description: 'compact context output (skips instructions dump)' },
     { name: '--body <text>', description: 'inline body for writes' },
     { name: '--from-file <path>', description: 'read body from file' },
   ])
@@ -126,11 +121,11 @@ function printRootHelp(): void {
     { name: 'EFFORTLESS_TASK', description: 'infers --task' },
     { name: 'EFFORTLESS_RUN_LABEL', description: 'checkpoint author label' },
     { name: 'EFFORTLESS_EFFORT', description: 'effort short ref for this run' },
-    { name: 'EFFORTLESS_PROVIDER', description: 'provider key (codex, cursor, …)' },
+    { name: 'EFFORTLESS_PROVIDER', description: 'provider key (codex, cursor, opencode)' },
   ])
 
   console.log('')
-  console.log('  efl run help          prepare → start (app open) → env')
+  console.log('  efl run help          prepare -> start (app open) -> env')
   console.log('  efl task help         checkpoint, artifact, context')
 }
 
@@ -142,7 +137,7 @@ function printEffortHelp(): void {
     { name: 'efl effort list', description: 'list efforts' },
     { name: 'efl effort show', description: '--effort <eff-ref>' },
     { name: 'efl effort context', description: '--effort <eff-ref> [--brief]' },
-    { name: 'efl effort summary', description: '--effort <eff-ref> --body … [--from-file]' },
+    { name: 'efl effort summary', description: '--effort <eff-ref> --body ... [--from-file]' },
     { name: 'efl effort complete', description: '--effort <eff-ref>' },
   ])
 
@@ -158,8 +153,8 @@ function printTaskHelp(): void {
     { name: 'efl task show', description: '--task <task-ref>' },
     { name: 'efl task context', description: '--task <task-ref> [--brief]  (read before coding)' },
     { name: 'efl task claim', description: '--task <task-ref>' },
-    { name: 'efl task checkpoint', description: '--body …  (infers --task, author from run label)' },
-    { name: 'efl task artifact', description: '--body …  (checkpoint)' },
+    { name: 'efl task checkpoint', description: '--body ...  (infers --task, author from run label)' },
+    { name: 'efl task artifact', description: '--body ...  (checkpoint)' },
     { name: 'efl task ready', description: '--task  (waits for review unless CLIENT_WAIT=1)' },
     { name: 'efl task wait', description: '--task  (reattach after disconnect)' },
     { name: 'efl task merge', description: '--task <task-ref>' },
@@ -171,14 +166,14 @@ function printTaskHelp(): void {
     { name: '--effort <eff-ref>', description: 'effort short ref' },
   ])
   console.log('')
-  console.log('  in a run: --task ← $EFFORTLESS_TASK')
+  console.log('  in a run: --task from $EFFORTLESS_TASK')
 }
 
 function printPlanHelp(): void {
   printHeader('efl plan', 'effort planning artifacts')
 
   printBlock('Commands', [
-    { name: 'efl plan submit', description: '--effort --body … [--from-file]' },
+    { name: 'efl plan submit', description: '--effort --body ... [--from-file]' },
     { name: 'efl plan list', description: '--effort <eff-ref>' },
     { name: 'efl plan show', description: '--plan <plan-ref>' },
     { name: 'efl plan context', description: '--plan <plan-ref> [--brief]' },
@@ -196,7 +191,7 @@ function printReviewHelp(): void {
   printHeader('efl review', 'human review loop')
 
   printBlock('Commands', [
-    { name: 'efl review submit', description: '--task --verdict approve|request-changes --body …' },
+    { name: 'efl review submit', description: '--task --verdict approve|request-changes --body ...' },
     { name: 'efl review list', description: '--task <task-ref>' },
     { name: 'efl review show', description: '--review <rev-ref>' },
     { name: 'efl review context', description: '--review <rev-ref> [--brief]' },
@@ -222,7 +217,7 @@ function printRunHelp(): void {
     { name: 'efl run list', description: '[--task]  (compact; --full for cwd/command)' },
     { name: 'efl run show', description: '--run [--brief]' },
     { name: 'efl run env', description: '--run  (env block for shell)' },
-    { name: 'efl run fail', description: '--run --body …  (manual recovery)' },
+    { name: 'efl run fail', description: '--run --body ...  (manual recovery)' },
     { name: 'efl run cancel', description: '--run' },
   ])
 
@@ -277,8 +272,8 @@ function printInputHelp(): void {
   printHeader('efl input', 'ask the human')
 
   printBlock('Commands', [
-    { name: 'efl input request', description: '--effort | --task --type yesno|choice|text --prompt … [--choices] [--no-wait]' },
-    { name: 'efl input answer', description: '--input --answer …' },
+    { name: 'efl input request', description: '--effort | --task --type yesno|choice|text --prompt ... [--choices] [--no-wait]' },
+    { name: 'efl input answer', description: '--input --answer ...' },
     { name: 'efl input wait', description: '--input' },
     { name: 'efl input show', description: '--input' },
   ])
@@ -304,36 +299,20 @@ function printRepoHelp(): void {
   ])
 }
 
-function printMandateHelp(): void {
-  printHeader('efl mandate', 'instructions per work surface')
+function printInstructionsHelp(): void {
+  printHeader('efl instructions', 'global and repo instructions')
 
   printBlock('Commands', [
-    { name: 'efl mandate list', description: '[--surface] [--repo]' },
-    { name: 'efl mandate create', description: '--surface --body … | --source-type file --file …' },
-    { name: 'efl mandate update', description: '--mandate [--surface] [--body] [--file] …' },
-    { name: 'efl mandate delete', description: '--mandate' },
-    { name: 'efl mandate resolve', description: '--surface [--repo]  (print merged text)' },
+    { name: 'efl instructions show', description: '[--repo <repo-ref>]  print effective instructions' },
+    { name: 'efl instructions set', description: '--body ... | --from-file ... | --file <path> [--repo]' },
+    { name: 'efl instructions clear', description: '[--repo <repo-ref>]' },
+    { name: 'efl instructions list', description: 'list configured scopes' },
   ])
 
   printBlock('Options', [
-    { name: '--surface <name>', description: 'effort | plan | task | review | run' },
-    { name: '--source-type body|file', description: 'mandate source' },
+    { name: '--repo <repo-ref>', description: 'repo short ref' },
+    { name: '--file <path>', description: 'use file content at runtime' },
     { name: '-h, --help', description: 'this help' },
-  ])
-}
-
-function printPlaybookHelp(): void {
-  printHeader('efl playbook', 'effort template playbooks')
-
-  printBlock('Commands', [
-    { name: 'efl playbook list', description: 'list templates' },
-    { name: 'efl playbook show', description: '--template bugfix|delivery|investigation' },
-    { name: 'efl playbook update', description: '--template --body … [--from-file]' },
-    { name: 'efl playbook reset', description: '--template' },
-  ])
-
-  printSharedOptions([
-    { name: '--template <name>', description: 'bugfix | delivery | investigation' },
   ])
 }
 

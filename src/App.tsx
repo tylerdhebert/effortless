@@ -37,7 +37,7 @@ import {
 import { MANAGE_SECTIONS, type ManageSection } from './lib/manageSections'
 import { useEffortMutations } from './hooks/useEffortMutations'
 import { useInputMutations } from './hooks/useInputMutations'
-import { useMandateMutations } from './hooks/useMandateMutations'
+import { useInstructionsMutations } from './hooks/useInstructionsMutations'
 import { usePlanMutations } from './hooks/usePlanMutations'
 import { useRepoMutations } from './hooks/useRepoMutations'
 import { useReviewMutations } from './hooks/useReviewMutations'
@@ -122,14 +122,9 @@ function App() {
     queryFn: () => window.effortless.listAgentProfiles(),
   })
 
-  const mandatesQuery = useQuery({
-    queryKey: ['mandates'],
-    queryFn: () => window.effortless.listMandates(),
-  })
-
-  const templatePlaybooksQuery = useQuery({
-    queryKey: ['template-playbooks'],
-    queryFn: () => window.effortless.listTemplatePlaybooks(),
+  const instructionsQuery = useQuery({
+    queryKey: ['instructions'],
+    queryFn: () => window.effortless.listInstructions(),
   })
 
   const appStateQuery = useQuery({
@@ -465,7 +460,7 @@ function App() {
 
   const { createEffort, deleteEffort } = useEffortMutations(selectedEffort?.id ?? null)
   const repoMutations = useRepoMutations(selectedEffort?.id ?? null)
-  const mandateMutations = useMandateMutations()
+  const instructionsMutations = useInstructionsMutations()
   const planMutations = usePlanMutations(
     selectedEffort?.id ?? null,
     selectedPlan?.id ?? null,
@@ -527,17 +522,6 @@ function App() {
         queryClient.invalidateQueries({ queryKey: ['agent-profiles'] }),
         queryClient.invalidateQueries({ queryKey: ['app-state'] }),
         queryClient.invalidateQueries({ queryKey: ['efforts'] }),
-      ])
-    },
-  })
-
-  const updateTemplatePlaybook = useMutation({
-    mutationFn: (input: { template: 'bugfix' | 'delivery' | 'investigation'; body: string }) =>
-      window.effortless.updateTemplatePlaybook(input),
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['template-playbooks'] }),
-        queryClient.invalidateQueries({ queryKey: ['app-state'] }),
       ])
     },
   })
@@ -689,17 +673,6 @@ function App() {
       await queryClient.invalidateQueries({ queryKey: ['agent-runs'] })
       await queryClient.invalidateQueries({ queryKey: ['agent-runs', 'live-sessions'] })
       await queryClient.invalidateQueries({ queryKey: ['app-state'] })
-    },
-  })
-
-  const resetTemplatePlaybook = useMutation({
-    mutationFn: (template: 'bugfix' | 'delivery' | 'investigation') =>
-      window.effortless.resetTemplatePlaybook(template),
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['template-playbooks'] }),
-        queryClient.invalidateQueries({ queryKey: ['app-state'] }),
-      ])
     },
   })
 
@@ -973,30 +946,23 @@ function App() {
           <ManageSurface
             repos={reposQuery.data ?? []}
             agentProfiles={agentProfilesQuery.data ?? []}
-            mandates={mandatesQuery.data ?? []}
-            playbooks={templatePlaybooksQuery.data ?? []}
+            instructions={instructionsQuery.data ?? []}
             createRepo={repoMutations.createRepo.mutateAsync}
             updateRepo={repoMutations.updateRepo.mutateAsync}
             deleteRepo={repoMutations.deleteRepo.mutateAsync}
             createAgentProfile={createAgentProfile.mutateAsync}
             updateAgentProfile={updateAgentProfile.mutateAsync}
             deleteAgentProfile={deleteAgentProfile.mutateAsync}
-            createMandate={mandateMutations.createMandate.mutateAsync}
-            updateMandate={mandateMutations.updateMandate.mutateAsync}
-            deleteMandate={mandateMutations.deleteMandate.mutateAsync}
-            updateTemplatePlaybook={updateTemplatePlaybook.mutateAsync}
-            resetTemplatePlaybook={resetTemplatePlaybook.mutateAsync}
+            setInstructions={instructionsMutations.setInstructions.mutateAsync}
+            deleteInstructions={instructionsMutations.deleteInstructions.mutateAsync}
             isCreatingRepo={repoMutations.createRepo.isPending}
             isUpdatingRepo={repoMutations.updateRepo.isPending}
             isDeletingRepo={repoMutations.deleteRepo.isPending}
             isCreatingAgentProfile={createAgentProfile.isPending}
             isUpdatingAgentProfile={updateAgentProfile.isPending}
             isDeletingAgentProfile={deleteAgentProfile.isPending}
-            isCreatingMandate={mandateMutations.createMandate.isPending}
-            isUpdatingMandate={mandateMutations.updateMandate.isPending}
-            isDeletingMandate={mandateMutations.deleteMandate.isPending}
-            isUpdatingPlaybook={updateTemplatePlaybook.isPending}
-            isResettingPlaybook={resetTemplatePlaybook.isPending}
+            isSavingInstructions={instructionsMutations.setInstructions.isPending}
+            isClearingInstructions={instructionsMutations.deleteInstructions.isPending}
             section={manageSection}
             notificationSettings={
               appStateQuery.data

@@ -15,7 +15,7 @@ import {
   updateTaskDetails,
 } from '../core/tasks'
 import { answerInputRequest, createInputRequest } from '../core/inputs'
-import { createMandate } from '../core/mandates'
+import { setInstructions } from '../core/instructions'
 import { createRepo } from '../core/repos'
 import { createEffort, updateEffortStatus, updateEffortSummary } from '../core/efforts'
 import { worktreePath } from '../core/git'
@@ -40,11 +40,11 @@ async function main() {
     resetDatabase(paths.databasePath)
   }
 
-  const db = openDatabase()
+    const db = openDatabase()
 
   try {
     const repos = seedRepos(db)
-    seedMandates(db, repos)
+    seedInstructions(db, repos)
     const investigationEffort = seedInvestigationEffort(db)
     const bugfixEffort = await seedBugfixEffort(db, repos)
     const deliveryEffort = await seedDeliveryEffort(db, repos)
@@ -94,7 +94,7 @@ function seedInvestigationEffort(db: AppDatabase): Effort {
   const effort = createEffort(db, {
     title: 'investigate CLI packaging overhead',
     description:
-      'Profile why the CLI bundle grew after adding mandate commands. Identify low-hanging reductions.',
+      'Profile why the CLI bundle grew after adding instructions commands. Identify low-hanging reductions.',
     template: 'investigation',
   })
   updateEffortSummary(
@@ -436,10 +436,9 @@ function touchEffort(db: AppDatabase, effortId: number) {
   db.prepare(`UPDATE efforts SET updated_at = ? WHERE id = ?`).run(new Date().toISOString(), effortId)
 }
 
-function seedMandates(db: AppDatabase, repos: { effortlessRepo: Repo; agentsyncboardRepo: Repo | null }) {
+function seedInstructions(db: AppDatabase, repos: { effortlessRepo: Repo; agentsyncboardRepo: Repo | null }) {
   if (repos.agentsyncboardRepo) {
-    createMandate(db, {
-      workSurface: 'task',
+    setInstructions(db, {
       repoId: repos.agentsyncboardRepo.id,
       sourceType: 'body',
       body: 'For agentsyncboard changes, run the full client build before marking ready. Check WebSocket reconnection paths.',
