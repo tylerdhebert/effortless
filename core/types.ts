@@ -83,11 +83,13 @@ export type TaskDiffView = {
   taskId: number
   type: DiffType
   output: string
+  error: string | null
 }
 
 export type TaskCommitView = {
   taskId: number
   output: string
+  error: string | null
 }
 
 export type TaskConflictView = {
@@ -95,6 +97,7 @@ export type TaskConflictView = {
   hasConflicts: boolean
   files: string[]
   details: string | null
+  error: string | null
 }
 
 export type InputChoice = {

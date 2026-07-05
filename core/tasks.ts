@@ -183,33 +183,41 @@ export async function ensureTaskWorktree(db: AppDatabase, taskId: number): Promi
 
 export async function getTaskDiffView(db: AppDatabase, taskId: number, type: DiffType): Promise<TaskDiffView> {
   const context = resolveTaskRepoContext(db, taskId)
-  const output = await readGitView(() => getDiff(context.repo.path, context.branchName, context.baseBranch, type))
-  return { taskId, type, output: output.trimEnd() }
+  const result = await readGitView(() => getDiff(context.repo.path, context.branchName, context.baseBranch, type))
+  if (!result.ok) {
+    return { taskId, type, output: '', error: `${result.error}\n\n${result.detail}` }
+  }
+  return { taskId, type, output: result.value.trimEnd(), error: null }
 }
 
 export async function getTaskCommitView(db: AppDatabase, taskId: number): Promise<TaskCommitView> {
   const context = resolveTaskRepoContext(db, taskId)
-  const output = await readGitView(() => getCommits(context.repo.path, context.branchName, context.baseBranch))
-  return { taskId, output: output.trimEnd() }
+  const result = await readGitView(() => getCommits(context.repo.path, context.branchName, context.baseBranch))
+  if (!result.ok) {
+    return { taskId, output: '', error: `${result.error}\n\n${result.detail}` }
+  }
+  return { taskId, output: result.value.trimEnd(), error: null }
 }
 
 export async function getTaskConflictView(db: AppDatabase, taskId: number): Promise<TaskConflictView> {
   const context = resolveTaskRepoContext(db, taskId)
   const result = await readGitView(() => checkConflicts(context.repo.path, context.branchName, context.baseBranch))
-  if (typeof result === 'string') {
+  if (!result.ok) {
     return {
       taskId,
       hasConflicts: false,
       files: [],
-      details: result.trimEnd(),
+      details: null,
+      error: `${result.error}\n\n${result.detail}`,
     }
   }
 
   return {
     taskId,
-    hasConflicts: result.hasConflicts,
-    files: result.hasConflicts ? result.files : [],
-    details: result.hasConflicts ? result.details.trimEnd() : null,
+    hasConflicts: result.value.hasConflicts,
+    files: result.value.hasConflicts ? result.value.files : [],
+    details: result.value.hasConflicts ? result.value.details.trimEnd() : null,
+    error: null,
   }
 }
 
@@ -269,13 +277,28 @@ export async function mergeTask(db: AppDatabase, taskId: number): Promise<Task> 
   return getTask(db, taskId)
 }
 
-async function readGitView<T>(read: () => Promise<T>): Promise<T | string> {
+type GitViewResult<T> = { ok: true; value: T } | { ok: false; error: string; detail: string }
+
+async function readGitView<T>(read: () => Promise<T>): Promise<GitViewResult<T>> {
   try {
-    return await read()
+    return { ok: true, value: await read() }
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
-    return `git data unavailable\n${message.trim()}`
+    return { ok: false, error: friendlyGitError(message), detail: message.trim() }
   }
+}
+
+function friendlyGitError(message: string): string {
+  if (/unknown revision|not a valid object name|bad revision/i.test(message)) {
+    return 'branch not created yet'
+  }
+  if (/not a git repository/i.test(message)) {
+    return 'path is not a git repository'
+  }
+  if (/ENOENT|no such file or directory/i.test(message)) {
+    return 'repo or worktree path is missing'
+  }
+  return 'git command failed'
 }
 
 export function updateTaskStatus(db: AppDatabase, taskId: number, status: Task['status']): void {

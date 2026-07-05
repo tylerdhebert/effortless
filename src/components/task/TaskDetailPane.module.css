@@ -475,6 +475,37 @@
   gap: 8px;
 }
 
+.git-view-empty {
+  display: grid;
+  gap: 8px;
+}
+
+.git-view-details {
+  margin: 0;
+}
+
+.git-view-details summary {
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.74rem;
+  user-select: none;
+}
+
+.git-view-details pre {
+  margin: 8px 0 0;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #12140f;
+  color: #c9d1bf;
+  font-family: "Cascadia Code", Consolas, "Courier New", monospace;
+  font-size: 0.74rem;
+  line-height: 1.45;
+  padding: 10px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 @media (max-width: 960px) {
   .task-detail-header-top {
     flex-direction: column;

@@ -121,7 +121,7 @@ export function TaskDetailPane({
   })
   const diffView = diffViewQuery.data ?? null
   const diffFiles = useMemo<FileData[]>(() => {
-    if (!diffView?.output) {
+    if (diffView?.error || !diffView?.output) {
       return []
     }
 
@@ -130,7 +130,7 @@ export function TaskDetailPane({
     } catch {
       return []
     }
-  }, [diffView?.output])
+  }, [diffView?.error, diffView?.output])
 
   const fileEntries = useMemo(() => {
     return diffFiles.map((file) => {
@@ -426,7 +426,9 @@ export function TaskDetailPane({
               />
             </div>
 
-            {fileEntries.length > 0 ? (
+            {diffView?.error ? (
+              <GitViewEmpty error={diffView.error} />
+            ) : fileEntries.length > 0 ? (
               <div className={styles['implementation-layout']}>
                 <div className={styles['implementation-file-list']}>
                   {fileEntries.map((entry) => (
@@ -454,8 +456,10 @@ export function TaskDetailPane({
                   )}
                 </div>
               </div>
+            ) : diffView?.output ? (
+              <pre>{diffView.output}</pre>
             ) : (
-              diffView?.output ? <pre>{diffView.output}</pre> : <p className="empty-state">no diff output</p>
+              <p className="empty-state">no diff output</p>
             )}
 
             <div className={styles['implementation-grid']}>
@@ -463,7 +467,13 @@ export function TaskDetailPane({
                 <div className={styles['implementation-card-header']}>
                   <strong>commits</strong>
                 </div>
-                {commitView?.output ? <pre>{commitView.output}</pre> : <p>no commits ahead of base</p>}
+                {commitView?.error ? (
+                  <GitViewEmpty error={commitView.error} />
+                ) : commitView?.output ? (
+                  <pre>{commitView.output}</pre>
+                ) : (
+                  <p>no commits ahead of base</p>
+                )}
               </article>
 
               <article className={styles['implementation-card']}>
@@ -471,23 +481,23 @@ export function TaskDetailPane({
                   <strong>conflicts</strong>
                   {conflictView ? (
                     <small>
-                      {conflictView.hasConflicts
-                        ? 'conflicts found'
-                        : conflictView.details
-                          ? 'merge status unavailable'
+                      {conflictView.error
+                        ? 'merge status unavailable'
+                        : conflictView.hasConflicts
+                          ? 'conflicts found'
                           : 'merge is clean'}
                     </small>
                   ) : null}
                 </div>
-                {conflictView?.hasConflicts ? (
+                {conflictView?.error ? (
+                  <GitViewEmpty error={conflictView.error} />
+                ) : conflictView?.hasConflicts ? (
                   <div className={styles['conflict-block']}>
                     {conflictView.files.length > 0 ? (
                       <p>{conflictView.files.join(', ')}</p>
                     ) : null}
                     {conflictView.details ? <pre>{conflictView.details}</pre> : null}
                   </div>
-                ) : conflictView?.details ? (
-                  <pre>{conflictView.details}</pre>
                 ) : (
                   <p>no conflicts detected</p>
                 )}
@@ -496,6 +506,24 @@ export function TaskDetailPane({
           </section>
         </>
       )}
+    </div>
+  )
+}
+
+function firstLine(text: string): string {
+  return text.split('\n')[0] ?? text
+}
+
+function GitViewEmpty({ error }: { error: string }) {
+  return (
+    <div className={styles['git-view-empty']}>
+      <p className="empty-state">{firstLine(error)}</p>
+      {error.includes('\n') ? (
+        <details className={styles['git-view-details']}>
+          <summary>details</summary>
+          <pre>{error}</pre>
+        </details>
+      ) : null}
     </div>
   )
 }
