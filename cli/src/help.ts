@@ -109,6 +109,13 @@ function printRootHelp(): void {
     { name: 'efl instructions', description: 'global and repo instructions' },
   ])
 
+  printBlock('shortcuts', [
+    { name: 'efl context <ref>', description: 'context for any ref (eff-1, task-2, plan-1, rev-1, run-3)' },
+    { name: 'efl show <ref>', description: 'show any ref' },
+    { name: 'efl checkpoint <text>', description: 'task checkpoint (task from run env)' },
+    { name: 'efl task context task-1', description: 'positional refs work anywhere the flag is unambiguous' },
+  ])
+
   printBlock('Options', [
     { name: '-h, --help', description: 'help (efl <domain> help for full command list)' },
     { name: '--brief', description: 'compact context output (skips instructions dump)' },

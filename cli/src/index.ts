@@ -14,17 +14,19 @@ import { handleRun } from './commands/run'
 import { handleSession } from './commands/session'
 import { handleTask } from './commands/task'
 import { ensureCliDatabase, setCliDatabase } from './context'
+import { rewriteCliArgs } from './refs'
 import type { AppDatabase } from '../../core/db'
 
 export async function runCli(args = rawArgs, database?: AppDatabase): Promise<void> {
-  setRawArgs(args)
+  const rewritten = rewriteCliArgs(args)
+  setRawArgs(rewritten)
   if (database) {
     setCliDatabase(database)
   } else {
     ensureCliDatabase()
   }
 
-  const [surface, command] = args
+  const [surface, command] = rewritten
 
   if (wantsHelp() && (!surface || command === 'help')) {
     printHelp(resolveHelpDomain(surface) ?? 'root')
