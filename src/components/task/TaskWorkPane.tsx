@@ -264,14 +264,22 @@ function firstLine(text: string): string {
   return text.split('\n')[0] ?? text
 }
 
+function errorDetail(text: string): string | null {
+  const separator = text.indexOf('\n\n')
+  if (separator === -1) return null
+  const detail = text.slice(separator + 2).trim()
+  return detail || null
+}
+
 function GitViewEmpty({ error }: { error: string }) {
+  const detail = errorDetail(error)
   return (
     <div className={styles['git-view-empty']}>
       <p className="empty-state">{firstLine(error)}</p>
-      {error.includes('\n') ? (
+      {detail ? (
         <details className={styles['git-view-details']}>
           <summary>details</summary>
-          <pre>{error}</pre>
+          <pre>{detail}</pre>
         </details>
       ) : null}
     </div>

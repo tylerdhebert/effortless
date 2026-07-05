@@ -182,6 +182,10 @@ export async function ensureTaskWorktree(db: AppDatabase, taskId: number): Promi
 }
 
 export async function getTaskDiffView(db: AppDatabase, taskId: number, type: DiffType): Promise<TaskDiffView> {
+  const task = getTask(db, taskId)
+  if (!task.repoId || !task.branchName) {
+    return { taskId, type, output: '', error: 'task has no repo or branch yet' }
+  }
   const context = resolveTaskRepoContext(db, taskId)
   const result = await readGitView(() => getDiff(context.repo.path, context.branchName, context.baseBranch, type))
   if (!result.ok) {
@@ -191,6 +195,10 @@ export async function getTaskDiffView(db: AppDatabase, taskId: number, type: Dif
 }
 
 export async function getTaskCommitView(db: AppDatabase, taskId: number): Promise<TaskCommitView> {
+  const task = getTask(db, taskId)
+  if (!task.repoId || !task.branchName) {
+    return { taskId, output: '', error: 'task has no repo or branch yet' }
+  }
   const context = resolveTaskRepoContext(db, taskId)
   const result = await readGitView(() => getCommits(context.repo.path, context.branchName, context.baseBranch))
   if (!result.ok) {
@@ -200,6 +208,10 @@ export async function getTaskCommitView(db: AppDatabase, taskId: number): Promis
 }
 
 export async function getTaskConflictView(db: AppDatabase, taskId: number): Promise<TaskConflictView> {
+  const task = getTask(db, taskId)
+  if (!task.repoId || !task.branchName) {
+    return { taskId, hasConflicts: false, files: [], details: null, error: 'task has no repo or branch yet' }
+  }
   const context = resolveTaskRepoContext(db, taskId)
   const result = await readGitView(() => checkConflicts(context.repo.path, context.branchName, context.baseBranch))
   if (!result.ok) {

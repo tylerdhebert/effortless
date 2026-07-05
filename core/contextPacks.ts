@@ -168,11 +168,11 @@ ${sessionHint}
 
 Use Effortless CLI updates as durable state:
 
-- efl task checkpoint --task ${task.shortRef} --body "..."
-- efl task artifact --task ${task.shortRef} --body "..."
+- efl task checkpoint --body "..."
+- efl task artifact --body "..."
 - efl input request --task ${task.shortRef} --type text --prompt "..."
-- efl build run --task ${task.shortRef}
-- efl task ready --task ${task.shortRef}
+- efl build run ${task.shortRef}
+- efl task ready ${task.shortRef}
 
 Keep durable decisions, checkpoints, and handoff notes in Effortless.
 
@@ -212,9 +212,9 @@ Use Effortless CLI updates as durable state. When the user asks you to focus on 
 
 Useful commands:
 
-- efl effort context --effort ${effort.shortRef}
-- efl task list --effort ${effort.shortRef}
-- efl task checkpoint --task task-1 --body "..."
+- efl effort context ${effort.shortRef}
+- efl task list ${effort.shortRef}
+- efl task checkpoint task-1 --body "..."
 - efl input request --effort ${effort.shortRef} --type text --prompt "..."
 
 Keep durable decisions, checkpoints, and handoff notes in Effortless.
