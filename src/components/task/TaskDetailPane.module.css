@@ -195,60 +195,7 @@
 }
 
 .expanded-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-tight);
   min-width: 0;
-}
-
-.chip-group {
-  display: grid;
-  gap: 3px;
-  min-width: 0;
-  max-width: 100%;
-}
-
-.chip-group-worktree {
-  max-width: 240px;
-}
-
-.chip-group-worktree > span {
-  max-width: 100%;
-  box-sizing: border-box;
-}
-
-.chip-group-runs > span {
-  white-space: normal;
-}
-
-.chip-group small {
-  color: var(--muted);
-  font-size: 0.64rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: lowercase;
-  padding-left: .3em;
-}
-
-.chip-group > span {
-  display: inline-block;
-  max-width: 100%;
-  box-sizing: border-box;
-  border: 1px solid color-mix(in srgb, var(--line) 82%, transparent);
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.028);
-  color: var(--text);
-  font-size: 0.7rem;
-  font-weight: 650;
-  letter-spacing: 0;
-  line-height: 1;
-  padding: 5px 8px;
-}
-
-.worktree-chip {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .task-action-row {

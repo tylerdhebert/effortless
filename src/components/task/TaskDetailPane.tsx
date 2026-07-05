@@ -202,42 +202,21 @@ export function TaskDetailPane({
         </div>
 
         <div className={styles['expanded-meta']}>
-          <div className={styles['chip-group']}>
-            <small>ref</small>
-            <span>{task.shortRef}</span>
-          </div>
-          <div className={styles['chip-group']}>
-            <small>status</small>
-            <span>{task.status}</span>
-          </div>
-          <div className={styles['chip-group']}>
-            <small>repo</small>
-            <span>{taskRepo?.name ?? 'no repo'}</span>
-          </div>
-          <div className={styles['chip-group']}>
-            <small>branch</small>
-            <span>{task.branchName ?? 'no branch'}</span>
-          </div>
-          <div className={`${styles['chip-group']} ${styles['chip-group-worktree']}`}>
-            <small>worktree</small>
-            <span
-              className={styles['worktree-chip']}
-              title={task.worktreePath ?? 'no worktree yet'}
-            >
+          <span className="meta-line">
+            {task.shortRef} · {task.status} · {taskRepo?.name ?? 'no repo'} · {task.branchName ?? 'no branch'} ·{' '}
+            <span title={task.worktreePath ?? 'no worktree yet'}>
               {task.worktreePath ? task.worktreePath.split(/[\\/]/).pop() : 'no worktree yet'}
             </span>
-          </div>
-          {taskRuns.length > 0 ? (
-            <div className={`${styles['chip-group']} ${styles['chip-group-runs']}`}>
-              <small>runs</small>
-              <span className={styles['task-run-summary']}>
+            {taskRuns.length > 0 ? (
+              <>
+                {' · '}
                 {taskRuns.slice(0, 4).map((run) => {
                   const badge = resolveRunBadgeLabel(run, liveSessionIds, providerLiveRunIds) ?? run.status
                   return `${run.shortRef} ${badge}`
                 }).join(' · ')}
-              </span>
-            </div>
-          ) : null}
+              </>
+            ) : null}
+          </span>
         </div>
 
         <div className={styles['task-launch-bar']}>

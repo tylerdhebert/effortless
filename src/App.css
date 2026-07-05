@@ -299,21 +299,22 @@
 
 .effort-header-meta {
   display: flex;
-  align-items: stretch;
+  align-items: center;
   gap: 6px;
   flex-wrap: wrap;
 }
 
-.effort-header-meta .chip-group,
-.drawer-effort-meta .chip-group {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  align-items: flex-start;
+.meta-line {
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0.02em;
 }
 
-.effort-header-meta .chip-group small,
-.drawer-effort-meta .chip-group small,
+.meta-line .meta-status {
+  font-weight: 600;
+}
+
+.effort-profile-chip small,
 .task-repo-filter small {
   color: var(--muted);
   font-size: 0.68rem;
@@ -323,16 +324,12 @@
   padding-left: .45em;
 }
 
-.effort-header-meta .chip-group span,
-.drawer-effort-meta .chip-group span {
-  border: 1px solid color-mix(in srgb, var(--line) 82%, transparent);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.028);
-  color: var(--text);
-  font-size: 0.76rem;
-  font-weight: 650;
-  line-height: 1;
-  padding: 8px 10px;
+.effort-profile-chip {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+  position: relative;
 }
 
 .effort-profile-chip select {
@@ -355,13 +352,8 @@
     box-shadow 140ms ease;
 }
 
-.effort-profile-chip select + .select-chevron,
 .effort-profile-chip .select-chevron {
   display: none;
-}
-
-.effort-profile-chip {
-  position: relative;
 }
 
 .effort-profile-chip::after {
@@ -859,9 +851,6 @@
 }
 
 .drawer-effort-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
   padding: 0;
 }
 

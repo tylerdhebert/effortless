@@ -1003,25 +1003,14 @@ function App() {
                   <div style={{display: 'flex', flexDirection: 'column', gap: '2px'}}>
                     <h2>{selectedEffort.title}</h2>
                     <div className="effort-header-meta">
-                      <div className="chip-group">
-                        <small>ref</small>
-                        <span>{selectedEffort.shortRef}</span>
-                      </div>
-                      <div className="chip-group">
-                        <small>type</small>
-                        <span>{selectedEffort.template.replace('-', ' ')}</span>
-                      </div>
-                      <div className="chip-group">
-                        <small>status</small>
-                        <span style={{ borderColor: effortStatusColor(selectedEffort.status), boxShadow: `0 0 8px ${effortStatusColor(selectedEffort.status)}` }}>{selectedEffort.status}</span>
-                      </div>
-                      {activeEffortRunCount > 0 ? (
-                        <div className="chip-group">
-                          <small>runs</small>
-                          <span>{activeEffortRunCount} live</span>
-                        </div>
-                      ) : null}
-                      <label className="chip-group effort-profile-chip">
+                      <span className="meta-line">
+                        {selectedEffort.shortRef} · {selectedEffort.template.replace('-', ' ')} ·{' '}
+                        <span className="meta-status" style={{ color: effortStatusColor(selectedEffort.status) }}>
+                          {selectedEffort.status}
+                        </span>
+                        {activeEffortRunCount > 0 ? ` · ${activeEffortRunCount} live` : ''}
+                      </span>
+                      <label className="effort-profile-chip">
                         <small>provider</small>
                         <select
                           aria-label="effort default provider"
@@ -1039,7 +1028,7 @@ function App() {
                           ))}
                         </select>
                       </label>
-                      <label className="chip-group effort-profile-chip">
+                      <label className="effort-profile-chip">
                         <small>profile</small>
                         <select
                           aria-label="effort default profile"
@@ -1183,18 +1172,9 @@ function App() {
                         <section className={`effort-zone-section effort-description-section ${usesBugfixOverview ? 'bugfix-description-section' : ''}`}>
                           <h4>description</h4>
                           <div className="drawer-effort-meta">
-                            <div className="chip-group">
-                              <small>ref</small>
-                              <span>{selectedEffort.shortRef}</span>
-                            </div>
-                            <div className="chip-group">
-                              <small>type</small>
-                              <span>{selectedEffort.template.replace('-', ' ')}</span>
-                            </div>
-                            <div className="chip-group">
-                              <small>status</small>
-                              <span>{selectedEffort.status}</span>
-                            </div>
+                            <span className="meta-line">
+                              {selectedEffort.shortRef} · {selectedEffort.template.replace('-', ' ')} · {selectedEffort.status}
+                            </span>
                           </div>
                           <div className="effort-zone-readout effort-description">
                             <p>{selectedEffort.description}</p>
