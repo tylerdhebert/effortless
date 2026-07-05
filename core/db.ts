@@ -32,7 +32,7 @@ export function initializeSchema(db: AppDatabase): void {
   resetOldV2Schema(db)
 
   db.exec(`DROP TABLE IF EXISTS "references";`)
-  dropPrunedScopeTables(db)
+  db.exec(`DROP TABLE IF EXISTS mandates; DROP TABLE IF EXISTS template_playbooks;`)
 
   db.exec(`
     CREATE TABLE IF NOT EXISTS app_state (
@@ -281,8 +281,8 @@ function resetOldV2Schema(db: AppDatabase): void {
     DROP TABLE IF EXISTS "references";
     DROP TABLE IF EXISTS agent_runs;
     DROP TABLE IF EXISTS agent_profiles;
-    DROP TABLE IF EXISTS ${prunedScopeTableName('template')};
-    DROP TABLE IF EXISTS ${prunedScopeTableName('surface')};
+    DROP TABLE IF EXISTS template_playbooks;
+    DROP TABLE IF EXISTS mandates;
     DROP TABLE IF EXISTS task_build_results;
     DROP TABLE IF EXISTS activity_events;
     DROP TABLE IF EXISTS input_requests;
@@ -295,16 +295,6 @@ function resetOldV2Schema(db: AppDatabase): void {
 
     PRAGMA foreign_keys = ON;
   `)
-}
-
-function dropPrunedScopeTables(db: AppDatabase): void {
-  for (const table of [prunedScopeTableName('surface'), prunedScopeTableName('template')]) {
-    db.exec(`DROP TABLE IF EXISTS ${table};`)
-  }
-}
-
-function prunedScopeTableName(kind: 'surface' | 'template'): string {
-  return kind === 'surface' ? 'man' + 'dates' : 'template_' + 'play' + 'books'
 }
 
 export function bumpAppState(db: AppDatabase): void {

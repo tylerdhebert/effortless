@@ -40,7 +40,7 @@ async function main() {
     resetDatabase(paths.databasePath)
   }
 
-    const db = openDatabase()
+  const db = openDatabase()
 
   try {
     const repos = seedRepos(db)

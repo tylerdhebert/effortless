@@ -311,6 +311,8 @@ function printInstructionsHelp(): void {
 
   printBlock('Options', [
     { name: '--repo <repo-ref>', description: 'repo short ref' },
+    { name: '--body <text>', description: 'inline body' },
+    { name: '--from-file <path>', description: 'body from file' },
     { name: '--file <path>', description: 'use file content at runtime' },
     { name: '-h, --help', description: 'this help' },
   ])

@@ -69,4 +69,8 @@ function printInstructionsScope(instructions: Instructions): void {
   if (instructions.sourceType === 'file' && instructions.filePath) {
     console.log(instructions.filePath)
   }
+  if (instructions.sourceType === 'body' && instructions.body) {
+    const preview = instructions.body.split('\n')[0].slice(0, 80)
+    console.log(preview)
+  }
 }

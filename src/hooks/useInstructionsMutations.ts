@@ -8,6 +8,7 @@ export function useInstructionsMutations() {
     mutationFn: (input: SetInstructionsInput) => window.effortless.setInstructions(input),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['instructions'] })
+      await queryClient.invalidateQueries({ queryKey: ['app-state'] })
     },
   })
 
@@ -15,6 +16,7 @@ export function useInstructionsMutations() {
     mutationFn: (id: number) => window.effortless.deleteInstructions(id),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['instructions'] })
+      await queryClient.invalidateQueries({ queryKey: ['app-state'] })
     },
   })
 
