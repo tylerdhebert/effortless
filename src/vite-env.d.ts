@@ -16,7 +16,6 @@ import type {
   CreateInputRequestInput,
   CreateMandateInput,
   CreatePlanInput,
-  CreateReferenceInput,
   CreateRepoInput,
   CreateTaskInput,
   Effort,
@@ -26,8 +25,6 @@ import type {
   Mandate,
   Plan,
   ActivityEvent,
-  Reference,
-  ReferenceOwnerType,
   Repo,
   RequestPlanChangesInput,
   RequestReviewChangesInput,
@@ -179,9 +176,6 @@ interface Window {
       listTemplatePlaybooks: () => Promise<TemplatePlaybook[]>
       updateTemplatePlaybook: (input: UpdateTemplatePlaybookInput) => Promise<TemplatePlaybook>
       resetTemplatePlaybook: (template: EffortTemplate) => Promise<TemplatePlaybook>
-      listReferences: (ownerType: ReferenceOwnerType, ownerId: number) => Promise<Reference[]>
-      createReference: (input: CreateReferenceInput) => Promise<Reference>
-      deleteReference: (refId: number) => Promise<void>
       captureDebugScreenshot: (relativePath?: string) => Promise<{ path: string; sha256: string }>
       listPendingNotifications: () => Promise<PendingNotification[]>
       countPendingNotifications: () => Promise<number>

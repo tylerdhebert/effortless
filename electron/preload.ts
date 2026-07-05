@@ -14,7 +14,6 @@ import type {
   CreateInputRequestInput,
   CreateMandateInput,
   CreatePlanInput,
-  CreateReferenceInput,
   CreateRepoInput,
   CreateTaskInput,
   Effort,
@@ -24,8 +23,6 @@ import type {
   Mandate,
   Plan,
   ActivityEvent,
-  Reference,
-  ReferenceOwnerType,
   Repo,
   RequestPlanChangesInput,
   RequestReviewChangesInput,
@@ -242,11 +239,6 @@ contextBridge.exposeInMainWorld('effortless', {
     ipcRenderer.invoke('playbooks:update', input) as Promise<TemplatePlaybook>,
   resetTemplatePlaybook: (template: EffortTemplate) =>
     ipcRenderer.invoke('playbooks:reset', template) as Promise<TemplatePlaybook>,
-  listReferences: (ownerType: ReferenceOwnerType, ownerId: number) =>
-    ipcRenderer.invoke('references:list', ownerType, ownerId) as Promise<Reference[]>,
-  createReference: (input: CreateReferenceInput) =>
-    ipcRenderer.invoke('references:create', input) as Promise<Reference>,
-  deleteReference: (refId: number) => ipcRenderer.invoke('references:delete', refId) as Promise<void>,
   captureDebugScreenshot: (relativePath?: string) =>
     ipcRenderer.invoke('debug:capture-screenshot', relativePath) as Promise<{ path: string; sha256: string }>,
   listPendingNotifications: () =>

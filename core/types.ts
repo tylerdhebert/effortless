@@ -378,27 +378,3 @@ export type PrepareForkRunInput = {
   taskId?: number | null
   label?: string | null
 }
-
-export type ReferenceOwnerType = 'effort' | 'plan' | 'task' | 'review'
-export type ReferenceTargetType = 'effort' | 'plan' | 'task' | 'review' | 'file'
-
-export type Reference = {
-  id: number
-  shortRef: string
-  ownerType: ReferenceOwnerType
-  ownerId: number
-  targetType: ReferenceTargetType
-  targetId: number | null
-  filePath: string | null
-  label: string | null
-  createdAt: string
-}
-
-export type CreateReferenceInput = {
-  ownerType: ReferenceOwnerType
-  ownerId: number
-  targetType: ReferenceTargetType
-  targetId?: number | null
-  filePath?: string | null
-  label?: string | null
-}

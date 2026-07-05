@@ -1,13 +1,11 @@
 import { createEffort, getEffortByRef, listEfforts, parseEffortTemplate, updateEffortStatus, updateEffortSummary } from '../../../core/efforts'
 import { listInputRequests } from '../../../core/inputs'
 import { listPlans } from '../../../core/plans'
-import { listReferences } from '../../../core/references'
 import { listTasks } from '../../../core/tasks'
 import { bodyArg, isBrief, option, requiredOption } from '../args'
 import { db } from '../context'
 import {
   printArtifactPreview,
-  printExpandedReferences,
   printSummary,
   printRelatedMandates,
   printSurfaceMandate,
@@ -64,7 +62,6 @@ export async function handleEffort(surface: string, command: string): Promise<bo
     const plans = listPlans(db, effort.id)
     const acceptedPlan = plans.find((plan) => plan.accepted) ?? null
     const tasks = listTasks(db, effort.id)
-    const references = listReferences(db, 'effort', effort.id)
     const inputs = listInputRequests(db, effort.id)
 
     console.log(`${effort.shortRef} ${effort.template} ${effort.status}`)
@@ -117,8 +114,6 @@ export async function handleEffort(surface: string, command: string): Promise<bo
         console.log(`${input.shortRef} ${input.status} ${input.prompt}`)
       }
     }
-
-    printExpandedReferences(db, references, { brief })
 
     return true
   }

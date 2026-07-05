@@ -5,7 +5,7 @@ export const DEFAULT_GLOBAL_MANDATES: Array<{ workSurface: WorkSurface; body: st
     workSurface: 'effort',
     body: `# Effort Mandate
 
-Coordinate the effort across durable surfaces. Read the effort context, references, plans, tasks, reviews, inputs, and runs before deciding what should happen next.
+Coordinate the effort across durable surfaces. Read the effort context, plans, tasks, reviews, inputs, and runs before deciding what should happen next.
 
 Use the effort surface for request-level synthesis.
 
@@ -13,17 +13,15 @@ Use the effort surface for request-level synthesis.
 
 - Keep the effort pointed at the user's actual goal.
 - Route work to the right durable surface: plans for approach artifacts, tasks for repo-bound implementation, reviews for independent assessment, inputs for blocking human decisions, and runs for live agent execution.
-- Attach the references that downstream work needs.
 - Keep summaries current when major conclusions land.
 - Complete the effort when the outcome is genuinely handled.
 
 ## Rules
 
 1. Read context before changing structure.
-2. Attach references before handing work to another surface.
-3. Ask for human input when a decision changes scope, risk, or user-facing behavior.
-4. Work directly when the task is single-threaded.
-5. Finish with a clear effort summary.`,
+2. Ask for human input when a decision changes scope, risk, or user-facing behavior.
+3. Work directly when the task is single-threaded.
+4. Finish with a clear effort summary.`,
   },
   {
     workSurface: 'plan',
@@ -35,14 +33,14 @@ Use this surface for research, design decisions, and decomposition.
 
 ## Responsibilities
 
-- Read the code and references before proposing changes.
+- Read the relevant context and code before proposing changes.
 - Describe what should be built or investigated, why, and the key tradeoffs.
 - Break work into concrete implementation tasks when decomposition is needed.
 - Surface risks, assumptions, and open questions directly in the plan.
 
 ## Rules
 
-1. Read context and references before drafting.
+1. Read context before drafting.
 2. Do not write code from the plan surface.
 3. Make the plan specific enough to drive execution.
 4. Surface risks explicitly.
@@ -58,7 +56,7 @@ Implement the task in its worktree, keep the scope tight, and leave a clean hand
 ## Responsibilities
 
 - Work in the assigned task worktree.
-- Read the task description, references, comments, inputs, repo details, and accepted plan before editing.
+- Read the task description, comments, inputs, repo details, and accepted plan before editing.
 - Keep checkpoints and the final artifact clear enough for the next surface to pick up quickly.
 - Run the task build when the repo provides one before marking the task ready.
 
@@ -88,7 +86,7 @@ Review another surface's output and deliver a clear verdict with actionable find
 
 ## Responsibilities
 
-- Read the review context, task context, and references before judging the work.
+- Read the review context and task context before judging the work.
 - Evaluate correctness, completeness, consistency, risk, and scope.
 - Record findings with practical impact and precise references where possible.
 - Distinguish blocking issues from non-blocking suggestions.

@@ -25,7 +25,6 @@ export function useEffortMutations(selectedEffortId: number | null) {
 
       if (selectedEffortId) {
         await Promise.all([
-          queryClient.invalidateQueries({ queryKey: ['references', 'effort', selectedEffortId] }),
           queryClient.invalidateQueries({ queryKey: ['tasks', selectedEffortId] }),
           queryClient.invalidateQueries({ queryKey: ['plans', selectedEffortId] }),
           queryClient.invalidateQueries({ queryKey: ['inputs', selectedEffortId] }),

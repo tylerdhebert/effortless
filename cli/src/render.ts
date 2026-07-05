@@ -1,5 +1,5 @@
 import type { AgentProviderConfig } from '../../core/agentProviders'
-import type { AgentProfile, AgentRun, InputRequest, Mandate, Plan, Reference, Repo, Review, Task } from '../../core/types'
+import type { AgentProfile, AgentRun, InputRequest, Mandate, Plan, Repo, Review, Task } from '../../core/types'
 import type { runTaskBuild } from '../../core/builds'
 
 export function printTask(task: Task): void {
@@ -59,16 +59,6 @@ export function printMandate(mandate: Mandate): void {
     console.log(mandate.body.length > 200 ? mandate.body.slice(0, 200) + '...' : mandate.body)
   } else if (mandate.sourceType === 'file' && mandate.filePath) {
     console.log(mandate.filePath)
-  }
-}
-
-export function printReference(reference: Reference): void {
-  console.log(`${reference.shortRef} ${reference.ownerType}-${reference.ownerId} -> ${reference.targetType}${reference.targetId ? `-${reference.targetId}` : ''}`)
-  if (reference.filePath) {
-    console.log(`file ${reference.filePath}`)
-  }
-  if (reference.label) {
-    console.log(`label ${reference.label}`)
   }
 }
 

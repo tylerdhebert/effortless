@@ -43,11 +43,6 @@ import {
   updateTemplatePlaybook,
 } from '../core/templatePlaybooks'
 import { acceptPlan, createPlan, getPlanByRef, listPlanComments, listPlans, markPlanReady, requestPlanChanges } from '../core/plans'
-import {
-  createReference,
-  deleteReference,
-  listReferences,
-} from '../core/references'
 import { createRepo, deleteRepo, listRepos, updateRepo } from '../core/repos'
 import { applyReview, getReviewByRef, listReviews, requestReviewChanges, submitReview } from '../core/reviews'
 import {
@@ -79,7 +74,6 @@ import type {
   CreateAgentProfileInput,
   CreateMandateInput,
   CreatePlanInput,
-  CreateReferenceInput,
   CreateRepoInput,
   RequestPlanChangesInput,
   RequestReviewChangesInput,
@@ -96,7 +90,6 @@ import type {
   UpdateTaskDetailsInput,
   EffortTemplate,
   WorkSurface,
-  ReferenceOwnerType,
   DiffType,
   AgentProvider,
 } from '../core/types'
@@ -300,13 +293,6 @@ ipcMain.handle('playbooks:reset', (_event, template: EffortTemplate) =>
   resetTemplatePlaybook(db, template),
 )
 
-ipcMain.handle('references:list', (_event, ownerType: ReferenceOwnerType, ownerId: number) =>
-  listReferences(db, ownerType, ownerId),
-)
-ipcMain.handle('references:create', (_event, input: CreateReferenceInput) =>
-  createReference(db, input),
-)
-ipcMain.handle('references:delete', (_event, refId: number) => deleteReference(db, refId))
 ipcMain.handle('debug:capture-screenshot', async (_event, relativePath?: string) => {
   if (!win) {
     throw new Error('Main window is not available')

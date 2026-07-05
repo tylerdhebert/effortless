@@ -16,9 +16,8 @@ import {
 } from '../core/tasks'
 import { answerInputRequest, createInputRequest } from '../core/inputs'
 import { createMandate } from '../core/mandates'
-import { createReference } from '../core/references'
 import { createRepo } from '../core/repos'
-import { createEffort, getEffort, updateEffortStatus, updateEffortSummary } from '../core/efforts'
+import { createEffort, updateEffortStatus, updateEffortSummary } from '../core/efforts'
 import { worktreePath } from '../core/git'
 import type { AppDatabase } from '../core/db'
 import type { Effort, Repo, Task } from '../core/types'
@@ -49,8 +48,6 @@ async function main() {
     const investigationEffort = seedInvestigationEffort(db)
     const bugfixEffort = await seedBugfixEffort(db, repos)
     const deliveryEffort = await seedDeliveryEffort(db, repos)
-
-    seedReferences(db, deliveryEffort, bugfixEffort)
 
     touchEffort(db, deliveryEffort.id)
 
@@ -97,7 +94,7 @@ function seedInvestigationEffort(db: AppDatabase): Effort {
   const effort = createEffort(db, {
     title: 'investigate CLI packaging overhead',
     description:
-      'Profile why the CLI bundle grew after adding mandate and reference commands. Identify low-hanging reductions.',
+      'Profile why the CLI bundle grew after adding mandate commands. Identify low-hanging reductions.',
     template: 'investigation',
   })
   updateEffortSummary(
@@ -448,40 +445,6 @@ function seedMandates(db: AppDatabase, repos: { effortlessRepo: Repo; agentsyncb
       body: 'For agentsyncboard changes, run the full client build before marking ready. Check WebSocket reconnection paths.',
     })
   }
-}
-
-function seedReferences(db: AppDatabase, deliveryEffort: Effort, bugfixEffort: Effort) {
-  const deliveryTasks = db
-    .prepare<{ id: number }>(`SELECT id FROM tasks WHERE effort_id = ?`)
-    .all(deliveryEffort.id)
-
-  const effort = getEffort(db, deliveryEffort.id)
-
-  if (effort.acceptedPlanId && deliveryTasks.length > 0) {
-    createReference(db, {
-      ownerType: 'task',
-      ownerId: deliveryTasks[0].id,
-      targetType: 'plan',
-      targetId: effort.acceptedPlanId,
-      label: 'accepted plan',
-    })
-  }
-
-  createReference(db, {
-    ownerType: 'effort',
-    ownerId: deliveryEffort.id,
-    targetType: 'file',
-    filePath: '/docs/review-orchestration.md',
-    label: 'review orchestration notes',
-  })
-
-  createReference(db, {
-    ownerType: 'effort',
-    ownerId: bugfixEffort.id,
-    targetType: 'effort',
-    targetId: deliveryEffort.id,
-    label: 'related delivery effort',
-  })
 }
 
 main().catch((error: unknown) => {

@@ -12,7 +12,6 @@ type HelpDomain =
   | 'repo'
   | 'mandate'
   | 'playbook'
-  | 'ref'
 
 const DOMAIN_ALIASES: Record<string, HelpDomain> = {
   effort: 'effort',
@@ -27,7 +26,6 @@ const DOMAIN_ALIASES: Record<string, HelpDomain> = {
   repo: 'repo',
   mandate: 'mandate',
   playbook: 'playbook',
-  ref: 'ref',
 }
 
 type HelpRow = {
@@ -66,8 +64,6 @@ export function printHelp(domain: HelpDomain = 'root'): void {
       return printMandateHelp()
     case 'playbook':
       return printPlaybookHelp()
-    case 'ref':
-      return printRefHelp()
     default:
       return printRootHelp()
   }
@@ -116,7 +112,6 @@ function printRootHelp(): void {
     { name: 'efl repo', description: 'register git repos' },
     { name: 'efl mandate', description: 'surface instructions (effort/task/run/…)' },
     { name: 'efl playbook', description: 'effort template playbooks' },
-    { name: 'efl ref', description: 'link files and entities' },
   ])
 
   printBlock('Options', [
@@ -339,22 +334,6 @@ function printPlaybookHelp(): void {
 
   printSharedOptions([
     { name: '--template <name>', description: 'bugfix | delivery | investigation' },
-  ])
-}
-
-function printRefHelp(): void {
-  printHeader('efl ref', 'link owners to targets')
-
-  printBlock('Commands', [
-    { name: 'efl ref add', description: '--owner-type --owner-ref --target-type [--target-id|--file] [--label]' },
-    { name: 'efl ref list', description: '--owner-type --owner-ref' },
-    { name: 'efl ref remove', description: '--ref' },
-  ])
-
-  printBlock('Options', [
-    { name: '--owner-type', description: 'effort | plan | task | review' },
-    { name: '--target-type', description: 'effort | plan | task | review | file' },
-    { name: '-h, --help', description: 'this help' },
   ])
 }
 

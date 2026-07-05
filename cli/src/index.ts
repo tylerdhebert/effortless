@@ -8,7 +8,6 @@ import { handleInput } from './commands/input'
 import { handleMandate } from './commands/mandate'
 import { handlePlan } from './commands/plan'
 import { handlePlaybook } from './commands/playbook'
-import { handleRef } from './commands/ref'
 import { handleRepo } from './commands/repo'
 import { handleResume } from './commands/resume'
 import { handleReview } from './commands/review'
@@ -52,7 +51,6 @@ export async function runCli(args = rawArgs, database?: AppDatabase): Promise<vo
     handleRepo,
     handleInput,
     handleMandate,
-    handleRef,
     handleEffort,
     handlePlaybook,
     handleSession,

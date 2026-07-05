@@ -14,14 +14,12 @@ import { getLatestTaskBuild } from '../../../core/builds'
 import { getEffort } from '../../../core/efforts'
 import { listPlans } from '../../../core/plans'
 import { getRepo } from '../../../core/repos'
-import { listReferences } from '../../../core/references'
 import { option, requiredOption, bodyArg, isBrief } from '../args'
 import { db, resolveTask, wait } from '../context'
 import {
   printArtifactPreview,
   printComments,
   endSection,
-  printExpandedReferences,
   printLatestUpdate,
   printRelatedMandates,
   printSection,
@@ -143,8 +141,6 @@ export async function handleTask(surface: string, command: string): Promise<bool
       }
     }
 
-    const references = listReferences(db, 'task', task.id)
-    printExpandedReferences(db, references, { brief })
     if (!brief) {
       printComments(comments)
     }

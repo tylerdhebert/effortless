@@ -32,6 +32,8 @@ export function openDatabase(): AppDatabase {
 export function initializeSchema(db: AppDatabase): void {
   resetOldV2Schema(db)
 
+  db.exec(`DROP TABLE IF EXISTS "references";`)
+
   db.exec(`
     CREATE TABLE IF NOT EXISTS app_state (
       id INTEGER PRIMARY KEY CHECK (id = 1),
@@ -204,17 +206,6 @@ export function initializeSchema(db: AppDatabase): void {
       updated_at TEXT NOT NULL
     );
 
-    CREATE TABLE IF NOT EXISTS "references" (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      short_ref TEXT UNIQUE,
-      owner_type TEXT NOT NULL,
-      owner_id INTEGER NOT NULL,
-      target_type TEXT NOT NULL,
-      target_id INTEGER,
-      file_path TEXT,
-      label TEXT,
-      created_at TEXT NOT NULL
-    );
   `)
 
   const addedEffortProvider = ensureColumn(db, 'efforts', 'default_provider', `TEXT NOT NULL DEFAULT '${DEFAULT_AGENT_PROVIDER}'`)

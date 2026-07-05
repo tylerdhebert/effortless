@@ -6,7 +6,6 @@ import { db } from '../context'
 import {
   printArtifactPreview,
   printComments,
-  printExpandedReferences,
   printSummary,
   printLatestUpdate,
   printRelatedMandates,
@@ -82,8 +81,6 @@ export async function handlePlan(surface: string, command: string): Promise<bool
     printSummary(plan.summary)
     printArtifactPreview(plan.body, `efl plan show --plan ${plan.shortRef}`)
 
-    const { listReferences } = await import('../../../core/references')
-    printExpandedReferences(db, listReferences(db, 'plan', plan.id), { brief })
     if (!brief) {
       printComments(comments)
     }

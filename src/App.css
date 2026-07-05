@@ -639,7 +639,6 @@
   --drawer-width: 720px;
 }
 
-.effort-drawer--references,
 .effort-drawer--inputs {
   --drawer-width: 540px;
 }
@@ -710,13 +709,6 @@
   align-self: stretch;
   box-sizing: border-box;
   overflow: hidden;
-  padding: 10px;
-}
-
-.effort-drawer--references .effort-drawer-body {
-  display: block;
-  box-sizing: border-box;
-  overflow-y: auto;
   padding: 10px;
 }
 
@@ -801,8 +793,7 @@
 
 .effort-zone-section .comment,
 .effort-zone-section .review-record,
-.effort-zone-section .input-card,
-.effort-zone-section .reference-card {
+.effort-zone-section .input-card {
   border: none;
   border-radius: 0;
   background: transparent;
@@ -811,21 +802,14 @@
 
 .effort-zone-section .comment,
 .effort-zone-section .review-record,
-.effort-zone-section .input-card,
-.effort-zone-section .reference-card:not(:last-child) {
+.effort-zone-section .input-card {
   padding: 10px 0;
   border-bottom: 1px solid color-mix(in srgb, var(--line) 42%, transparent);
 }
 
 .effort-zone-section .comment:last-child,
 .effort-zone-section .review-record:last-child,
-.effort-zone-section .input-card:last-child,
-.effort-zone-section .reference-card:last-child {
-  border-bottom: none;
-}
-
-.effort-zone-section .reference-card--featured {
-  padding: 0;
+.effort-zone-section .input-card:last-child {
   border-bottom: none;
 }
 

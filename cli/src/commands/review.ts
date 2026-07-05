@@ -8,7 +8,6 @@ import { db, resolveTask } from '../context'
 import {
   printArtifactPreview,
   printComments,
-  printExpandedReferences,
   printSummary,
   printLatestUpdate,
   printRelatedMandates,
@@ -115,8 +114,6 @@ export async function handleReview(surface: string, command: string): Promise<bo
 
     const comments = listTaskComments(db, task.id)
     printLatestUpdate(comments)
-    const { listReferences } = await import('../../../core/references')
-    printExpandedReferences(db, listReferences(db, 'review', review.id), { brief })
     if (!brief) {
       printComments(comments)
     }

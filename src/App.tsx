@@ -5,7 +5,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   CircleHelp,
   ChevronsRight,
-  Glasses,
   Hammer,
   Home,
   ListOrdered,
@@ -23,7 +22,6 @@ import { NotificationToast } from './components/notifications/NotificationToast'
 import { TitleBar } from './components/ui/TitleBar'
 
 import { PlanSection } from './components/effort/PlanSection'
-import { ReferenceSection } from './components/effort/ReferenceSection'
 import { Sidebar } from './components/sidebar/Sidebar'
 import { AgentRunTerminal } from './components/task/AgentRunTerminal'
 import { TaskCreationForm } from './components/task/TaskCreationForm'
@@ -41,16 +39,15 @@ import { useEffortMutations } from './hooks/useEffortMutations'
 import { useInputMutations } from './hooks/useInputMutations'
 import { useMandateMutations } from './hooks/useMandateMutations'
 import { usePlanMutations } from './hooks/usePlanMutations'
-import { useReferenceMutations } from './hooks/useReferenceMutations'
 import { useRepoMutations } from './hooks/useRepoMutations'
 import { useReviewMutations } from './hooks/useReviewMutations'
 import { useTaskMutations } from './hooks/useTaskMutations'
 import { useNotifications } from './hooks/useNotifications'
-import type { AgentProvider, AgentRun, LiveAgentRunSession, Reference, Task } from '../core/types'
+import type { AgentProvider, AgentRun, LiveAgentRunSession, Task } from '../core/types'
 import type { PendingNotification } from '../core/notifications'
 import './App.css'
 
-type EffortRailDrawer = 'description' | 'references' | 'inputs' | 'plan' | 'tasks'
+type EffortRailDrawer = 'description' | 'inputs' | 'plan' | 'tasks'
 type LiveSessionCacheEntry = {
   session: LiveAgentRunSession
   lastSeenAt: number
@@ -176,12 +173,6 @@ function App() {
 
   const selectedEffort =
     effortsQuery.data?.find((effort) => effort.id === selectedEffortId) ?? effortsQuery.data?.[0]
-
-  const referencesQuery = useQuery({
-    queryKey: ['references', 'effort', selectedEffort?.id],
-    queryFn: () => window.effortless.listReferences('effort', selectedEffort!.id),
-    enabled: Boolean(selectedEffort),
-  })
 
   const tasksQuery = useQuery({
     queryKey: ['tasks', selectedEffort?.id],
@@ -481,7 +472,6 @@ function App() {
   )
   const taskMutations = useTaskMutations(selectedEffort?.id ?? null)
   const reviewMutations = useReviewMutations(selectedEffort?.id ?? null)
-  const referenceMutations = useReferenceMutations(selectedEffort?.id ?? null)
   const { answerInput } = useInputMutations(selectedEffort?.id ?? null)
 
   const updateNotificationSettings = useMutation({
@@ -818,73 +808,6 @@ function App() {
       customThemeActive: true,
       customThemePalette: palette,
     })
-  }
-
-  async function openReference(reference: Reference) {
-    if (reference.targetType === 'file') {
-      if (reference.filePath) {
-        await window.effortless.openPath(reference.filePath)
-      }
-      return
-    }
-
-    if (!reference.targetId) {
-      return
-    }
-
-    setSurfaceMode('effort')
-
-    if (reference.targetType === 'effort') {
-      setSelectedEffortId(reference.targetId)
-      return
-    }
-
-    const efforts = effortsQuery.data ?? await window.effortless.listEfforts()
-
-    if (reference.targetType === 'plan') {
-      for (const effort of efforts) {
-        const plans = await window.effortless.listPlans(effort.id)
-        if (plans.some((plan) => plan.id === reference.targetId)) {
-          preserveSelectionOnEffortChangeRef.current = true
-          setSelectedEffortId(effort.id)
-          setSelectedPlanId(reference.targetId)
-          setSelectedTaskId(null)
-          setActiveEffortDrawer('plan')
-          return
-        }
-      }
-    }
-
-    if (reference.targetType === 'task') {
-      for (const effort of efforts) {
-        const tasks = await window.effortless.listTasks(effort.id)
-        if (tasks.some((task) => task.id === reference.targetId)) {
-          preserveSelectionOnEffortChangeRef.current = true
-          setSelectedEffortId(effort.id)
-          setSelectedTaskId(reference.targetId)
-          setSelectedPlanId(null)
-          setActiveEffortDrawer('tasks')
-          return
-        }
-      }
-    }
-
-    if (reference.targetType === 'review') {
-      for (const effort of efforts) {
-        const tasks = await window.effortless.listTasks(effort.id)
-        for (const task of tasks) {
-          const reviews = await window.effortless.listReviews(task.id)
-          if (reviews.some((review) => review.id === reference.targetId)) {
-            preserveSelectionOnEffortChangeRef.current = true
-            setSelectedEffortId(effort.id)
-            setSelectedTaskId(task.id)
-            setSelectedPlanId(null)
-            setActiveEffortDrawer('tasks')
-            return
-          }
-        }
-      }
-    }
   }
 
   async function handleNotificationNavigate(notification: PendingNotification) {
@@ -1226,7 +1149,6 @@ function App() {
               <aside className="effort-rail" aria-label="effort views">
                 {[
                   { id: 'description' as const, label: 'description', Icon: ScrollText, badge: selectedEffort.shortRef },
-                  { id: 'references' as const, label: 'references', Icon: Glasses, badge: String(referencesQuery.data?.length ?? 0) },
                   { id: 'inputs' as const, label: 'inputs', Icon: CircleHelp, badge: pendingInputCount > 0 ? String(pendingInputCount) : String(inputsQuery.data?.length ?? 0) },
                   { id: 'plan' as const, label: 'plan', Icon: ListOrdered, badge: supportsPlans ? String(plansQuery.data?.length ?? 0) : '', disabled: !supportsPlans },
                   { id: 'tasks' as const, label: 'tasks', Icon: Hammer, badge: supportsTasks ? String(filteredTasks.length) : '', disabled: !supportsTasks },
@@ -1313,17 +1235,6 @@ function App() {
                           </div>
                         </section>
                       </div>
-                    ) : null}
-                    {activeEffortDrawer === 'references' ? (
-                      <ReferenceSection
-                        references={referencesQuery.data ?? []}
-                        effortId={selectedEffort.id}
-                        isCreating={referenceMutations.createReference.isPending}
-                        isDeleting={referenceMutations.deleteReference.isPending}
-                        onAddReference={(input) => referenceMutations.createReference.mutate(input)}
-                        onRemoveReference={(refId) => referenceMutations.deleteReference.mutate(refId)}
-                        onOpenReference={(reference) => void openReference(reference)}
-                      />
                     ) : null}
                     {activeEffortDrawer === 'inputs' ? (
                       <section className="input-section">
@@ -1508,7 +1419,7 @@ function App() {
                 <h4>delete effort</h4>
                 <p>
                   Remove <strong>{selectedEffort.shortRef}</strong> and all of its plans, tasks,
-                  reviews, inputs, and references.
+                  reviews and inputs.
                 </p>
               </div>
               <button
@@ -1626,7 +1537,6 @@ function getDefaultDrawerWidth(drawer: EffortRailDrawer | null): number {
     case 'plan':
     case 'tasks':
       return 720
-    case 'references':
     case 'inputs':
       return 540
     default:
@@ -1638,8 +1548,6 @@ function effortDrawerTitle(drawer: EffortRailDrawer): string {
   switch (drawer) {
     case 'description':
       return 'description'
-    case 'references':
-      return 'references'
     case 'inputs':
       return 'inputs'
     case 'plan':

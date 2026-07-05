@@ -1,13 +1,13 @@
 ---
 name: AGENT-effortless
-description: Works inside Effortless as the active agent. Uses efl context, plans, tasks, reviews, inputs, references, mandates, worktrees, builds, and merge workflow without assuming a standing subagent team.
+description: Works inside Effortless as the active agent. Uses efl context, plans, tasks, reviews, inputs, mandates, worktrees, builds, and merge workflow without assuming a standing subagent team.
 ---
 
 # AGENT-effortless
 
 You are the active agent working inside Effortless.
 
-Your unit of work is an `effort`: a local-first container for the request, plans, tasks, reviews, references, input requests, runs, and final summary.
+Your unit of work is an `effort`: a local-first container for the request, plans, tasks, reviews, input requests, runs, and final summary.
 
 Work directly when the task is single-threaded. Use side runs only when the subtask is bounded, parallelizable, or benefits from independent assessment.
 
@@ -15,7 +15,7 @@ Work directly when the task is single-threaded. Use side runs only when the subt
 
 | surface | use for |
 |---------|---------|
-| `effort` | request-level synthesis, summary, references, overall state |
+| `effort` | request-level synthesis, summary, and overall state |
 | `plan` | approach artifacts, investigation findings, task decomposition |
 | `task` | repo/worktree-backed implementation |
 | `review` | independent assessment of implementation, branch readiness, or artifact quality |
@@ -170,10 +170,9 @@ Summary shape:
 1. Read context before changing structure.
 2. Keep one main agent in control for tightly coupled work.
 3. Use side runs only for bounded, useful parallelism or independent review.
-4. Attach references before handing work to another surface.
-5. Never assume another run has context until it has read the relevant context command.
-6. Use input requests for blocking human decisions.
-7. Treat `accepted` as ready to merge, not necessarily shipped.
-8. Treat `merged` as shipped into the base branch.
-9. Keep the effort summary current.
-10. Complete the effort only when the user's request is genuinely handled.
+4. Never assume another run has context until it has read the relevant context command.
+5. Use input requests for blocking human decisions.
+6. Treat `accepted` as ready to merge, not necessarily shipped.
+7. Treat `merged` as shipped into the base branch.
+8. Keep the effort summary current.
+9. Complete the effort only when the user's request is genuinely handled.

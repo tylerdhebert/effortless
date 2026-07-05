@@ -62,18 +62,6 @@ insertPlanComment(planId, 'agent-69', 'comment', 'Planning guidance: use the sup
 insertPlanComment(planId, 'plan-prop-variants-70', 'comment', 'Drafted the minimal-first plan: extractor plus FilterText enrichment, keeping DiscoveryQueryNormalizer exception-only.')
 insertPlanComment(planId, null, 'approval', 'accepted')
 
-insertReference('effort', effortId, 'plan', planId, 'approved plan')
-insertReference('effort', effortId, 'task', taskId, 'approved implementation')
-insertReference('task', taskId, 'effort', effortId, 'goal')
-insertReference('task', taskId, 'plan', planId, 'approved plan')
-insertReference('task', taskId, 'review', review1Id, 'requested changes review')
-insertReference('task', taskId, 'review', review2Id, 'accepted review')
-insertReference('review', review1Id, 'task', taskId, 'impl job under review')
-insertReference('review', review1Id, 'plan', planId, 'approved plan')
-insertReference('review', review2Id, 'task', taskId, 'impl job under review')
-insertReference('review', review2Id, 'plan', planId, 'approved plan')
-insertReference('review', review2Id, 'review', review1Id, 'prior review')
-
 bumpAppState(db)
 
 console.log(`created effort eff-${effortId}`)
@@ -217,19 +205,4 @@ function insertPlanComment(planId: number, agentId: string | null, kind: string,
     INSERT INTO plan_comments (plan_id, author, agent_id, kind, body, created_at)
     VALUES (?, ?, ?, ?, ?, ?)
   `).run(planId, agentId ? 'agent' : 'user', agentId, kind, body, now)
-}
-
-function insertReference(
-  ownerType: string,
-  ownerId: number,
-  targetType: string,
-  targetId: number,
-  label: string,
-): void {
-  const result = db.prepare(`
-    INSERT INTO "references" (short_ref, owner_type, owner_id, target_type, target_id, file_path, label, created_at)
-    VALUES (NULL, ?, ?, ?, ?, NULL, ?, ?)
-  `).run(ownerType, ownerId, targetType, targetId, label, now)
-  const id = Number(result.lastInsertRowid)
-  db.prepare(`UPDATE "references" SET short_ref = ? WHERE id = ?`).run(`ref-${id}`, id)
 }

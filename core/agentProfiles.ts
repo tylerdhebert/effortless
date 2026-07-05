@@ -75,7 +75,7 @@ export function createAgentProfile(db: AppDatabase, input: CreateAgentProfileInp
   return getAgentProfile(db, id)
 }
 
-export function countAgentProfileReferences(
+export function countAgentProfileUsages(
   db: AppDatabase,
   profileId: number,
 ): { runs: number; efforts: number } {
@@ -91,7 +91,7 @@ export function countAgentProfileReferences(
 }
 
 export function deleteAgentProfile(db: AppDatabase, profileId: number): void {
-  const { runs, efforts } = countAgentProfileReferences(db, profileId)
+  const { runs, efforts } = countAgentProfileUsages(db, profileId)
   if (runs > 0) {
     throw new Error(`profile is used by ${runs} run${runs === 1 ? '' : 's'}`)
   }
