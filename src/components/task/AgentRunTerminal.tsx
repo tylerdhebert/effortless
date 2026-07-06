@@ -664,20 +664,13 @@ export function AgentRunTerminal({
         </div>
         <div className={styles['stage-tab-strip-end']}>
           <div className={styles['stage-tab-status']}>
-            {isWorkTabActive && activeTab ? (
-              <>
-                <Ref value={workTabShortRef(activeTab)} />
-                <span className={styles['stage-tab-status-sep']} aria-hidden="true">·</span>
-                <span>{activeTab.branchLabel ?? 'no branch'}</span>
-              </>
-            ) : activeRun ? (
+            {!isWorkTabActive && activeRun ? (
               <>
                 <Ref value={activeRun.shortRef} />
-                <span className={styles['stage-tab-status-sep']} aria-hidden="true">·</span>
                 <Stamp label={displayStatus} tone={statusTone(displayStatus)} compact />
               </>
             ) : (
-              <Stamp label={emptyLabel} tone="neutral" compact />
+              <span className={styles['stage-tab-status-idle']}>{emptyLabel}</span>
             )}
           </div>
           <div ref={menuRef} className={styles['terminal-menu-shell']}>
