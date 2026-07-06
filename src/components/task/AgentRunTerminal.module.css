@@ -40,6 +40,228 @@
   padding: 4px 30px;
 }
 
+.stage-tab-strip {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  min-height: 34px;
+  height: 34px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.026);
+  padding: 0 30px;
+}
+
+.stage-tab-rail {
+  display: flex;
+  align-items: stretch;
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+}
+
+.stage-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 1 auto;
+  min-width: 0;
+  height: 100%;
+  margin-bottom: -1px;
+  border: 0;
+  border-radius: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1;
+  padding: 0 10px;
+  transition:
+    color 140ms ease,
+    background 140ms ease,
+    border-color 140ms ease;
+}
+
+.stage-tab:hover {
+  color: var(--text);
+  background: color-mix(in srgb, var(--surface) 42%, transparent);
+}
+
+.stage-tab.active {
+  background: var(--surface);
+  color: var(--text-strong);
+  border-bottom-color: var(--accent);
+}
+
+.stage-tab.work:hover {
+  color: var(--text);
+  background: color-mix(in srgb, var(--surface) 42%, transparent);
+}
+
+.stage-tab.work.active .stage-tab-select {
+  color: var(--text-strong);
+}
+
+.stage-tab:focus-visible,
+.stage-tab-select:focus-visible,
+.stage-tab-close:focus-visible,
+.stage-tab-add:focus-visible,
+.stage-tab-menu-trigger:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  outline-offset: -2px;
+}
+
+.stage-tab-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  padding: 0 0 0 2px;
+}
+
+.stage-tab-select:hover {
+  color: inherit;
+}
+
+.stage-tab-live-dot {
+  flex: 0 0 auto;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+}
+
+.stage-tab-live-dot.live {
+  background: var(--live);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--live) 50%, transparent);
+}
+
+.stage-tab-live-dot.idle {
+  border: 1.5px solid var(--line-strong);
+  background: transparent;
+}
+
+.stage-tab-label {
+  min-width: 0;
+  max-width: 16ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stage-tab-work-glyph {
+  flex: 0 0 auto;
+  color: var(--accent);
+  font-size: 0.68rem;
+  line-height: 1;
+}
+
+.stage-tab-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 16px;
+  min-width: 16px;
+  height: 16px;
+  min-height: 16px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0;
+  transition: color 120ms ease;
+}
+
+.stage-tab-close:hover {
+  color: var(--accent);
+}
+
+.stage-tab-add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 28px;
+  height: 100%;
+  margin-bottom: -1px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  opacity: 0.5;
+  padding: 0;
+  transition:
+    color 140ms ease,
+    opacity 140ms ease;
+}
+
+.stage-tab-add:hover {
+  color: var(--text-strong);
+  opacity: 1;
+}
+
+.stage-tab-strip-end {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+  margin-left: auto;
+  padding-left: 12px;
+}
+
+.stage-tab-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+
+.stage-tab-status-sep {
+  color: color-mix(in srgb, var(--muted) 72%, transparent);
+}
+
+.stage-tab-menu-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0;
+  transition:
+    color 140ms ease,
+    background 140ms ease;
+}
+
+.stage-tab-menu-trigger:hover {
+  background: color-mix(in srgb, var(--button) 88%, transparent);
+  color: var(--text-strong);
+}
+
+.stage-tab-menu-trigger[aria-expanded='true'] {
+  background: color-mix(in srgb, var(--surface) 90%, transparent);
+  color: var(--text-strong);
+}
+
 .terminal-menu-shell {
   position: relative;
   z-index: 12;
@@ -77,8 +299,9 @@
 
 .terminal-menu {
   position: absolute;
-  top: calc(100% + 8px);
-  left: 0;
+  top: calc(100% + 6px);
+  right: 0;
+  left: auto;
   z-index: 80;
   display: grid;
   gap: 8px;
@@ -444,7 +667,7 @@
     margin-left: -18px;
   }
 
-  .terminal-header {
+  .stage-tab-strip {
     padding-right: 18px;
     padding-left: 18px;
   }

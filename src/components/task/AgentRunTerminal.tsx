@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { FitAddon } from '@xterm/addon-fit'
 import { Terminal } from '@xterm/xterm'
 import '@xterm/xterm/css/xterm.css'
-import { ChevronDown, ExternalLink, Play, Plus, RotateCcw, Square, SquareTerminal, X } from 'lucide-react'
+import { ChevronDown, ExternalLink, Play, Plus, RotateCcw, Square, X } from 'lucide-react'
 import type { AgentRun, LiveAgentRunSession } from '../../../core/types'
 import { Ref } from '../ui/Ref'
 import { Stamp, statusTone } from '../ui/Stamp'
@@ -470,22 +470,23 @@ export function AgentRunTerminal({
     return () => window.removeEventListener('mousedown', handlePointerDown)
   }, [closeMenu, menuOpen])
 
-  const { mainTab, forkTabs, workTabs, otherTabs, orderedMenuTabs } = useMemo(() => {
+  const { mainTab, forkTabs, workTabs, otherTabs, stripTerminalTabs, orderedMenuTabs } = useMemo(() => {
     const mainTab = tabs.find((tab) => tab.key === 'main') ?? null
     const forkTabs = tabs.filter((tab) => tab.key !== 'main' && tab.purpose === 'fork' && tab.kind !== 'work')
     const workTabs = tabs.filter((tab) => tab.kind === 'work')
     const otherTabs = tabs.filter((tab) => tab.key !== 'main' && tab.purpose !== 'fork' && tab.kind !== 'work')
+    const stripTerminalTabs = [
+      ...(mainTab ? [mainTab] : []),
+      ...forkTabs,
+      ...otherTabs,
+    ]
     return {
       mainTab,
       forkTabs,
       workTabs,
       otherTabs,
-      orderedMenuTabs: [
-        ...(mainTab ? [mainTab] : []),
-        ...forkTabs,
-        ...workTabs,
-        ...otherTabs,
-      ],
+      stripTerminalTabs,
+      orderedMenuTabs: stripTerminalTabs,
     }
   }, [tabs])
 
@@ -577,101 +578,170 @@ export function AgentRunTerminal({
     terminalEntriesRef.current.get(activeRunId)?.terminal.focus()
   }, [activeRunId, activeRunHasLiveSession, scheduleFitAndRefresh, renderIdleTerminal])
 
-  const attachmentsWithRuns = tabs.filter((tab) => tab.kind !== 'work' && tab.run).length
   const activeTab = tabs.find((tab) => tab.key === activeTabKey) ?? null
   const isWorkTabActive = activeTab?.kind === 'work'
   const canForkMain = Boolean(onForkMain) && !forkMainDisabledReason && !isStarting
 
+  function selectStripTab(tabKey: string) {
+    onSelectTab?.(tabKey)
+  }
+
+  function handleStripTabKeydown(event: { key: string; preventDefault: () => void }, tabKey: string) {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      selectStripTab(tabKey)
+    }
+  }
+
   return (
     <section className={styles['terminal-section']}>
-      <div className={styles['terminal-header']}>
-        <div ref={menuRef} className={styles['terminal-menu-shell']}>
+      <div className={styles['stage-tab-strip']}>
+        <div className={styles['stage-tab-rail']}>
+          {stripTerminalTabs.map((tab) => {
+            const isLive = Boolean(tab.hasLiveSession || tab.providerLive)
+            const isActive = tab.key === activeTabKey
+            return (
+              <button
+                key={tab.key}
+                type="button"
+                className={`${styles['stage-tab']} ${isActive ? styles.active : ''}`}
+                title={tab.label}
+                aria-selected={isActive}
+                onClick={() => selectStripTab(tab.key)}
+                onKeyDown={(event) => handleStripTabKeydown(event, tab.key)}
+              >
+                <span
+                  className={`${styles['stage-tab-live-dot']} ${isLive ? styles.live : styles.idle}`}
+                  aria-hidden="true"
+                />
+                <span className={styles['stage-tab-label']}>{tab.label}</span>
+              </button>
+            )
+          })}
+          {workTabs.map((tab) => {
+            const shortRef = workTabShortRef(tab)
+            const isActive = tab.key === activeTabKey
+            return (
+              <div
+                key={tab.key}
+                className={`${styles['stage-tab']} ${styles.work} ${isActive ? styles.active : ''}`}
+                title={tab.label}
+              >
+                <button
+                  type="button"
+                  className={styles['stage-tab-select']}
+                  aria-selected={isActive}
+                  onClick={() => selectStripTab(tab.key)}
+                  onKeyDown={(event) => handleStripTabKeydown(event, tab.key)}
+                >
+                  <span className={styles['stage-tab-work-glyph']} aria-hidden="true">▹</span>
+                  <Ref value={shortRef} />
+                </button>
+                <button
+                  type="button"
+                  className={styles['stage-tab-close']}
+                  aria-label={`close ${shortRef}`}
+                  title={`close ${shortRef}`}
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    onCloseWorkTab?.(tab.key)
+                  }}
+                >
+                  <X size={12} aria-hidden="true" />
+                </button>
+              </div>
+            )
+          })}
           <button
             type="button"
-            className={styles['terminal-menu-trigger']}
-            aria-label="terminal runs"
-            aria-expanded={menuOpen}
-            onClick={() => {
-              if (menuOpen) {
-                closeMenu()
-              } else {
-                openMenu()
-              }
-            }}
+            className={styles['stage-tab-add']}
+            aria-label="add terminal"
+            title="add terminal"
+            onClick={() => openMenu()}
           >
-            <SquareTerminal size={15} aria-hidden="true" />
-            <span>({attachmentsWithRuns})</span>
-            <ChevronDown size={13} aria-hidden="true" />
+            <Plus size={14} aria-hidden="true" />
           </button>
-          {menuOpen ? (
-            <div className={styles['terminal-menu']} role="menu">
-              {mainTab ? renderTerminalMenuRow(mainTab, 0) : null}
-
-              <TerminalMenuSeparator label="forks" />
-              <div className={styles['terminal-menu-section']}>
-                {forkTabs.length > 0 ? (
-                  forkTabs.map((tab, tabIndex) => renderTerminalMenuRow(tab, tabIndex + 1))
-                ) : (
-                  <p className={styles['terminal-menu-empty']}>no forks yet</p>
-                )}
-              </div>
-              <button
-                type="button"
-                className={styles['terminal-menu-sticky-action']}
-                disabled={!canForkMain}
-                title={forkMainDisabledReason ?? 'fork main'}
-                onClick={() => {
-                  onForkMain?.()
-                  closeMenu()
-                }}
-              >
-                <Plus size={13} aria-hidden="true" />
-                <span>fork main</span>
-              </button>
-
-              <TerminalMenuSeparator label="work views" />
-              <div className={styles['terminal-menu-section']}>
-                {workTabs.length > 0 ? (
-                  workTabs.map((tab, tabIndex) => renderWorkMenuRow(tab, tabIndex + 1 + forkTabs.length))
-                ) : (
-                  <p className={styles['terminal-menu-empty']}>no work views open</p>
-                )}
-              </div>
-
-              <TerminalMenuSeparator label="others" />
-              <div className={styles['terminal-menu-section']}>
-                {otherTabs.length > 0 ? (
-                  otherTabs.map((tab, tabIndex) => renderTerminalMenuRow(tab, tabIndex + 1 + forkTabs.length + workTabs.length))
-                ) : (
-                  <p className={styles['terminal-menu-empty']}>no other terminals</p>
-                )}
-              </div>
-              <button
-                type="button"
-                className={`${styles['terminal-menu-sticky-action']} ${styles.secondary}`}
-                disabled
-                title="add terminal is coming next"
-              >
-                <Plus size={13} aria-hidden="true" />
-                <span>add terminal</span>
-              </button>
-            </div>
-          ) : null}
         </div>
-        <div className={styles['terminal-title']}>
-          <h4>{isWorkTabActive ? activeTab?.label ?? 'work' : 'terminal'}</h4>
-          <span>
-            {isWorkTabActive
-              ? activeTab?.branchLabel ?? 'no branch'
-              : activeRun
-                ? (
-                  <>
-                    {activeTab?.label ?? 'run'} · <Ref value={activeRun.shortRef} /> ·{' '}
-                    <Stamp label={displayStatus} tone={statusTone(displayStatus)} compact />
-                  </>
-                )
-                : emptyLabel}
-          </span>
+        <div className={styles['stage-tab-strip-end']}>
+          <div className={styles['stage-tab-status']}>
+            {isWorkTabActive && activeTab ? (
+              <>
+                <Ref value={workTabShortRef(activeTab)} />
+                <span className={styles['stage-tab-status-sep']} aria-hidden="true">·</span>
+                <span>{activeTab.branchLabel ?? 'no branch'}</span>
+              </>
+            ) : activeRun ? (
+              <>
+                <Ref value={activeRun.shortRef} />
+                <span className={styles['stage-tab-status-sep']} aria-hidden="true">·</span>
+                <Stamp label={displayStatus} tone={statusTone(displayStatus)} compact />
+              </>
+            ) : (
+              <Stamp label={emptyLabel} tone="neutral" compact />
+            )}
+          </div>
+          <div ref={menuRef} className={styles['terminal-menu-shell']}>
+            <button
+              type="button"
+              className={styles['stage-tab-menu-trigger']}
+              aria-label="terminal overflow menu"
+              aria-expanded={menuOpen}
+              onClick={() => {
+                if (menuOpen) {
+                  closeMenu()
+                } else {
+                  openMenu()
+                }
+              }}
+            >
+              <ChevronDown size={14} aria-hidden="true" />
+            </button>
+            {menuOpen ? (
+              <div className={styles['terminal-menu']} role="menu">
+                {mainTab ? renderTerminalMenuRow(mainTab, 0) : null}
+
+                <TerminalMenuSeparator label="forks" />
+                <div className={styles['terminal-menu-section']}>
+                  {forkTabs.length > 0 ? (
+                    forkTabs.map((tab, tabIndex) => renderTerminalMenuRow(tab, tabIndex + 1))
+                  ) : (
+                    <p className={styles['terminal-menu-empty']}>no forks yet</p>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  className={styles['terminal-menu-sticky-action']}
+                  disabled={!canForkMain}
+                  title={forkMainDisabledReason ?? 'fork main'}
+                  onClick={() => {
+                    onForkMain?.()
+                    closeMenu()
+                  }}
+                >
+                  <Plus size={13} aria-hidden="true" />
+                  <span>fork main</span>
+                </button>
+
+                <TerminalMenuSeparator label="others" />
+                <div className={styles['terminal-menu-section']}>
+                  {otherTabs.length > 0 ? (
+                    otherTabs.map((tab, tabIndex) => renderTerminalMenuRow(tab, tabIndex + 1 + forkTabs.length))
+                  ) : (
+                    <p className={styles['terminal-menu-empty']}>no other terminals</p>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  className={`${styles['terminal-menu-sticky-action']} ${styles.secondary}`}
+                  disabled
+                  title="add terminal is coming next"
+                >
+                  <Plus size={13} aria-hidden="true" />
+                  <span>add terminal</span>
+                </button>
+              </div>
+            ) : null}
+          </div>
         </div>
       </div>
       <div className={styles['terminal-stage']}>
@@ -825,46 +895,10 @@ export function AgentRunTerminal({
     )
   }
 
-  function renderWorkMenuRow(tab: TerminalTab, tabIndex: number) {
-    return (
-      <div
-        key={tab.key}
-        className={`${styles['terminal-menu-row']} ${tab.key === activeTabKey ? styles.active : ''}`}
-        role="menuitem"
-      >
-        <button
-          type="button"
-          className={styles['terminal-menu-select']}
-          tabIndex={-1}
-          ref={(el) => {
-            menuRowRefs.current[tabIndex] = el
-          }}
-          onClick={() => {
-            onSelectTab?.(tab.key)
-            closeMenu()
-          }}
-        >
-          <strong>{tab.label}</strong>
-          <span>{tab.branchLabel ?? 'no branch'}</span>
-        </button>
-        <div className={styles['terminal-menu-actions']}>
-          <button
-            type="button"
-            className={styles['terminal-menu-icon-action']}
-            aria-label={`close ${tab.label}`}
-            title="close"
-            onClick={(event) => {
-              event.stopPropagation()
-              onCloseWorkTab?.(tab.key)
-              closeMenu()
-            }}
-          >
-            <X size={13} aria-hidden="true" />
-          </button>
-        </div>
-      </div>
-    )
-  }
+}
+
+function workTabShortRef(tab: TerminalTab): string {
+  return tab.label.replace(/ work$/, '')
 }
 
 function TerminalMenuSeparator({ label }: { label: string }) {
