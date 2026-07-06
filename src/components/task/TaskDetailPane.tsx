@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Play, RotateCcw, Send } from 'lucide-react'
+import { Hammer, Play, RotateCcw, Send } from 'lucide-react'
 import type {
   AgentProfile,
   AgentProvider,
@@ -15,7 +15,6 @@ import { CommentStream } from './CommentStream'
 import { ReviewHistory } from './ReviewHistory'
 import { ReviewRecord } from './ReviewRecord'
 import { reviewSummary } from '../../lib/helpers'
-import { PillSwitcher } from '../ui/PillSwitcher'
 import styles from './TaskDetailPane.module.css'
 
 type TaskDetailPaneProps = {
@@ -30,8 +29,7 @@ type TaskDetailPaneProps = {
   providerLiveRunIds?: Set<number>
   reviews: Review[]
   comments: ActivityEvent[]
-  workView: boolean
-  onWorkViewChange: (next: boolean) => void
+  onOpenWorkView: () => void
   onRunBuild: (taskId: number) => void
   onWorkOnTask: (input: { task: Task; provider: AgentProvider; profileId: number | null }) => void
   onStartTaskRun: (input: { task: Task; provider: AgentProvider; profileId: number | null }) => void
@@ -59,8 +57,7 @@ export function TaskDetailPane({
   providerLiveRunIds = new Set<number>(),
   reviews,
   comments,
-  workView,
-  onWorkViewChange,
+  onOpenWorkView,
   onRunBuild,
   onWorkOnTask,
   onStartTaskRun,
@@ -110,15 +107,15 @@ export function TaskDetailPane({
       <div className={`effort-zone-hero ${styles['task-detail-header']}`}>
         <div className={styles['task-detail-header-top']}>
           <h3>{task.title}</h3>
-          <PillSwitcher
-            ariaLabel="task detail mode"
-            options={[
-              { id: 'meta', label: 'meta' },
-              { id: 'work', label: 'work' },
-            ]}
-            value={workView ? 'work' : 'meta'}
-            onChange={(id) => onWorkViewChange(id === 'work')}
-          />
+          <button
+            type="button"
+            className={styles['task-header-action']}
+            title="open work view"
+            onClick={onOpenWorkView}
+          >
+            <Hammer size={14} aria-hidden="true" />
+            <span>open work view</span>
+          </button>
         </div>
 
         <div className={styles['expanded-meta']}>

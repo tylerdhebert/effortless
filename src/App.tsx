@@ -70,6 +70,7 @@ function App() {
   const [deleteEffortOpen, setDeleteEffortOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [activeTerminalTabKey, setActiveTerminalTabKey] = useState('main')
+  const [openWorkTaskIds, setOpenWorkTaskIds] = useState<number[]>([])
   const [activeEffortDrawer, setActiveEffortDrawer] = useState<EffortRailDrawer | null>(null)
   const [drawerWidth, setDrawerWidth] = useState<number | null>(null)
   const [drawerResizing, setDrawerResizing] = useState(false)
@@ -96,7 +97,6 @@ function App() {
     document.addEventListener('mousemove', onMove)
     document.addEventListener('mouseup', onUp)
   }, [drawerWidth, activeEffortDrawer])
-  const [centerView, setCenterView] = useState<'terminal' | 'work'>('terminal')
   const [taskCreateOpen, setTaskCreateOpen] = useState(false)
   const [focusedInputId, setFocusedInputId] = useState<number | null>(null)
   const [terminalMenuOpen, setTerminalMenuOpen] = useState(false)
@@ -249,12 +249,6 @@ function App() {
     enabled: Boolean(selectedTask),
   })
 
-  const buildQuery = useQuery({
-    queryKey: ['task-build', selectedTask?.id],
-    queryFn: () => window.effortless.getLatestTaskBuild(selectedTask!.id),
-    enabled: Boolean(selectedTask),
-  })
-
   const effortRunsQuery = useQuery({
     queryKey: ['agent-runs', selectedEffort?.id],
     queryFn: () => window.effortless.listAgentRuns(selectedEffort!.id),
@@ -361,7 +355,7 @@ function App() {
     for (const run of runs) {
       tabKeys.add(run.terminalTabKey ?? 'main')
     }
-    return Array.from(tabKeys).map((key) => {
+    const terminalOnlyTabs = Array.from(tabKeys).map((key) => {
       const tabRuns = runs.filter((run) => (run.terminalTabKey ?? 'main') === key)
       const run =
         tabRuns.find((candidate) => providerLiveRunIds.has(candidate.id)) ??
@@ -384,8 +378,31 @@ function App() {
         branchLabel: run?.taskId
           ? tasks.find((task) => task.id === run.taskId)?.branchName ?? 'no branch'
           : 'effort',
+        kind: 'terminal' as const,
+        workTaskId: null,
       }
     })
+    const workTabs = openWorkTaskIds
+      .map((taskId) => {
+        const task = tasks.find((candidate) => candidate.id === taskId)
+        if (!task) return null
+        return {
+          key: `work-task-${taskId}`,
+          label: `${task.shortRef} work`,
+          run: null,
+          hasLiveSession: false,
+          providerLive: false,
+          profileLabel: null,
+          taskId,
+          purpose: null,
+          branchLabel: task.branchName ?? 'no branch',
+          kind: 'work' as const,
+          workTaskId: taskId,
+        }
+      })
+      .filter((tab): tab is NonNullable<typeof tab> => tab !== null)
+
+    return [...terminalOnlyTabs, ...workTabs]
   }, [
     activeTerminalTabKey,
     effortRunsQuery.data,
@@ -393,6 +410,7 @@ function App() {
     liveSessionIds,
     providerLiveRunIds,
     tasksQuery.data,
+    openWorkTaskIds,
   ])
 
   useEffect(() => {
@@ -400,6 +418,23 @@ function App() {
       setActiveTerminalTabKey('main')
     }
   }, [activeTerminalTabKey, terminalTabs])
+
+  const activeWorkTask = useMemo(() => {
+    const tab = terminalTabs.find((candidate) => candidate.key === activeTerminalTabKey)
+    if (!tab?.workTaskId) return null
+    return tasksQuery.data?.find((task) => task.id === tab.workTaskId) ?? null
+  }, [activeTerminalTabKey, terminalTabs, tasksQuery.data])
+
+  const activeWorkTaskRuns = useMemo(() => {
+    if (!activeWorkTask) return []
+    return (effortRunsQuery.data ?? []).filter((run) => run.taskId === activeWorkTask.id)
+  }, [effortRunsQuery.data, activeWorkTask])
+
+  const buildQuery = useQuery({
+    queryKey: ['task-build', activeWorkTask?.id],
+    queryFn: () => window.effortless.getLatestTaskBuild(activeWorkTask!.id),
+    enabled: Boolean(activeWorkTask),
+  })
 
   const activeTerminalRun = useMemo(() => {
     const tab = terminalTabs.find((candidate) => candidate.key === activeTerminalTabKey)
@@ -448,16 +483,32 @@ function App() {
     await queryClient.invalidateQueries({ queryKey: ['app-state'] })
   }
 
+  const openWorkView = useCallback((taskId: number) => {
+    setOpenWorkTaskIds((current) => (current.includes(taskId) ? current : [...current, taskId]))
+    setActiveTerminalTabKey(`work-task-${taskId}`)
+  }, [])
+
+  const closeWorkView = useCallback((key: string) => {
+    const taskId = Number(key.replace('work-task-', ''))
+    setOpenWorkTaskIds((current) => current.filter((id) => id !== taskId))
+    setActiveTerminalTabKey((current) => (current === key ? 'main' : current))
+  }, [])
+
+  useEffect(() => {
+    const taskIds = new Set((tasksQuery.data ?? []).map((task) => task.id))
+    setOpenWorkTaskIds((current) => current.filter((id) => taskIds.has(id)))
+  }, [tasksQuery.data])
+
   const commitsQuery = useQuery({
-    queryKey: ['task-commits', selectedTask?.id],
-    queryFn: () => window.effortless.getTaskCommits(selectedTask!.id),
-    enabled: Boolean(selectedTask),
+    queryKey: ['task-commits', activeWorkTask?.id],
+    queryFn: () => window.effortless.getTaskCommits(activeWorkTask!.id),
+    enabled: Boolean(activeWorkTask),
   })
 
   const conflictsQuery = useQuery({
-    queryKey: ['task-conflicts', selectedTask?.id],
-    queryFn: () => window.effortless.getTaskConflicts(selectedTask!.id),
-    enabled: Boolean(selectedTask),
+    queryKey: ['task-conflicts', activeWorkTask?.id],
+    queryFn: () => window.effortless.getTaskConflicts(activeWorkTask!.id),
+    enabled: Boolean(activeWorkTask),
   })
 
   const { createEffort, deleteEffort } = useEffortMutations(selectedEffort?.id ?? null)
@@ -824,10 +875,6 @@ function App() {
   }
 
   useEffect(() => {
-    setCenterView('terminal')
-  }, [selectedTaskId, selectedEffortId])
-
-  useEffect(() => {
     if (!selectedPlanId && plansQuery.data?.[0]) {
       setSelectedPlanId(plansQuery.data[0].id)
     }
@@ -1070,7 +1117,7 @@ function App() {
             </header>
 
             <div className="terminal-first-stage">
-              <div className={`terminal-first-canvas ${centerView === 'work' && selectedTask ? 'hidden' : ''}`}>
+              <div className="terminal-first-canvas">
                 <AgentRunTerminal
                   activeRun={activeTerminalRun}
                   activeRunHasLiveSession={activeTerminalRunHasLiveSession}
@@ -1083,6 +1130,20 @@ function App() {
                   ptyAvailable={ptyAvailable}
                   emptyLabel="ready for effort"
                   menuOpen={terminalMenuOpen}
+                  workPane={activeWorkTask ? (
+                    <TaskWorkPane
+                      task={activeWorkTask}
+                      repos={reposQuery.data ?? []}
+                      taskRuns={activeWorkTaskRuns}
+                      liveSessionIds={liveSessionIds}
+                      providerLiveRunIds={providerLiveRunIds}
+                      latestBuild={buildQuery.data ?? null}
+                      commitView={commitsQuery.data ?? null}
+                      conflictView={conflictsQuery.data ?? null}
+                      onClose={() => closeWorkView(`work-task-${activeWorkTask.id}`)}
+                    />
+                  ) : null}
+                  onCloseWorkTab={closeWorkView}
                   onStart={() => {
                     startEffortRun.mutate({
                       effortId: selectedEffort.id,
@@ -1107,21 +1168,6 @@ function App() {
                   forkMainDisabledReason={forkMainRun.isPending ? 'fork is starting' : forkMainDisabledReason}
                 />
               </div>
-              {centerView === 'work' && selectedTask ? (
-                <div className="terminal-first-canvas work-canvas">
-                  <TaskWorkPane
-                    task={selectedTask}
-                    repos={reposQuery.data ?? []}
-                    taskRuns={selectedTaskRuns}
-                    liveSessionIds={liveSessionIds}
-                    providerLiveRunIds={providerLiveRunIds}
-                    latestBuild={buildQuery.data ?? null}
-                    commitView={commitsQuery.data ?? null}
-                    conflictView={conflictsQuery.data ?? null}
-                    onClose={() => setCenterView('terminal')}
-                  />
-                </div>
-              ) : null}
               <aside className="effort-rail" aria-label="effort views">
                 {[
                   { id: 'description' as const, label: 'description', Icon: ScrollText, badge: selectedEffort.shortRef },
@@ -1296,8 +1342,7 @@ function App() {
                               providerLiveRunIds={providerLiveRunIds}
                               reviews={reviewsQuery.data ?? []}
                               comments={commentsQuery.data ?? []}
-                              workView={centerView === 'work'}
-                              onWorkViewChange={(next) => setCenterView(next ? 'work' : 'terminal')}
+                              onOpenWorkView={() => openWorkView(selectedTask!.id)}
                               onRunBuild={(taskId) => taskMutations.runBuild.mutate(taskId)}
                               onWorkOnTask={(input) => sendTaskToEffortSession.mutate(input)}
                               onStartTaskRun={(input) => startTaskRun.mutate(input)}

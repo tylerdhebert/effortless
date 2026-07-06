@@ -369,6 +369,23 @@
   height: 100%;
 }
 
+.terminal-stack.hidden {
+  display: none;
+}
+
+.terminal-stage {
+  position: relative;
+  min-height: 0;
+  height: 100%;
+}
+
+.work-pane-host {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  overflow-y: auto;
+}
+
 .terminal-host.active {
   visibility: visible;
   pointer-events: auto;

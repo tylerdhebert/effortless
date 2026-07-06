@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { FitAddon } from '@xterm/addon-fit'
 import { Terminal } from '@xterm/xterm'
 import '@xterm/xterm/css/xterm.css'
-import { ChevronDown, ExternalLink, Play, Plus, RotateCcw, Square, SquareTerminal } from 'lucide-react'
+import { ChevronDown, ExternalLink, Play, Plus, RotateCcw, Square, SquareTerminal, X } from 'lucide-react'
 import type { AgentRun, LiveAgentRunSession } from '../../../core/types'
 import styles from './AgentRunTerminal.module.css'
 
@@ -64,6 +64,8 @@ type TerminalTab = {
   branchLabel?: string | null
   taskId?: number | null
   purpose?: AgentRun['purpose'] | null
+  kind?: 'terminal' | 'work'
+  workTaskId?: number | null
 }
 
 type MountedTerminalRun = {
@@ -96,6 +98,8 @@ type AgentRunTerminalProps = {
   onTerminalSizeChange?: (size: { cols: number; rows: number }) => void
   drawerClosedAt?: number
   forkMainDisabledReason?: string | null
+  workPane?: ReactNode
+  onCloseWorkTab?: (key: string) => void
 }
 
 export function AgentRunTerminal({
@@ -120,6 +124,8 @@ export function AgentRunTerminal({
   onTerminalSizeChange,
   drawerClosedAt,
   forkMainDisabledReason,
+  workPane,
+  onCloseWorkTab,
 }: AgentRunTerminalProps) {
   const hostRefs = useRef(new Map<number, HTMLDivElement>())
   const terminalEntriesRef = useRef(new Map<number, TerminalEntry>())
@@ -462,17 +468,20 @@ export function AgentRunTerminal({
     return () => window.removeEventListener('mousedown', handlePointerDown)
   }, [closeMenu, menuOpen])
 
-  const { mainTab, forkTabs, otherTabs, orderedMenuTabs } = useMemo(() => {
+  const { mainTab, forkTabs, workTabs, otherTabs, orderedMenuTabs } = useMemo(() => {
     const mainTab = tabs.find((tab) => tab.key === 'main') ?? null
-    const forkTabs = tabs.filter((tab) => tab.key !== 'main' && tab.purpose === 'fork')
-    const otherTabs = tabs.filter((tab) => tab.key !== 'main' && tab.purpose !== 'fork')
+    const forkTabs = tabs.filter((tab) => tab.key !== 'main' && tab.purpose === 'fork' && tab.kind !== 'work')
+    const workTabs = tabs.filter((tab) => tab.kind === 'work')
+    const otherTabs = tabs.filter((tab) => tab.key !== 'main' && tab.purpose !== 'fork' && tab.kind !== 'work')
     return {
       mainTab,
       forkTabs,
+      workTabs,
       otherTabs,
       orderedMenuTabs: [
         ...(mainTab ? [mainTab] : []),
         ...forkTabs,
+        ...workTabs,
         ...otherTabs,
       ],
     }
@@ -566,8 +575,9 @@ export function AgentRunTerminal({
     terminalEntriesRef.current.get(activeRunId)?.terminal.focus()
   }, [activeRunId, activeRunHasLiveSession, scheduleFitAndRefresh, renderIdleTerminal])
 
-  const attachmentsWithRuns = tabs.filter((tab) => tab.run).length
+  const attachmentsWithRuns = tabs.filter((tab) => tab.kind !== 'work' && tab.run).length
   const activeTab = tabs.find((tab) => tab.key === activeTabKey) ?? null
+  const isWorkTabActive = activeTab?.kind === 'work'
   const canForkMain = Boolean(onForkMain) && !forkMainDisabledReason && !isStarting
 
   return (
@@ -617,10 +627,19 @@ export function AgentRunTerminal({
                 <span>fork main</span>
               </button>
 
+              <TerminalMenuSeparator label="work views" />
+              <div className={styles['terminal-menu-section']}>
+                {workTabs.length > 0 ? (
+                  workTabs.map((tab, tabIndex) => renderWorkMenuRow(tab, tabIndex + 1 + forkTabs.length))
+                ) : (
+                  <p className={styles['terminal-menu-empty']}>no work views open</p>
+                )}
+              </div>
+
               <TerminalMenuSeparator label="others" />
               <div className={styles['terminal-menu-section']}>
                 {otherTabs.length > 0 ? (
-                  otherTabs.map((tab, tabIndex) => renderTerminalMenuRow(tab, tabIndex + 1 + forkTabs.length))
+                  otherTabs.map((tab, tabIndex) => renderTerminalMenuRow(tab, tabIndex + 1 + forkTabs.length + workTabs.length))
                 ) : (
                   <p className={styles['terminal-menu-empty']}>no other terminals</p>
                 )}
@@ -638,15 +657,21 @@ export function AgentRunTerminal({
           ) : null}
         </div>
         <div className={styles['terminal-title']}>
-          <h4>terminal</h4>
+          <h4>{isWorkTabActive ? activeTab?.label ?? 'work' : 'terminal'}</h4>
           <span>
-            {activeRun
-              ? `${activeTab?.label ?? 'run'} - ${activeRun.shortRef} - ${displayStatus}`
-              : emptyLabel}
+            {isWorkTabActive
+              ? activeTab?.branchLabel ?? 'no branch'
+              : activeRun
+                ? `${activeTab?.label ?? 'run'} - ${activeRun.shortRef} - ${displayStatus}`
+                : emptyLabel}
           </span>
         </div>
       </div>
-      <div className={styles['terminal-stack']}>
+      <div className={styles['terminal-stage']}>
+        {isWorkTabActive && workPane ? (
+          <div className={styles['work-pane-host']}>{workPane}</div>
+        ) : null}
+        <div className={`${styles['terminal-stack']} ${isWorkTabActive ? styles.hidden : ''}`}>
         {!ptyAvailable ? (
           <div className={styles['terminal-pty-unavailable']}>
             <p>embedded terminal unavailable</p>
@@ -680,6 +705,7 @@ export function AgentRunTerminal({
             </div>
           ) : null,
         )}
+      </div>
       </div>
     </section>
   )
@@ -789,6 +815,47 @@ export function AgentRunTerminal({
                       )}
                     </div>
                   </div>
+    )
+  }
+
+  function renderWorkMenuRow(tab: TerminalTab, tabIndex: number) {
+    return (
+      <div
+        key={tab.key}
+        className={`${styles['terminal-menu-row']} ${tab.key === activeTabKey ? styles.active : ''}`}
+        role="menuitem"
+      >
+        <button
+          type="button"
+          className={styles['terminal-menu-select']}
+          tabIndex={-1}
+          ref={(el) => {
+            menuRowRefs.current[tabIndex] = el
+          }}
+          onClick={() => {
+            onSelectTab?.(tab.key)
+            closeMenu()
+          }}
+        >
+          <strong>{tab.label}</strong>
+          <span>{tab.branchLabel ?? 'no branch'}</span>
+        </button>
+        <div className={styles['terminal-menu-actions']}>
+          <button
+            type="button"
+            className={styles['terminal-menu-icon-action']}
+            aria-label={`close ${tab.label}`}
+            title="close"
+            onClick={(event) => {
+              event.stopPropagation()
+              onCloseWorkTab?.(tab.key)
+              closeMenu()
+            }}
+          >
+            <X size={13} aria-hidden="true" />
+          </button>
+        </div>
+      </div>
     )
   }
 }
