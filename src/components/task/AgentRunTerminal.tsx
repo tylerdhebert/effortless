@@ -1138,7 +1138,7 @@ function drawIdleWordmark(terminal: Terminal, palette: TerminalPalette['idleArt'
       : []),
     '',
     ansiText(palette.label, centerLine(terminal.cols, 'no live run')),
-    ansiText(palette.helper, centerLine(terminal.cols, 'open the run menu to start or resume a session')),
+    ansiText(palette.helper, centerLine(terminal.cols, 'hit + to start a session or open a task')),
   ]
 
   const topPad = Math.max(0, Math.floor((terminal.rows - body.length) / 2))
