@@ -295,6 +295,9 @@
 
 .effort-title-row h2 {
   margin-bottom: 0;
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: 0.01em;
 }
 
 .effort-header-meta {
@@ -306,6 +309,7 @@
 
 .meta-line {
   color: var(--muted);
+  font-family: var(--font-mono);
   font-size: 12px;
   letter-spacing: 0.02em;
 }
@@ -822,7 +826,7 @@
   background: var(--field);
   border: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
   color: #c9d1bf;
-  font-family: "Cascadia Code", Consolas, "Courier New", monospace;
+  font-family: var(--font-mono);
   font-size: 0.76rem;
   line-height: 1.5;
   padding: 11px;

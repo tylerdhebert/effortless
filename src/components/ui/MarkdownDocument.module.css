@@ -67,7 +67,7 @@
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.04);
   color: #eef3e7;
-  font-family: "Cascadia Code", Consolas, "Courier New", monospace;
+  font-family: var(--font-mono);
   font-size: 0.84em;
   padding: 0.08rem 0.42rem;
 }
@@ -82,7 +82,7 @@
 
 .markdown-code-block code {
   color: #d5ddc8;
-  font-family: "Cascadia Code", Consolas, "Courier New", monospace;
+  font-family: var(--font-mono);
   font-size: 0.82rem;
   line-height: 1.55;
 }

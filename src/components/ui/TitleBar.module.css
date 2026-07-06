@@ -63,9 +63,9 @@
 
 .app-title {
   color: var(--muted);
-  font-family: Bahnschrift, 'Aptos Narrow', 'Trebuchet MS', sans-serif;
+  font-family: var(--font-display);
   font-size: 0.72rem;
-  font-weight: 650;
+  font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: lowercase;
 }
