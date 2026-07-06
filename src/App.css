@@ -274,19 +274,12 @@
 
 .effort-header-copy {
   display: grid;
-  gap: 6px;
+  gap: 4px;
   min-width: 0;
+  flex: 1 1 auto;
 }
 
-.effort-title-row {
-  display: flex;
-  align-items: flex-end;
-  gap: 14px;
-  flex-wrap: wrap;
-  min-width: 0;
-}
-
-.effort-title-row h2 {
+.effort-header-copy h2 {
   margin-bottom: 0;
   font-family: var(--font-display);
   font-weight: 600;
@@ -378,6 +371,20 @@
   max-width: 70ch;
 }
 
+.effort-header-controls {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  flex: 0 0 auto;
+}
+
+.effort-header-divider {
+  width: 1px;
+  height: 24px;
+  background: var(--line);
+  align-self: center;
+}
+
 .effort-profile-chip small,
 .task-repo-filter small {
   color: var(--muted);
@@ -453,13 +460,11 @@
 }
 
 .effort-delete-button {
-  position: absolute;
-  top: 8px;
-  right: 10px;
   display: grid;
   place-items: center;
   width: 24px;
   height: 24px;
+  margin-bottom: 4px;
   padding: 0;
   border: 1px solid color-mix(in srgb, var(--danger) 36%, transparent);
   border-radius: var(--radius-ctl);

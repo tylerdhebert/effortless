@@ -1134,123 +1134,122 @@ function App() {
           <div className={`surface-panel surface-panel--effort ${surfaceMode === 'effort' ? 'active' : 'hidden'}`}>
             <header className="effort-header">
               <div className="effort-header-copy">
-                <div className="effort-title-row">
-                  <div style={{display: 'flex', flexDirection: 'column', gap: '2px'}}>
-                    <h2>{selectedEffort.title}</h2>
-                    <div className="effort-header-meta">
-                      <span className="meta-line">
-                        <Ref value={selectedEffort.shortRef} /> · {selectedEffort.template.replace('-', ' ')} ·{' '}
-                        <Stamp label={selectedEffort.status} tone={statusTone(selectedEffort.status)} />
-                        {activeEffortRunCount > 0 ? ` · ${activeEffortRunCount} live` : ''}
-                      </span>
-                      <label className="effort-profile-chip">
-                        <small>provider</small>
-                        <select
-                          aria-label="effort default provider"
-                          value={selectedEffort.defaultProvider}
-                          onChange={(event) => {
-                            updateEffortDefaultProvider.mutate({
-                              effortId: selectedEffort.id,
-                              provider: event.target.value as AgentProvider,
-                            })
-                          }}
-                          disabled={updateEffortDefaultProvider.isPending}
-                        >
-                          {providers.map((provider) => (
-                            <option key={provider.key} value={provider.key}>{provider.name}</option>
-                          ))}
-                        </select>
-                      </label>
-                      <label className="effort-profile-chip">
-                        <small>profile</small>
-                        <select
-                          aria-label="effort default profile"
-                          value={selectedEffort.defaultProfileId == null ? '' : String(selectedEffort.defaultProfileId)}
-                          onChange={(event) => {
-                            updateEffortDefaultProfile.mutate({
-                              effortId: selectedEffort.id,
-                              profileId: event.target.value ? Number(event.target.value) : null,
-                            })
-                          }}
-                          disabled={updateEffortDefaultProfile.isPending || (agentProfilesQuery.data?.length ?? 0) === 0}
-                        >
-                          <option value="">app default</option>
-                          {(agentProfilesQuery.data ?? []).map((profile) => (
-                            <option key={profile.id} value={profile.id}>{profile.name}</option>
-                          ))}
-                        </select>
-                      </label>
-                    </div>
-                    {(() => {
-                      const descriptionPreview = selectedEffort.description.split(/\r?\n/, 1)[0]
-                      const hasSummary =
-                        (selectedEffort.status === 'complete' || selectedEffort.status === 'archived') &&
-                        Boolean(selectedEffort.summary)
-                      const canExpand = Boolean(selectedEffort.description.trim()) || hasSummary
-                      if (!descriptionPreview && !canExpand) {
-                        return null
-                      }
-
-                      return (
-                        <div className="effort-header-description">
-                          {!effortDescriptionExpanded ? (
-                            <p className="effort-description-preview">
-                              <span className="effort-description-preview-text">{descriptionPreview}</span>
-                              {canExpand ? (
-                                <button
-                                  type="button"
-                                  className="effort-description-toggle"
-                                  onClick={() => setEffortDescriptionExpanded(true)}
-                                >
-                                  expand
-                                </button>
-                              ) : null}
-                            </p>
-                          ) : (
-                            <div className="effort-description-expanded">
-                              {selectedEffort.description ? (
-                                <p className="effort-description-full">{selectedEffort.description}</p>
-                              ) : null}
-                              {hasSummary ? (
-                                <>
-                                  {selectedEffort.template === 'investigation' ? (
-                                    <EffortSummarySection label="findings" summary={selectedEffort.summary} />
-                                  ) : null}
-                                  {selectedEffort.template === 'delivery' ? (
-                                    <EffortSummarySection label="effort summary" summary={selectedEffort.summary} />
-                                  ) : null}
-                                  {selectedEffort.template === 'bugfix' ? (
-                                    <EffortSummarySection label="bugfix summary" summary={selectedEffort.summary} />
-                                  ) : null}
-                                </>
-                              ) : null}
-                              <p className="effort-description-collapse">
-                                <button
-                                  type="button"
-                                  className="effort-description-toggle"
-                                  onClick={() => setEffortDescriptionExpanded(false)}
-                                >
-                                  collapse
-                                </button>
-                              </p>
-                            </div>
-                          )}
-                        </div>
-                      )
-                    })()}
-                  </div>
+                <h2>{selectedEffort.title}</h2>
+                <div className="effort-header-meta">
+                  <span className="meta-line">
+                    <Ref value={selectedEffort.shortRef} /> · {selectedEffort.template.replace('-', ' ')} ·{' '}
+                    <Stamp label={selectedEffort.status} tone={statusTone(selectedEffort.status)} />
+                    {activeEffortRunCount > 0 ? ` · ${activeEffortRunCount} live` : ''}
+                  </span>
                 </div>
+                {(() => {
+                  const descriptionPreview = selectedEffort.description.split(/\r?\n/, 1)[0]
+                  const hasSummary =
+                    (selectedEffort.status === 'complete' || selectedEffort.status === 'archived') &&
+                    Boolean(selectedEffort.summary)
+                  const canExpand = Boolean(selectedEffort.description.trim()) || hasSummary
+                  if (!descriptionPreview && !canExpand) {
+                    return null
+                  }
+
+                  return (
+                    <div className="effort-header-description">
+                      {!effortDescriptionExpanded ? (
+                        <p className="effort-description-preview">
+                          <span className="effort-description-preview-text">{descriptionPreview}</span>
+                          {canExpand ? (
+                            <button
+                              type="button"
+                              className="effort-description-toggle"
+                              onClick={() => setEffortDescriptionExpanded(true)}
+                            >
+                              expand
+                            </button>
+                          ) : null}
+                        </p>
+                      ) : (
+                        <div className="effort-description-expanded">
+                          {selectedEffort.description ? (
+                            <p className="effort-description-full">{selectedEffort.description}</p>
+                          ) : null}
+                          {hasSummary ? (
+                            <>
+                              {selectedEffort.template === 'investigation' ? (
+                                <EffortSummarySection label="findings" summary={selectedEffort.summary} />
+                              ) : null}
+                              {selectedEffort.template === 'delivery' ? (
+                                <EffortSummarySection label="effort summary" summary={selectedEffort.summary} />
+                              ) : null}
+                              {selectedEffort.template === 'bugfix' ? (
+                                <EffortSummarySection label="bugfix summary" summary={selectedEffort.summary} />
+                              ) : null}
+                            </>
+                          ) : null}
+                          <p className="effort-description-collapse">
+                            <button
+                              type="button"
+                              className="effort-description-toggle"
+                              onClick={() => setEffortDescriptionExpanded(false)}
+                            >
+                              collapse
+                            </button>
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })()}
               </div>
-              <button
-                className="effort-delete-button"
-                onClick={() => setDeleteEffortOpen(true)}
-                type="button"
-                aria-label="delete effort"
-                title="delete effort"
-                disabled={deleteEffort.isPending}
-              >
-                <Trash2 size={13} />
-              </button>
+              <div className="effort-header-controls">
+                <label className="effort-profile-chip">
+                  <small>provider</small>
+                  <select
+                    aria-label="effort default provider"
+                    value={selectedEffort.defaultProvider}
+                    onChange={(event) => {
+                      updateEffortDefaultProvider.mutate({
+                        effortId: selectedEffort.id,
+                        provider: event.target.value as AgentProvider,
+                      })
+                    }}
+                    disabled={updateEffortDefaultProvider.isPending}
+                  >
+                    {providers.map((provider) => (
+                      <option key={provider.key} value={provider.key}>{provider.name}</option>
+                    ))}
+                  </select>
+                </label>
+                <label className="effort-profile-chip">
+                  <small>profile</small>
+                  <select
+                    aria-label="effort default profile"
+                    value={selectedEffort.defaultProfileId == null ? '' : String(selectedEffort.defaultProfileId)}
+                    onChange={(event) => {
+                      updateEffortDefaultProfile.mutate({
+                        effortId: selectedEffort.id,
+                        profileId: event.target.value ? Number(event.target.value) : null,
+                      })
+                    }}
+                    disabled={updateEffortDefaultProfile.isPending || (agentProfilesQuery.data?.length ?? 0) === 0}
+                  >
+                    <option value="">app default</option>
+                    {(agentProfilesQuery.data ?? []).map((profile) => (
+                      <option key={profile.id} value={profile.id}>{profile.name}</option>
+                    ))}
+                  </select>
+                </label>
+                <span className="effort-header-divider" aria-hidden="true" />
+                <button
+                  className="effort-delete-button"
+                  onClick={() => setDeleteEffortOpen(true)}
+                  type="button"
+                  aria-label="delete effort"
+                  title="delete effort"
+                  disabled={deleteEffort.isPending}
+                >
+                  <Trash2 size={13} />
+                </button>
+              </div>
             </header>
 
             <div className="terminal-first-stage">
