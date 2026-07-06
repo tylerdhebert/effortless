@@ -1296,6 +1296,12 @@ function App() {
                   activeRunProviderLive={activeTerminalRunProviderLive}
                   tabs={terminalTabs}
                   mountedRuns={mountedTerminalRuns}
+                  availableTasks={(tasksQuery.data ?? []).map((task) => ({
+                    id: task.id,
+                    shortRef: task.shortRef,
+                    title: task.title,
+                  }))}
+                  openTaskIds={openTaskPageIds}
                   activeTabKey={activeTerminalTabKey}
                   isStarting={startEffortRun.isPending || resumeAgentRun.isPending || forkMainRun.isPending}
                   startDisabled={!ptyAvailable}
@@ -1351,6 +1357,7 @@ function App() {
                   onOpenTask={(taskId) => {
                     openTaskPage(taskId)
                   }}
+                  onOpenTaskPage={openTaskPage}
                   onStop={(runId) => taskMutations.stopAgentRun.mutate(runId)}
                   onToggleMenu={setTerminalMenuOpen}
                   onTerminalSizeChange={setTerminalStartSize}

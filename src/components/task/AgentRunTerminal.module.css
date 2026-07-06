@@ -219,6 +219,10 @@
   color: var(--accent);
 }
 
+.stage-tab-add[aria-expanded='true'] {
+  color: var(--accent);
+}
+
 .stage-tab-strip-end {
   display: flex;
   align-items: stretch;
@@ -278,6 +282,13 @@
   flex: 0 0 auto;
 }
 
+.create-menu-shell {
+  position: relative;
+  z-index: 12;
+  flex: 0 0 auto;
+  height: 100%;
+}
+
 .terminal-menu-trigger {
   display: inline-flex;
   align-items: center;
@@ -326,6 +337,63 @@
   padding: 8px;
 }
 
+.create-menu {
+  position: fixed;
+  z-index: 1200;
+  display: grid;
+  gap: 2px;
+  min-width: 220px;
+  border: 1px solid color-mix(in srgb, var(--line-strong) 86%, transparent);
+  border-radius: var(--radius-ctl);
+  background:
+    color-mix(in srgb, var(--surface) 96%, black);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.42);
+  padding: 4px;
+}
+
+.create-menu-section {
+  display: grid;
+  gap: 2px;
+}
+
+.create-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 28px;
+  min-width: 0;
+  border: 0;
+  border-radius: var(--radius-ctl);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  padding: 5px 7px;
+  text-align: left;
+  transition:
+    background 140ms ease,
+    color 140ms ease;
+}
+
+.create-menu-item:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  color: var(--text);
+}
+
+.create-menu-item:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.create-menu-task-title {
+  max-width: 28ch;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .terminal-menu-section {
   display: grid;
   gap: 8px;
@@ -356,36 +424,6 @@
   color: var(--muted);
   font-size: var(--text-xs);
   padding: 8px 10px;
-}
-
-.terminal-menu-sticky-action {
-  position: sticky;
-  bottom: 0;
-  z-index: 2;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  min-height: 30px;
-  border: 1px solid color-mix(in srgb, var(--accent) 34%, var(--line));
-  border-radius: var(--radius-ctl);
-  background: color-mix(in srgb, var(--accent) 10%, var(--button));
-  color: var(--text-strong);
-  cursor: pointer;
-  font-size: var(--text-sm);
-  font-weight: 700;
-  padding: 6px 10px;
-}
-
-.terminal-menu-sticky-action.secondary {
-  border-color: var(--line);
-  background: var(--button);
-  color: var(--text);
-}
-
-.terminal-menu-sticky-action:disabled {
-  cursor: default;
-  opacity: 0.48;
 }
 
 .terminal-menu-row {

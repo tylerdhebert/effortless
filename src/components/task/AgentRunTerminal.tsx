@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { FitAddon } from '@xterm/addon-fit'
 import { Terminal } from '@xterm/xterm'
 import '@xterm/xterm/css/xterm.css'
@@ -80,10 +81,18 @@ type MountedTerminalRun = {
   liveSession: LiveAgentRunSession | null
 }
 
+type AvailableTask = {
+  id: number
+  shortRef: string
+  title: string
+}
+
 type AgentRunTerminalProps = {
   activeRun: AgentRun | null
   tabs?: TerminalTab[]
   mountedRuns?: MountedTerminalRun[]
+  availableTasks?: AvailableTask[]
+  openTaskIds?: number[]
   activeTabKey?: string
   isStarting: boolean
   activeRunHasLiveSession?: boolean
@@ -97,6 +106,7 @@ type AgentRunTerminalProps = {
   onResume?: (runId: number) => void
   onSelectTab?: (tabKey: string) => void
   onOpenTask?: (taskId: number) => void
+  onOpenTaskPage?: (taskId: number) => void
   onStop: (runId: number) => void
   onToggleMenu?: (open: boolean) => void
   onTerminalSizeChange?: (size: { cols: number; rows: number }) => void
@@ -115,6 +125,8 @@ export function AgentRunTerminal({
   activeRun,
   tabs = [],
   mountedRuns = [],
+  availableTasks = [],
+  openTaskIds = [],
   activeTabKey,
   isStarting,
   activeRunHasLiveSession = false,
@@ -128,6 +140,7 @@ export function AgentRunTerminal({
   onResume,
   onSelectTab,
   onOpenTask,
+  onOpenTaskPage,
   onStop,
   onToggleMenu,
   onTerminalSizeChange,
@@ -152,12 +165,17 @@ export function AgentRunTerminal({
     liveSession: LiveAgentRunSession | null
   }>())
   const menuRef = useRef<HTMLDivElement | null>(null)
+  const createMenuRef = useRef<HTMLDivElement | null>(null)
+  const createButtonRef = useRef<HTMLButtonElement | null>(null)
+  const createMenuElRef = useRef<HTMLDivElement | null>(null)
   const menuRowRefs = useRef<Array<HTMLButtonElement | null>>([])
   const fitFrameRef = useRef<number | null>(null)
   const layoutSettleTimerRef = useRef<number | null>(null)
   const lastPublishedTerminalSizeRef = useRef<TerminalSize | null>(null)
   const scheduleFitAndRefreshRef = useRef<(runId?: number, mode?: FitScheduleMode, reason?: string) => void>(() => {})
   const [menuOpenInternal, setMenuOpenInternal] = useState(false)
+  const [createMenuOpen, setCreateMenuOpen] = useState(false)
+  const [createMenuPosition, setCreateMenuPosition] = useState<{ top: number; left: number } | null>(null)
   const [focusedMenuIndex, setFocusedMenuIndex] = useState(-1)
 
   const menuOpen = menuOpenProp ?? menuOpenInternal
@@ -171,13 +189,35 @@ export function AgentRunTerminal({
     setFocusedMenuIndex(-1)
   }, [menuOpenProp, onToggleMenu])
 
+  const closeCreateMenu = useCallback(() => {
+    setCreateMenuOpen(false)
+  }, [])
+
   function openMenu() {
+    closeCreateMenu()
     if (menuOpenProp !== undefined) {
       onToggleMenu?.(true)
     } else {
       setMenuOpenInternal(true)
     }
   }
+
+  function toggleCreateMenu() {
+    closeMenu()
+    setCreateMenuOpen((open) => !open)
+  }
+
+  const updateCreateMenuPosition = useCallback(() => {
+    const button = createButtonRef.current
+    if (!button) return
+    const buttonRect = button.getBoundingClientRect()
+    const menuWidth = 260
+    const maxLeft = Math.max(8, window.innerWidth - menuWidth - 8)
+    setCreateMenuPosition({
+      top: buttonRect.bottom + 6,
+      left: Math.max(8, Math.min(buttonRect.left, maxLeft)),
+    })
+  }, [])
 
   useEffect(() => {
     const next = new Map<number, {
@@ -482,6 +522,39 @@ export function AgentRunTerminal({
     return () => window.removeEventListener('mousedown', handlePointerDown)
   }, [closeMenu, menuOpen])
 
+  useEffect(() => {
+    if (!createMenuOpen) return
+
+    function handlePointerDown(event: MouseEvent) {
+      const target = event.target as Node
+      if (
+        !createMenuRef.current?.contains(target) &&
+        !createMenuElRef.current?.contains(target)
+      ) {
+        closeCreateMenu()
+      }
+    }
+
+    window.addEventListener('mousedown', handlePointerDown)
+    return () => window.removeEventListener('mousedown', handlePointerDown)
+  }, [closeCreateMenu, createMenuOpen])
+
+  useLayoutEffect(() => {
+    if (!createMenuOpen) {
+      setCreateMenuPosition(null)
+      return
+    }
+
+    updateCreateMenuPosition()
+    const handle = () => updateCreateMenuPosition()
+    window.addEventListener('resize', handle)
+    window.addEventListener('scroll', handle, true)
+    return () => {
+      window.removeEventListener('resize', handle)
+      window.removeEventListener('scroll', handle, true)
+    }
+  }, [createMenuOpen, updateCreateMenuPosition])
+
   const { mainTab, forkTabs, workTabs, otherTabs, stripTerminalTabs, orderedMenuTabs } = useMemo(() => {
     const mainTab = tabs.find((tab) => tab.key === 'main') ?? null
     const forkTabs = tabs.filter((tab) => tab.key !== 'main' && tab.purpose === 'fork' && tab.kind !== 'work')
@@ -544,6 +617,23 @@ export function AgentRunTerminal({
   }, [activeRun, closeMenu, focusedMenuIndex, menuOpen, orderedMenuTabs, onSelectTab])
 
   useEffect(() => {
+    if (!createMenuOpen) return
+
+    function handleCreateMenuKeydown(event: KeyboardEvent) {
+      if (event.key !== 'Escape') return
+      event.preventDefault()
+      event.stopPropagation()
+      closeCreateMenu()
+      if (activeRun) {
+        terminalEntriesRef.current.get(activeRun.id)?.terminal.focus()
+      }
+    }
+
+    window.addEventListener('keydown', handleCreateMenuKeydown, true)
+    return () => window.removeEventListener('keydown', handleCreateMenuKeydown, true)
+  }, [activeRun, closeCreateMenu, createMenuOpen])
+
+  useEffect(() => {
     if (focusedMenuIndex >= 0) {
       menuRowRefs.current[focusedMenuIndex]?.focus()
     }
@@ -593,6 +683,14 @@ export function AgentRunTerminal({
   const activeTab = tabs.find((tab) => tab.key === activeTabKey) ?? null
   const isWorkTabActive = activeTab?.kind === 'work'
   const canForkMain = Boolean(onForkMain) && !forkMainDisabledReason && !isStarting
+  const canStartMain = Boolean(onStart) && !isStarting && !startDisabled
+  const canShowStartMain = Boolean(mainTab && !mainTab.hasLiveSession && !mainTab.providerLive)
+  const openTaskIdSet = useMemo(() => new Set(openTaskIds), [openTaskIds])
+  const availableCreateTasks = useMemo(
+    () => availableTasks.filter((task) => !openTaskIdSet.has(task.id)),
+    [availableTasks, openTaskIdSet],
+  )
+  const taskEmptyLabel = availableTasks.length > 0 ? 'all tasks open' : 'no tasks yet'
 
   function selectStripTab(tabKey: string) {
     onSelectTab?.(tabKey)
@@ -664,15 +762,87 @@ export function AgentRunTerminal({
               </div>
             )
           })}
-          <button
-            type="button"
-            className={styles['stage-tab-add']}
-            aria-label="add terminal"
-            title="add terminal"
-            onClick={() => openMenu()}
-          >
-            <Plus size={14} aria-hidden="true" />
-          </button>
+          <div ref={createMenuRef} className={styles['create-menu-shell']}>
+            <button
+              ref={createButtonRef}
+              type="button"
+              className={styles['stage-tab-add']}
+              aria-label="new tab"
+              title="new tab"
+              aria-expanded={createMenuOpen}
+              onClick={toggleCreateMenu}
+            >
+              <Plus size={14} aria-hidden="true" />
+            </button>
+            {createMenuOpen && createMenuPosition
+              ? createPortal(
+                  <div
+                    ref={createMenuElRef}
+                    className={styles['create-menu']}
+                    role="menu"
+                    style={{ top: createMenuPosition.top, left: createMenuPosition.left }}
+                  >
+                    <TerminalMenuSeparator label="terminal" />
+                    <div className={styles['create-menu-section']}>
+                      {canShowStartMain ? (
+                        <button
+                          type="button"
+                          className={styles['create-menu-item']}
+                          role="menuitem"
+                          disabled={!canStartMain}
+                          onClick={() => {
+                            onStart?.()
+                            closeCreateMenu()
+                            onSelectTab?.('main')
+                          }}
+                        >
+                          <Play size={13} aria-hidden="true" />
+                          <span>start main terminal</span>
+                        </button>
+                      ) : null}
+                      <button
+                        type="button"
+                        className={styles['create-menu-item']}
+                        role="menuitem"
+                        disabled={!canForkMain}
+                        title={forkMainDisabledReason ?? 'fork main'}
+                        onClick={() => {
+                          onForkMain?.()
+                          closeCreateMenu()
+                        }}
+                      >
+                        <Plus size={13} aria-hidden="true" />
+                        <span>fork main</span>
+                      </button>
+                    </div>
+
+                    <TerminalMenuSeparator label="tasks" />
+                    <div className={styles['create-menu-section']}>
+                      {availableCreateTasks.length > 0 ? (
+                        availableCreateTasks.map((task) => (
+                          <button
+                            type="button"
+                            key={task.id}
+                            className={styles['create-menu-item']}
+                            role="menuitem"
+                            onClick={() => {
+                              onOpenTaskPage?.(task.id)
+                              closeCreateMenu()
+                            }}
+                          >
+                            <Ref value={task.shortRef} />
+                            <span className={styles['create-menu-task-title']}>{task.title}</span>
+                          </button>
+                        ))
+                      ) : (
+                        <p className={styles['terminal-menu-empty']}>{taskEmptyLabel}</p>
+                      )}
+                    </div>
+                  </div>,
+                  document.body,
+                )
+              : null}
+          </div>
         </div>
         <div className={styles['stage-tab-strip-end']}>
           <div className={styles['stage-tab-status']}>
@@ -715,19 +885,6 @@ export function AgentRunTerminal({
                     <p className={styles['terminal-menu-empty']}>no forks yet</p>
                   )}
                 </div>
-                <button
-                  type="button"
-                  className={styles['terminal-menu-sticky-action']}
-                  disabled={!canForkMain}
-                  title={forkMainDisabledReason ?? 'fork main'}
-                  onClick={() => {
-                    onForkMain?.()
-                    closeMenu()
-                  }}
-                >
-                  <Plus size={13} aria-hidden="true" />
-                  <span>fork main</span>
-                </button>
 
                 <TerminalMenuSeparator label="others" />
                 <div className={styles['terminal-menu-section']}>
@@ -737,15 +894,6 @@ export function AgentRunTerminal({
                     <p className={styles['terminal-menu-empty']}>no other terminals</p>
                   )}
                 </div>
-                <button
-                  type="button"
-                  className={`${styles['terminal-menu-sticky-action']} ${styles.secondary}`}
-                  disabled
-                  title="add terminal is coming next"
-                >
-                  <Plus size={13} aria-hidden="true" />
-                  <span>add terminal</span>
-                </button>
               </div>
             ) : null}
           </div>
