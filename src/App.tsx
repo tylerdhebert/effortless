@@ -8,6 +8,7 @@ import {
   Hammer,
   Home,
   ListOrdered,
+  MoreHorizontal,
   Plus,
   Trash2,
   X,
@@ -70,8 +71,10 @@ function App() {
   const [openTaskPageIdsByEffort, setOpenTaskPageIdsByEffort] = useState<Record<number, number[]>>({})
   const [activeEffortDrawer, setActiveEffortDrawer] = useState<EffortRailDrawer | null>(null)
   const [effortDescriptionExpanded, setEffortDescriptionExpanded] = useState(false)
+  const [effortMenuOpen, setEffortMenuOpen] = useState(false)
   const [drawerWidth, setDrawerWidth] = useState<number | null>(null)
   const [drawerResizing, setDrawerResizing] = useState(false)
+  const effortMenuRef = useRef<HTMLDivElement | null>(null)
 
   const handleDrawerResizeStart = useCallback((e: React.MouseEvent) => {
     e.preventDefault()
@@ -820,7 +823,31 @@ function App() {
 
   useEffect(() => {
     setEffortDescriptionExpanded(false)
-  }, [selectedEffortId])
+    setEffortMenuOpen(false)
+  }, [selectedEffort?.id])
+
+  useEffect(() => {
+    if (!effortMenuOpen) return
+
+    const handleMouseDown = (event: MouseEvent) => {
+      if (!effortMenuRef.current?.contains(event.target as Node)) {
+        setEffortMenuOpen(false)
+      }
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setEffortMenuOpen(false)
+      }
+    }
+
+    window.addEventListener('mousedown', handleMouseDown)
+    window.addEventListener('keydown', handleKeyDown)
+    return () => {
+      window.removeEventListener('mousedown', handleMouseDown)
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [effortMenuOpen])
 
   useEffect(() => {
     if (!appStateQuery.data) return
@@ -1144,6 +1171,7 @@ function App() {
                 </div>
                 {(() => {
                   const descriptionPreview = selectedEffort.description.split(/\r?\n/, 1)[0]
+                  const descriptionRest = selectedEffort.description.split(/\r?\n/).slice(1).join('\n').trim()
                   const hasSummary =
                     (selectedEffort.status === 'complete' || selectedEffort.status === 'archived') &&
                     Boolean(selectedEffort.summary)
@@ -1154,23 +1182,22 @@ function App() {
 
                   return (
                     <div className="effort-header-description">
-                      {!effortDescriptionExpanded ? (
-                        <p className="effort-description-preview">
-                          <span className="effort-description-preview-text">{descriptionPreview}</span>
-                          {canExpand ? (
-                            <button
-                              type="button"
-                              className="effort-description-toggle"
-                              onClick={() => setEffortDescriptionExpanded(true)}
-                            >
-                              expand
-                            </button>
-                          ) : null}
-                        </p>
-                      ) : (
+                      <p className="effort-description-preview">
+                        <span className="effort-description-preview-text">{descriptionPreview}</span>
+                        {canExpand ? (
+                          <button
+                            type="button"
+                            className="effort-description-toggle"
+                            onClick={() => setEffortDescriptionExpanded((value) => !value)}
+                          >
+                            {effortDescriptionExpanded ? 'collapse' : 'expand'}
+                          </button>
+                        ) : null}
+                      </p>
+                      {effortDescriptionExpanded ? (
                         <div className="effort-description-expanded">
-                          {selectedEffort.description ? (
-                            <p className="effort-description-full">{selectedEffort.description}</p>
+                          {descriptionRest ? (
+                            <p className="effort-description-full">{descriptionRest}</p>
                           ) : null}
                           {hasSummary ? (
                             <>
@@ -1185,17 +1212,8 @@ function App() {
                               ) : null}
                             </>
                           ) : null}
-                          <p className="effort-description-collapse">
-                            <button
-                              type="button"
-                              className="effort-description-toggle"
-                              onClick={() => setEffortDescriptionExpanded(false)}
-                            >
-                              collapse
-                            </button>
-                          </p>
                         </div>
-                      )}
+                      ) : null}
                     </div>
                   )
                 })()}
@@ -1238,17 +1256,35 @@ function App() {
                     ))}
                   </select>
                 </label>
-                <span className="effort-header-divider" aria-hidden="true" />
-                <button
-                  className="effort-delete-button"
-                  onClick={() => setDeleteEffortOpen(true)}
-                  type="button"
-                  aria-label="delete effort"
-                  title="delete effort"
-                  disabled={deleteEffort.isPending}
-                >
-                  <Trash2 size={13} />
-                </button>
+                <div ref={effortMenuRef} className="effort-menu-shell">
+                  <button
+                    className="effort-menu-trigger"
+                    onClick={() => setEffortMenuOpen((open) => !open)}
+                    type="button"
+                    aria-label="effort menu"
+                    aria-expanded={effortMenuOpen}
+                    aria-haspopup="menu"
+                  >
+                    <MoreHorizontal size={14} />
+                  </button>
+                  {effortMenuOpen ? (
+                    <div className="effort-menu" role="menu">
+                      <button
+                        type="button"
+                        className="effort-menu-item"
+                        role="menuitem"
+                        onClick={() => {
+                          setEffortMenuOpen(false)
+                          setDeleteEffortOpen(true)
+                        }}
+                        disabled={deleteEffort.isPending}
+                      >
+                        <Trash2 size={13} />
+                        <span>delete effort</span>
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
               </div>
             </header>
 
