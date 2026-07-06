@@ -1,6 +1,7 @@
 .task-page {
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
   min-height: 0;
   height: 100%;
   padding: var(--space-section);
