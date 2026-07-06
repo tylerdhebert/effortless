@@ -10,6 +10,7 @@ export function useInputMutations(selectedEffortId: number | null) {
       window.effortless.answerInputRequest(input),
     onSuccess: async (inputRequest) => {
       await queryClient.invalidateQueries({ queryKey: ['inputs', selectedEffortId] })
+      await queryClient.invalidateQueries({ queryKey: ['attention'] })
       await queryClient.invalidateQueries({ queryKey: ['efforts'] })
       if (inputRequest.taskId && selectedEffortId) {
         await invalidateTask(inputRequest.taskId, selectedEffortId)

@@ -1,0 +1,175 @@
+.dock {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  z-index: 4;
+  display: grid;
+  gap: 8px;
+  width: min(420px, calc(100% - 28px));
+  pointer-events: none;
+}
+
+.dock > * {
+  pointer-events: auto;
+}
+
+.more-link {
+  justify-self: end;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  padding: 2px 4px;
+}
+
+.more-link:hover {
+  color: var(--text);
+}
+
+.card {
+  position: relative;
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px 12px;
+  border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--line));
+  border-left: 3px solid var(--accent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--field) 92%, black 8%);
+  box-shadow:
+    0 8px 22px rgba(0, 0, 0, 0.22),
+    inset 0 1px 0 color-mix(in srgb, white 4%, transparent);
+  overflow: hidden;
+}
+
+.card.demoting {
+  animation: input-dock-demote 340ms ease-in forwards;
+}
+
+@keyframes input-dock-demote {
+  to {
+    opacity: 0;
+    transform: translate(28px, -24px) scale(0.92);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card.demoting {
+    animation: none;
+    opacity: 0;
+    transform: none;
+  }
+}
+
+.timer-track {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.timer-bar {
+  height: 100%;
+  width: 100%;
+  background: var(--accent);
+  transform-origin: left center;
+  animation: input-dock-timer 10s linear forwards;
+}
+
+.timer-bar.paused {
+  animation-play-state: paused;
+}
+
+@keyframes input-dock-timer {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .timer-bar {
+    animation: none;
+    transform: scaleX(0);
+  }
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 2px;
+}
+
+.prompt {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--text);
+}
+
+.answers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.answer-btn {
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--line));
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 0.74rem;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+
+.answer-btn:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.answer-btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.text-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+}
+
+.text-form input {
+  min-width: 0;
+  border: 1px solid color-mix(in srgb, var(--line) 90%, transparent);
+  border-radius: 7px;
+  background: var(--field);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.78rem;
+  padding: 6px 8px;
+}
+
+.text-form button {
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  color: var(--text);
+  font-size: 0.74rem;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.text-form button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}

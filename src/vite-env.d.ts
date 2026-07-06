@@ -1,5 +1,6 @@
 /// <reference types="vite/client" />
 
+import type { AttentionSnapshot } from '../core/attention'
 import type { PendingNotification } from '../core/notifications'
 import type {
   AnswerInputRequestInput,
@@ -75,6 +76,7 @@ interface Window {
       createRepo: (input: CreateRepoInput) => Promise<Repo>
       updateRepo: (input: UpdateRepoInput) => Promise<Repo>
       deleteRepo: (repoId: number) => Promise<void>
+      listAttention: () => Promise<AttentionSnapshot>
       listInputRequests: (effortId: number) => Promise<InputRequest[]>
       listPendingInputRequests: (effortId: number) => Promise<InputRequest[]>
       createInputRequest: (input: CreateInputRequestInput) => Promise<InputRequest>

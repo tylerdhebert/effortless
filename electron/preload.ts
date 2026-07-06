@@ -41,6 +41,7 @@ import type {
   UpdateRepoInput,
   UpdateTaskDetailsInput,
 } from '../core/types'
+import type { AttentionSnapshot } from '../core/attention'
 import type { PendingNotification } from '../core/notifications'
 import type { NotificationSettings } from '../core/db'
 
@@ -76,6 +77,7 @@ contextBridge.exposeInMainWorld('effortless', {
   createRepo: (input: CreateRepoInput) => ipcRenderer.invoke('repos:create', input) as Promise<Repo>,
   updateRepo: (input: UpdateRepoInput) => ipcRenderer.invoke('repos:update', input) as Promise<Repo>,
   deleteRepo: (repoId: number) => ipcRenderer.invoke('repos:delete', repoId) as Promise<void>,
+  listAttention: () => ipcRenderer.invoke('attention:list') as Promise<AttentionSnapshot>,
   listInputRequests: (effortId: number) =>
     ipcRenderer.invoke('inputs:list', effortId) as Promise<InputRequest[]>,
   listPendingInputRequests: (effortId: number) =>

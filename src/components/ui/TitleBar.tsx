@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Home, Minus, Settings, Square, X } from 'lucide-react'
+import { NeedsYou, type AttentionNavigateTarget } from '../notifications/NeedsYou'
 import styles from './TitleBar.module.css'
 
 type TitleBarProps = {
   surfaceMode: 'effort' | 'manage'
   onSetSurfaceMode: (mode: 'effort' | 'manage') => void
+  onAttentionNavigate: (target: AttentionNavigateTarget) => void
 }
 
-export function TitleBar({ surfaceMode, onSetSurfaceMode }: TitleBarProps) {
+export function TitleBar({ surfaceMode, onSetSurfaceMode, onAttentionNavigate }: TitleBarProps) {
   const [isMaximized, setIsMaximized] = useState(false)
   const platform = window.effortless.platform
   const isMac = platform === 'darwin'
@@ -54,6 +56,7 @@ export function TitleBar({ surfaceMode, onSetSurfaceMode }: TitleBarProps) {
           </button>
         </div>
       </div>
+      <NeedsYou onNavigate={onAttentionNavigate} />
       {isMac ? null : (
         <div className={styles['window-controls']}>
           <button

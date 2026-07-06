@@ -3,7 +3,8 @@ import { FitAddon } from '@xterm/addon-fit'
 import { Terminal } from '@xterm/xterm'
 import '@xterm/xterm/css/xterm.css'
 import { ChevronDown, ExternalLink, Play, Plus, RotateCcw, Square, X } from 'lucide-react'
-import type { AgentRun, LiveAgentRunSession } from '../../../core/types'
+import type { AgentRun, InputRequest, LiveAgentRunSession } from '../../../core/types'
+import { InputDock } from './InputDock'
 import { Ref } from '../ui/Ref'
 import { Stamp, statusTone } from '../ui/Stamp'
 import styles from './AgentRunTerminal.module.css'
@@ -103,6 +104,11 @@ type AgentRunTerminalProps = {
   forkMainDisabledReason?: string | null
   workPane?: ReactNode
   onCloseWorkTab?: (key: string) => void
+  dockInputs?: InputRequest[]
+  dockHiddenCount?: number
+  onAnswerDockInput?: (inputRequestId: number, answer: string) => void
+  isAnsweringDockInput?: boolean
+  onOpenInputsDrawer?: () => void
 }
 
 export function AgentRunTerminal({
@@ -129,6 +135,11 @@ export function AgentRunTerminal({
   forkMainDisabledReason,
   workPane,
   onCloseWorkTab,
+  dockInputs = [],
+  dockHiddenCount = 0,
+  onAnswerDockInput,
+  isAnsweringDockInput = false,
+  onOpenInputsDrawer,
 }: AgentRunTerminalProps) {
   const hostRefs = useRef(new Map<number, HTMLDivElement>())
   const terminalEntriesRef = useRef(new Map<number, TerminalEntry>())
@@ -741,6 +752,15 @@ export function AgentRunTerminal({
         </div>
       </div>
       <div className={styles['terminal-stage']}>
+        {!isWorkTabActive && onAnswerDockInput && onOpenInputsDrawer ? (
+          <InputDock
+            inputs={dockInputs}
+            hiddenCount={dockHiddenCount}
+            onAnswer={onAnswerDockInput}
+            isAnswering={isAnsweringDockInput}
+            onOpenInputsDrawer={onOpenInputsDrawer}
+          />
+        ) : null}
         {isWorkTabActive && workPane ? (
           <div className={styles['work-pane-host']}>{workPane}</div>
         ) : null}

@@ -18,6 +18,7 @@ export function useTaskMutations(selectedEffortId: number | null) {
       await queryClient.invalidateQueries({ queryKey: ['tasks', task.effortId] })
       await queryClient.invalidateQueries({ queryKey: ['all-tasks'] })
       await queryClient.invalidateQueries({ queryKey: ['app-state'] })
+      await queryClient.invalidateQueries({ queryKey: ['attention'] })
     },
   })
 
@@ -56,6 +57,7 @@ export function useTaskMutations(selectedEffortId: number | null) {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['agent-runs'] })
       await queryClient.invalidateQueries({ queryKey: ['app-state'] })
+      await queryClient.invalidateQueries({ queryKey: ['attention'] })
     },
   })
 

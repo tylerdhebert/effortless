@@ -287,11 +287,11 @@
 .implementation-eyebrow {
   margin: 0;
   font-family: var(--font-mono);
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 600;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.1em;
   text-transform: lowercase;
-  color: var(--text-strong);
+  color: var(--muted);
 }
 
 .implementation-build-cluster {
@@ -430,11 +430,11 @@
 .supporting-eyebrow {
   margin: 0;
   font-family: var(--font-mono);
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 600;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.1em;
   text-transform: lowercase;
-  color: var(--text-strong);
+  color: var(--muted);
 }
 
 .supporting-message {

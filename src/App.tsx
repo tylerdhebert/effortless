@@ -20,6 +20,7 @@ import { ManageSurface } from './components/manage/ManageSurface'
 import { NotificationFooter } from './components/notifications/NotificationFooter'
 import { NotificationToast } from './components/notifications/NotificationToast'
 import { TitleBar } from './components/ui/TitleBar'
+import type { AttentionNavigateTarget } from './components/notifications/NeedsYou'
 
 import { PlanSection } from './components/effort/PlanSection'
 import { Sidebar } from './components/sidebar/Sidebar'
@@ -434,10 +435,30 @@ function App() {
     enabled: Boolean(activePageTask),
   })
 
-  const activeTerminalRun = useMemo(() => {
-    const tab = terminalTabs.find((candidate) => candidate.key === activeTerminalTabKey)
-    return tab?.run ?? null
-  }, [activeTerminalTabKey, terminalTabs])
+  const activeTerminalTab = useMemo(
+    () => terminalTabs.find((tab) => tab.key === activeTerminalTabKey) ?? null,
+    [activeTerminalTabKey, terminalTabs],
+  )
+  const activeTerminalRun = useMemo(() => activeTerminalTab?.run ?? null, [activeTerminalTab])
+  const isTerminalTabActive = activeTerminalTab?.kind !== 'work'
+
+  const dockScopedInputs = useMemo(() => {
+    if (!isTerminalTabActive || !activeTerminalRun) return []
+    return (inputsQuery.data ?? [])
+      .filter((input) => input.status === 'pending')
+      .filter(
+        (input) =>
+          input.runId === activeTerminalRun.id ||
+          (input.taskId != null &&
+            activeTerminalRun.taskId != null &&
+            input.taskId === activeTerminalRun.taskId),
+      )
+      .sort((a, b) => new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime())
+  }, [activeTerminalRun, inputsQuery.data, isTerminalTabActive])
+
+  const dockVisibleInputs = useMemo(() => dockScopedInputs.slice(0, 2), [dockScopedInputs])
+  const dockHiddenCount = Math.max(0, dockScopedInputs.length - 2)
+
   const activeTerminalRunHasLiveSession = activeTerminalRun ? liveSessionIds.has(activeTerminalRun.id) : false
   const activeTerminalRunProviderLive = activeTerminalRun ? providerLiveRunIds.has(activeTerminalRun.id) : false
   const mountedTerminalRuns = useMemo(() => {
@@ -491,6 +512,31 @@ function App() {
     const taskId = Number(key.replace('work-task-', ''))
     setOpenTaskPageIds((current) => current.filter((id) => id !== taskId))
     setActiveTerminalTabKey((current) => (current === key ? 'main' : current))
+  }, [])
+
+  const handleAttentionNavigate = useCallback((target: AttentionNavigateTarget) => {
+    setSurfaceMode('effort')
+    setSelectedEffortId(target.effortId)
+
+    if (target.inputId != null) {
+      setActiveEffortDrawer('inputs')
+      setFocusedInputId(target.inputId)
+      if (target.taskId != null) {
+        setSelectedTaskId(target.taskId)
+        setSelectedPlanId(null)
+      }
+      return
+    }
+
+    if (target.taskId != null) {
+      setSelectedTaskId(target.taskId)
+      setSelectedPlanId(null)
+      openTaskPage(target.taskId)
+    }
+  }, [openTaskPage])
+
+  const openInputsDrawer = useCallback(() => {
+    setActiveEffortDrawer('inputs')
   }, [])
 
   useEffect(() => {
@@ -769,6 +815,7 @@ function App() {
       void queryClient.invalidateQueries({ queryKey: ['app-state'] })
       if (selectedEffort?.id) {
         void queryClient.invalidateQueries({ queryKey: ['tasks', selectedEffort.id] })
+        void queryClient.invalidateQueries({ queryKey: ['attention'] })
       }
     })
   }, [queryClient, selectedEffort?.id])
@@ -893,7 +940,11 @@ function App() {
 
   return (
     <main className={`app-shell ${sidebarCollapsed ? 'app-shell--sidebar-collapsed' : ''}`}>
-      <TitleBar surfaceMode={surfaceMode} onSetSurfaceMode={setSurfaceMode} />
+      <TitleBar
+        surfaceMode={surfaceMode}
+        onSetSurfaceMode={setSurfaceMode}
+        onAttentionNavigate={handleAttentionNavigate}
+      />
       {sidebarCollapsed ? (
         <aside className="collapsed-sidebar" aria-label="collapsed sidebar">
           <div className="collapsed-sidebar-stack">
@@ -1175,6 +1226,13 @@ function App() {
                   onTerminalSizeChange={setTerminalStartSize}
                   drawerClosedAt={drawerClosedAt}
                   forkMainDisabledReason={forkMainRun.isPending ? 'fork is starting' : forkMainDisabledReason}
+                  dockInputs={dockVisibleInputs}
+                  dockHiddenCount={dockHiddenCount}
+                  onAnswerDockInput={(inputRequestId, answer) =>
+                    answerInput.mutate({ inputRequestId, answer })
+                  }
+                  isAnsweringDockInput={answerInput.isPending}
+                  onOpenInputsDrawer={openInputsDrawer}
                 />
               </div>
               <aside className="effort-rail" aria-label="effort views">

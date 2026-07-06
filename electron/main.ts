@@ -18,6 +18,7 @@ import type { NotificationSettings } from '../core/db'
 import { getCustomThemeState, updateCustomThemeState } from '../core/themeConfig'
 import { listEfforts, createEffort, deleteEffort, updateEffortDefaultProfile, updateEffortDefaultProvider, updateEffortSummary } from '../core/efforts'
 import { browsePath } from '../core/filesystem'
+import { listAttention } from '../core/attention'
 import {
   answerInputRequest,
   createInputRequest,
@@ -143,6 +144,7 @@ ipcMain.handle('repos:list', () => listRepos(db))
 ipcMain.handle('repos:create', (_event, input: CreateRepoInput) => createRepo(db, input))
 ipcMain.handle('repos:update', (_event, input: UpdateRepoInput) => updateRepo(db, input))
 ipcMain.handle('repos:delete', (_event, repoId: number) => deleteRepo(db, repoId))
+ipcMain.handle('attention:list', () => listAttention(db))
 ipcMain.handle('inputs:list', (_event, effortId: number) => listInputRequests(db, effortId))
 ipcMain.handle('inputs:pending', (_event, effortId: number) => listPendingInputRequests(db, effortId))
 ipcMain.handle('inputs:create', (_event, input: CreateInputRequestInput) => createInputRequest(db, input))
