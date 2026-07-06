@@ -130,14 +130,6 @@ export function NeedsYou({ onNavigate }: NeedsYouProps) {
   useEffect(() => {
     if (!openChip) return
 
-    function handlePointerDown(event: MouseEvent) {
-      const target = event.target as Node
-      if (clusterRef.current?.contains(target)) return
-      if (popoverRef.current?.contains(target)) return
-      setOpenChip(null)
-      setFocusedRowIndex(-1)
-    }
-
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') {
         event.preventDefault()
@@ -168,11 +160,16 @@ export function NeedsYou({ onNavigate }: NeedsYouProps) {
       }
     }
 
-    window.addEventListener('mousedown', handlePointerDown)
+    function handleBlur() {
+      setOpenChip(null)
+      setFocusedRowIndex(-1)
+    }
+
     window.addEventListener('keydown', handleKeyDown, true)
+    window.addEventListener('blur', handleBlur)
     return () => {
-      window.removeEventListener('mousedown', handlePointerDown)
       window.removeEventListener('keydown', handleKeyDown, true)
+      window.removeEventListener('blur', handleBlur)
     }
   }, [activeRows, focusedRowIndex, navigateRow, openChip])
 
@@ -220,13 +217,22 @@ export function NeedsYou({ onNavigate }: NeedsYouProps) {
 
       {openChip && popoverPosition
         ? createPortal(
-            <div
-              ref={popoverRef}
-              className={styles.popover}
-              role="dialog"
-              aria-label={openChip === 'inputs' ? 'pending inputs' : 'pending verdicts'}
-              style={{ top: popoverPosition.top, left: popoverPosition.left }}
-            >
+            <>
+              <div
+                className={styles.backdrop}
+                aria-hidden="true"
+                onMouseDown={() => {
+                  setOpenChip(null)
+                  setFocusedRowIndex(-1)
+                }}
+              />
+              <div
+                ref={popoverRef}
+                className={styles.popover}
+                role="dialog"
+                aria-label={openChip === 'inputs' ? 'pending inputs' : 'pending verdicts'}
+                style={{ top: popoverPosition.top, left: popoverPosition.left }}
+              >
               {groupedRows.length === 0 ? (
                 <p className={styles.empty}>nothing waiting</p>
               ) : (
@@ -260,7 +266,8 @@ export function NeedsYou({ onNavigate }: NeedsYouProps) {
                   </section>
                 ))
               )}
-            </div>,
+              </div>
+            </>,
             document.body,
           )
         : null}
