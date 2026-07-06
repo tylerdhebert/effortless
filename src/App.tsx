@@ -47,6 +47,7 @@ import type { PendingNotification } from '../core/notifications'
 import './App.css'
 
 type EffortRailDrawer = 'inputs' | 'plan' | 'tasks'
+type TaskTabFace = 'work' | 'session'
 type LiveSessionCacheEntry = {
   session: LiveAgentRunSession
   lastSeenAt: number
@@ -69,6 +70,8 @@ function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [activeTerminalTabKey, setActiveTerminalTabKey] = useState('main')
   const [openTaskPageIdsByEffort, setOpenTaskPageIdsByEffort] = useState<Record<number, number[]>>({})
+  const [taskTabFaceByTaskId, setTaskTabFaceByTaskId] = useState<Record<number, TaskTabFace>>({})
+  const [selectedTaskRunIdByTaskId, setSelectedTaskRunIdByTaskId] = useState<Record<number, number>>({})
   const [activeEffortDrawer, setActiveEffortDrawer] = useState<EffortRailDrawer | null>(null)
   const [effortDescriptionExpanded, setEffortDescriptionExpanded] = useState(false)
   const [effortMenuOpen, setEffortMenuOpen] = useState(false)
@@ -362,6 +365,34 @@ function App() {
     return countActiveEffortRuns(effortRunsQuery.data ?? [], liveSessionIds, providerLiveRunIds)
   }, [effortRunsQuery.data, liveSessionIds, providerLiveRunIds])
 
+  const taskRunsByTaskId = useMemo(() => {
+    const map = new Map<number, AgentRun[]>()
+    for (const run of effortRunsQuery.data ?? []) {
+      if (run.taskId == null) continue
+      const taskRuns = map.get(run.taskId) ?? []
+      taskRuns.push(run)
+      map.set(run.taskId, taskRuns)
+    }
+    return map
+  }, [effortRunsQuery.data])
+
+  const selectedTaskRunByTaskId = useMemo(() => {
+    const map = new Map<number, AgentRun>()
+    for (const [taskId, runs] of taskRunsByTaskId) {
+      const manualRunId = selectedTaskRunIdByTaskId[taskId]
+      const run =
+        runs.find((candidate) => candidate.id === manualRunId) ??
+        runs.find((candidate) => providerLiveRunIds.has(candidate.id)) ??
+        runs.find((candidate) => liveSessionIds.has(candidate.id)) ??
+        runs[0] ??
+        null
+      if (run) {
+        map.set(taskId, run)
+      }
+    }
+    return map
+  }, [liveSessionIds, providerLiveRunIds, selectedTaskRunIdByTaskId, taskRunsByTaskId])
+
   const activePageTaskRuns = useMemo(() => {
     if (!activePageTask) return []
     return (effortRunsQuery.data ?? []).filter((run) => run.taskId === activePageTask.id)
@@ -378,11 +409,13 @@ function App() {
     const profiles = agentProfilesQuery.data ?? []
     const tasks = tasksQuery.data ?? []
     const tabKeys = new Set<string>(['main'])
-    if (!activeTerminalTabKey.startsWith('work-task-')) {
+    if (!activeTerminalTabKey.startsWith('work-task-') && !activeTerminalTabKey.startsWith('task-')) {
       tabKeys.add(activeTerminalTabKey)
     }
     for (const run of runs) {
-      tabKeys.add(run.terminalTabKey ?? 'main')
+      const key = run.terminalTabKey ?? 'main'
+      if (run.taskId != null && key.startsWith('task-')) continue
+      tabKeys.add(key)
     }
     const terminalOnlyTabs = Array.from(tabKeys).map((key) => {
       const tabRuns = runs.filter((run) => (run.terminalTabKey ?? 'main') === key)
@@ -443,6 +476,48 @@ function App() {
     openTaskPageIds,
   ])
 
+  const taskSessionTabs = useMemo(() => {
+    const profiles = agentProfilesQuery.data ?? []
+    return (tasksQuery.data ?? [])
+      .map((task) => {
+        const runs = taskRunsByTaskId.get(task.id) ?? []
+        if (runs.length === 0) return null
+        const selectedRun = selectedTaskRunByTaskId.get(task.id) ?? null
+        return {
+          taskId: task.id,
+          shortRef: task.shortRef,
+          title: task.title,
+          branchLabel: task.branchName ?? 'no branch',
+          run: selectedRun,
+          hasLiveSession: selectedRun ? liveSessionIds.has(selectedRun.id) : false,
+          providerLive: selectedRun ? providerLiveRunIds.has(selectedRun.id) : false,
+          profileLabel: selectedRun
+            ? `${getAgentProviderConfig(selectedRun.provider).name} / ${
+                profiles.find((profile) => profile.id === selectedRun.profileId)?.name ?? `profile-${selectedRun.profileId}`
+              }`
+            : null,
+          runs: [...runs]
+            .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())
+            .map((run) => ({
+              run,
+              hasLiveSession: liveSessionIds.has(run.id),
+              providerLive: providerLiveRunIds.has(run.id),
+              profileLabel: `${getAgentProviderConfig(run.provider).name} / ${
+                profiles.find((profile) => profile.id === run.profileId)?.name ?? `profile-${run.profileId}`
+              }`,
+            })),
+        }
+      })
+      .filter((tab): tab is NonNullable<typeof tab> => tab !== null)
+  }, [
+    agentProfilesQuery.data,
+    liveSessionIds,
+    providerLiveRunIds,
+    selectedTaskRunByTaskId,
+    taskRunsByTaskId,
+    tasksQuery.data,
+  ])
+
   useEffect(() => {
     if (tasksQuery.data === undefined || tasksQuery.isLoading) return
     if (!terminalTabs.some((tab) => tab.key === activeTerminalTabKey)) {
@@ -460,8 +535,17 @@ function App() {
     () => terminalTabs.find((tab) => tab.key === activeTerminalTabKey) ?? null,
     [activeTerminalTabKey, terminalTabs],
   )
-  const activeTerminalRun = useMemo(() => activeTerminalTab?.run ?? null, [activeTerminalTab])
-  const isTerminalTabActive = activeTerminalTab?.kind !== 'work'
+  const activeTaskTabFace = activePageTaskId != null
+    ? taskTabFaceByTaskId[activePageTaskId] ?? 'work'
+    : null
+  const activeTerminalRun = useMemo(() => {
+    if (activeTerminalTab?.kind === 'work') {
+      if (activeTaskTabFace !== 'session' || activePageTaskId == null) return null
+      return selectedTaskRunByTaskId.get(activePageTaskId) ?? null
+    }
+    return activeTerminalTab?.run ?? null
+  }, [activePageTaskId, activeTaskTabFace, activeTerminalTab, selectedTaskRunByTaskId])
+  const isTerminalTabActive = activeTerminalTab?.kind !== 'work' || activeTaskTabFace === 'session'
 
   const dockScopedInputs = useMemo(() => {
     if (!isTerminalTabActive || !activeTerminalRun) return []
@@ -516,13 +600,6 @@ function App() {
         ? 'provider does not support fork'
         : null
 
-  async function refreshAgentRunState(tabKey?: string | null) {
-    rememberActiveTerminalTabKey(tabKey ?? 'main')
-    await queryClient.invalidateQueries({ queryKey: ['agent-runs'] })
-    await queryClient.invalidateQueries({ queryKey: ['agent-runs', 'live-sessions'] })
-    await queryClient.invalidateQueries({ queryKey: ['app-state'] })
-  }
-
   const openTaskPage = useCallback((taskId: number, effortId = selectedEffort?.id) => {
     if (effortId == null) return
     setOpenTaskPageIdsByEffort((current) => {
@@ -530,9 +607,92 @@ function App() {
       if (effortTaskIds.includes(taskId)) return current
       return { ...current, [effortId]: [...effortTaskIds, taskId] }
     })
+    setTaskTabFaceByTaskId((current) => ({ ...current, [taskId]: 'work' }))
     rememberActiveTerminalTabKey(`work-task-${taskId}`, effortId)
     setActiveEffortDrawer(null)
   }, [rememberActiveTerminalTabKey, selectedEffort?.id])
+
+  const selectTaskTab = useCallback((
+    taskId: number,
+    face: TaskTabFace,
+    effortId = selectedEffort?.id,
+    runId?: number | null,
+  ) => {
+    if (effortId == null) return
+    setOpenTaskPageIdsByEffort((current) => {
+      const effortTaskIds = current[effortId] ?? []
+      if (effortTaskIds.includes(taskId)) return current
+      return { ...current, [effortId]: [...effortTaskIds, taskId] }
+    })
+    setTaskTabFaceByTaskId((current) => ({ ...current, [taskId]: face }))
+    if (runId != null) {
+      setSelectedTaskRunIdByTaskId((current) => ({ ...current, [taskId]: runId }))
+    }
+    rememberActiveTerminalTabKey(`work-task-${taskId}`, effortId)
+    setActiveEffortDrawer(null)
+  }, [rememberActiveTerminalTabKey, selectedEffort?.id])
+
+  const navigateToRunTab = useCallback((
+    runOrTabKey?: AgentRun | string | null,
+    effortId = selectedEffort?.id,
+  ) => {
+    if (!runOrTabKey) {
+      rememberActiveTerminalTabKey('main', effortId)
+      return
+    }
+
+    if (typeof runOrTabKey !== 'string') {
+      if (runOrTabKey.taskId != null) {
+        setSelectedTaskId(runOrTabKey.taskId)
+        setSelectedPlanId(null)
+        selectTaskTab(runOrTabKey.taskId, 'session', runOrTabKey.effortId, runOrTabKey.id)
+        return
+      }
+      rememberActiveTerminalTabKey(runOrTabKey.terminalTabKey ?? 'main', runOrTabKey.effortId)
+      return
+    }
+
+    const tabKey = runOrTabKey
+    const matchingRun = (effortRunsQuery.data ?? allRunsQuery.data ?? [])
+      .find((run) => (run.terminalTabKey ?? 'main') === tabKey)
+    if (matchingRun?.taskId != null) {
+      setSelectedTaskId(matchingRun.taskId)
+      setSelectedPlanId(null)
+      selectTaskTab(matchingRun.taskId, 'session', matchingRun.effortId, matchingRun.id)
+      return
+    }
+
+    if (tabKey.startsWith('task-')) {
+      const taskShortRef = tabKey.replace(/^task-/, '')
+      const matchingTask = [
+        ...(tasksQuery.data ?? []),
+        ...(allTasksQuery.data ?? []),
+      ].find((task) => task.shortRef === taskShortRef)
+      if (matchingTask) {
+        setSelectedTaskId(matchingTask.id)
+        setSelectedPlanId(null)
+        selectTaskTab(matchingTask.id, 'session', effortId)
+        return
+      }
+    }
+
+    rememberActiveTerminalTabKey(tabKey, effortId)
+  }, [
+    allRunsQuery.data,
+    allTasksQuery.data,
+    effortRunsQuery.data,
+    rememberActiveTerminalTabKey,
+    selectTaskTab,
+    selectedEffort?.id,
+    tasksQuery.data,
+  ])
+
+  async function refreshAgentRunState(runOrTabKey?: AgentRun | string | null) {
+    navigateToRunTab(runOrTabKey ?? 'main')
+    await queryClient.invalidateQueries({ queryKey: ['agent-runs'] })
+    await queryClient.invalidateQueries({ queryKey: ['agent-runs', 'live-sessions'] })
+    await queryClient.invalidateQueries({ queryKey: ['app-state'] })
+  }
 
   const closeTaskPage = useCallback((key: string) => {
     if (!selectedEffort) return
@@ -689,7 +849,7 @@ function App() {
       return prepared
     },
     onSuccess: async (prepared) => {
-      await refreshAgentRunState(prepared.run.terminalTabKey)
+      await refreshAgentRunState(prepared.run)
     },
   })
 
@@ -700,7 +860,7 @@ function App() {
       return prepared
     },
     onSuccess: async (prepared) => {
-      await refreshAgentRunState(prepared.run.terminalTabKey)
+      await refreshAgentRunState(prepared.run)
     },
   })
 
@@ -718,7 +878,7 @@ function App() {
       return prepared
     },
     onSuccess: async (prepared) => {
-      await refreshAgentRunState(prepared.run.terminalTabKey)
+      await refreshAgentRunState(prepared.run)
     },
   })
 
@@ -735,7 +895,7 @@ function App() {
     },
     onSuccess: async (prepared) => {
       setActiveEffortDrawer(null)
-      await refreshAgentRunState(prepared.run.terminalTabKey)
+      await refreshAgentRunState(prepared.run)
     },
   })
 
@@ -753,7 +913,7 @@ function App() {
     },
     onSuccess: async (prepared) => {
       setActiveEffortDrawer(null)
-      await refreshAgentRunState(prepared.run.terminalTabKey)
+      await refreshAgentRunState(prepared.run)
     },
   })
 
@@ -802,7 +962,7 @@ function App() {
       return prepared.run
     },
     onSuccess: async (run) => {
-      rememberActiveTerminalTabKey(run.terminalTabKey ?? 'main')
+      navigateToRunTab(run)
       setActiveEffortDrawer(null)
       await queryClient.invalidateQueries({ queryKey: ['agent-runs'] })
       await queryClient.invalidateQueries({ queryKey: ['agent-runs', 'live-sessions'] })
@@ -864,7 +1024,7 @@ function App() {
   useEffect(() => {
     return window.effortless.onAgentRunTerminalEvent((event) => {
       if (event.kind === 'started') {
-        rememberActiveTerminalTabKey(event.body ?? 'main')
+        navigateToRunTab(event.body ?? 'main')
         void queryClient.invalidateQueries({ queryKey: ['agent-runs'] })
         void queryClient.invalidateQueries({ queryKey: ['agent-runs', 'live-sessions'] })
         void queryClient.invalidateQueries({ queryKey: ['app-state'] })
@@ -883,7 +1043,7 @@ function App() {
         void queryClient.invalidateQueries({ queryKey: ['attention'] })
       }
     })
-  }, [queryClient, rememberActiveTerminalTabKey, selectedEffort?.id])
+  }, [navigateToRunTab, queryClient, selectedEffort?.id])
 
   useEffect(() => {
     if (preserveSelectionOnEffortChangeRef.current) {
@@ -966,7 +1126,7 @@ function App() {
       } else {
         setActiveEffortDrawer(null)
       }
-      rememberActiveTerminalTabKey(notification.terminalTabKey ?? 'main', notification.effortId)
+      navigateToRunTab(notification.terminalTabKey ?? 'main', notification.effortId)
       return
     }
 
@@ -979,7 +1139,7 @@ function App() {
         setSelectedPlanId(null)
       }
       if (notification.terminalTabKey) {
-        rememberActiveTerminalTabKey(notification.terminalTabKey, notification.effortId)
+        navigateToRunTab(notification.terminalTabKey, notification.effortId)
         setActiveEffortDrawer(null)
       }
     }
@@ -1295,6 +1455,7 @@ function App() {
                   activeRunHasLiveSession={activeTerminalRunHasLiveSession}
                   activeRunProviderLive={activeTerminalRunProviderLive}
                   tabs={terminalTabs}
+                  taskSessionTabs={taskSessionTabs}
                   mountedRuns={mountedTerminalRuns}
                   availableTasks={(tasksQuery.data ?? []).map((task) => ({
                     id: task.id,
@@ -1303,7 +1464,8 @@ function App() {
                   }))}
                   openTaskIds={openTaskPageIds}
                   activeTabKey={activeTerminalTabKey}
-                  isStarting={startEffortRun.isPending || resumeAgentRun.isPending || forkMainRun.isPending}
+                  activeTaskFace={activeTaskTabFace}
+                  isStarting={startEffortRun.isPending || resumeAgentRun.isPending || forkMainRun.isPending || startTaskRun.isPending || rerunTaskRun.isPending}
                   startDisabled={!ptyAvailable}
                   ptyAvailable={ptyAvailable}
                   emptyLabel="ready for effort"
@@ -1351,8 +1513,30 @@ function App() {
                   onForkMain={() => forkMainRun.mutate()}
                   onResume={(runId) => resumeAgentRun.mutate(runId)}
                   onSelectTab={(key) => {
-                    rememberActiveTerminalTabKey(key)
+                    navigateToRunTab(key)
                     setTerminalMenuOpen(false)
+                  }}
+                  onSetTaskFace={(taskId, face) => {
+                    setTaskTabFaceByTaskId((current) => ({ ...current, [taskId]: face }))
+                  }}
+                  onSelectTaskSession={(taskId) => {
+                    setSelectedTaskId(taskId)
+                    setSelectedPlanId(null)
+                    selectTaskTab(taskId, 'session')
+                    setTerminalMenuOpen(false)
+                  }}
+                  onSelectTaskRun={(taskId, runId) => {
+                    setSelectedTaskRunIdByTaskId((current) => ({ ...current, [taskId]: runId }))
+                    selectTaskTab(taskId, 'session', selectedEffort.id, runId)
+                  }}
+                  onStartTaskSession={(taskId) => {
+                    const task = tasksQuery.data?.find((candidate) => candidate.id === taskId)
+                    if (!task) return
+                    startTaskRun.mutate({
+                      task,
+                      provider: selectedEffort.defaultProvider,
+                      profileId: selectedEffort.defaultProfileId ?? effortDefaultProfile?.id ?? null,
+                    })
                   }}
                   onOpenTask={(taskId) => {
                     openTaskPage(taskId)
