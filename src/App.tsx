@@ -148,7 +148,7 @@ function App() {
       setCustomThemePalette((current) => current ?? cloneThemePalette(appStateQuery.data.customThemePalette!))
     } else if (!customThemePalette && appStateQuery.data.theme) {
       const basePalette =
-        THEME_PALETTES[appStateQuery.data.theme as keyof typeof THEME_PALETTES] ?? THEME_PALETTES.grass
+        THEME_PALETTES[appStateQuery.data.theme as keyof typeof THEME_PALETTES] ?? THEME_PALETTES.phosphor
       setCustomThemePalette(cloneThemePalette(basePalette))
     }
 
@@ -794,7 +794,7 @@ function App() {
     const basePalette =
       themeId && themeId in THEME_PALETTES
         ? THEME_PALETTES[themeId as keyof typeof THEME_PALETTES]
-        : THEME_PALETTES.grass
+        : THEME_PALETTES.phosphor
     return cloneThemePalette(basePalette)
   }
 
@@ -1034,7 +1034,7 @@ function App() {
               updateNotificationSettings.mutate(settings)
             }
             isUpdatingNotificationSettings={updateNotificationSettings.isPending}
-            currentTheme={appStateQuery.data?.theme ?? 'grass'}
+            currentTheme={appStateQuery.data?.theme ?? 'phosphor'}
             customTheme={ensureCustomPalette()}
             customThemeActive={customThemeActive}
             onUpdateTheme={(theme) => {

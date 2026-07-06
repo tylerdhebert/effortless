@@ -348,7 +348,7 @@ export function ManageSurface({
         ) : section === 'appearance' ? (
           <section className={`${styles['manage-surface']} ${styles['manage-surface-notifications']}`}>
             <AppearanceSettingsPanel
-              currentTheme={currentTheme ?? 'grass'}
+              currentTheme={currentTheme ?? 'phosphor'}
               customTheme={customTheme}
               customThemeActive={customThemeActive}
               onUpdateTheme={onUpdateTheme ?? (() => {})}

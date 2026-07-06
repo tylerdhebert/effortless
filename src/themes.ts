@@ -1,4 +1,5 @@
 export type ThemeId =
+  | 'phosphor'
   | 'grass'
   | 'dark'
   | 'light'
@@ -22,7 +23,43 @@ export type ThemeId =
 export type ThemePalette = Record<string, string>
 
 export const THEME_PALETTES: Record<ThemeId, ThemePalette> = {
-  // current effortless theme
+  phosphor: {
+    '--body-bg': '#151210',
+    '--body-text': '#eae3d2',
+    '--main': '#151210',
+    '--sidebar': '#0f0d0b',
+    '--surface': '#1c1814',
+    '--panel': '#231e18',
+    '--field': '#12100d',
+    '--button': '#1f1a15',
+    '--line': '#332c23',
+    '--line-strong': '#4a4033',
+    '--text': '#ddd5c2',
+    '--text-strong': '#f5efe0',
+    '--muted': '#94897a',
+    '--accent': '#e8a33d',
+    '--live': '#8fbf6a',
+    '--ok': '#9dbb7e',
+    '--danger': '#d96a5b',
+    '--placeholder': '#6b6152',
+    '--focus-shadow': 'rgba(232, 163, 61, 0.18)',
+    '--diff-insert-bg': 'rgba(143, 191, 106, 0.16)',
+    '--diff-delete-bg': 'rgba(217, 106, 91, 0.16)',
+    '--diff-gutter-insert-bg': 'rgba(143, 191, 106, 0.65)',
+    '--diff-gutter-delete-bg': 'rgba(217, 106, 91, 0.7)',
+    '--diff-text-color': '#d8d0bd',
+    '--diff-gutter-insert-bg-solid': '#2a3a1e',
+    '--diff-gutter-insert-text': '#a4ce85',
+    '--diff-gutter-delete-bg-solid': '#3a221c',
+    '--diff-gutter-delete-text': '#e08a7c',
+    '--diff-code-insert-bg': '#1a2212',
+    '--diff-code-delete-bg': '#221410',
+    '--diff-code-insert-edit-bg': '#2e4a1e',
+    '--diff-code-delete-edit-bg': '#4a2a1e',
+    '--diff-code-selected-bg': 'rgba(232, 163, 61, 0.12)',
+    '--diff-omit-gutter-line': '#7c7160',
+  },
+
   grass: {
     '--body-bg': '#11130f',
     '--body-text': '#e8e6d9',
@@ -38,6 +75,9 @@ export const THEME_PALETTES: Record<ThemeId, ThemePalette> = {
     '--text-strong': '#f2f1e7',
     '--muted': '#929984',
     '--accent': '#8ccf62',
+    '--live': '#8ccf62',
+    '--ok': '#8ccf62',
+    '--danger': '#e05d50',
     '--placeholder': '#707767',
     '--focus-shadow': 'rgba(140, 207, 98, 0.18)',
     '--diff-insert-bg': 'rgba(46, 160, 67, 0.2)',
@@ -73,6 +113,9 @@ export const THEME_PALETTES: Record<ThemeId, ThemePalette> = {
     '--text-strong': '#f0f0f0',
     '--muted': '#808080',
     '--accent': '#a0a0a0',
+    '--live': '#77d89c',
+    '--ok': '#6bc48a',
+    '--danger': '#f38a8a',
     '--placeholder': '#505050',
     '--focus-shadow': 'rgba(160, 160, 160, 0.18)',
     '--diff-insert-bg': 'rgba(46, 160, 67, 0.2)',
@@ -108,6 +151,9 @@ export const THEME_PALETTES: Record<ThemeId, ThemePalette> = {
     '--text-strong': '#0d1117',
     '--muted': '#5c6e86',
     '--accent': '#6366f1',
+    '--live': '#2f8f5b',
+    '--ok': '#267a4d',
+    '--danger': '#c85b61',
     '--placeholder': '#91a0b6',
     '--focus-shadow': 'rgba(99, 102, 241, 0.18)',
     '--diff-insert-bg': 'rgba(47, 143, 91, 0.13)',
@@ -143,6 +189,9 @@ export const THEME_PALETTES: Record<ThemeId, ThemePalette> = {
     '--text-strong': '#fbf1c7',
     '--muted': '#a89984',
     '--accent': '#fabd2f',
+    '--live': '#b8bb26',
+    '--ok': '#b8bb26',
+    '--danger': '#fb4934',
     '--placeholder': '#7c6f64',
     '--focus-shadow': 'rgba(250, 189, 47, 0.18)',
     '--diff-insert-bg': 'rgba(184, 187, 38, 0.2)',
@@ -178,6 +227,9 @@ export const THEME_PALETTES: Record<ThemeId, ThemePalette> = {
     '--text-strong': '#ffffff',
     '--muted': '#c4c6cc',
     '--accent': '#bd93f9',
+    '--live': '#50fa7b',
+    '--ok': '#45e06e',
+    '--danger': '#ff5555',
     '--placeholder': '#6272a4',
     '--focus-shadow': 'rgba(189, 147, 249, 0.18)',
     '--diff-insert-bg': 'rgba(80, 250, 123, 0.15)',
@@ -213,6 +265,9 @@ export const THEME_PALETTES: Record<ThemeId, ThemePalette> = {
     '--text-strong': '#ffffff',
     '--muted': '#c5c2d4',
     '--accent': '#ff7edb',
+    '--live': '#72f1b8',
+    '--ok': '#62e0a8',
+    '--danger': '#fe4450',
     '--placeholder': '#7b7489',
     '--focus-shadow': 'rgba(255, 126, 219, 0.18)',
     '--diff-insert-bg': 'rgba(114, 241, 184, 0.15)',
@@ -248,6 +303,9 @@ export const THEME_PALETTES: Record<ThemeId, ThemePalette> = {
     '--text-strong': '#eceff4',
     '--muted': '#9aa5bc',
     '--accent': '#88c0d0',
+    '--live': '#a3be8c',
+    '--ok': '#8fad78',
+    '--danger': '#bf616a',
     '--placeholder': '#677691',
     '--focus-shadow': 'rgba(136, 192, 208, 0.18)',
     '--diff-insert-bg': 'rgba(163, 190, 140, 0.2)',
@@ -283,6 +341,9 @@ export const THEME_PALETTES: Record<ThemeId, ThemePalette> = {
     '--text-strong': '#ffffff',
     '--muted': '#9aa5ce',
     '--accent': '#7aa2f7',
+    '--live': '#9ece6a',
+    '--ok': '#8ab85a',
+    '--danger': '#f7768e',
     '--placeholder': '#565f89',
     '--focus-shadow': 'rgba(122, 162, 247, 0.18)',
     '--diff-insert-bg': 'rgba(158, 206, 106, 0.18)',
@@ -318,6 +379,9 @@ export const THEME_PALETTES: Record<ThemeId, ThemePalette> = {
     '--text-strong': '#ffffff',
     '--muted': '#a6adc8',
     '--accent': '#89b4fa',
+    '--live': '#a6e3a1',
+    '--ok': '#8fd48a',
+    '--danger': '#f38ba8',
     '--placeholder': '#6c7086',
     '--focus-shadow': 'rgba(137, 180, 250, 0.18)',
     '--diff-insert-bg': 'rgba(166, 227, 161, 0.18)',
@@ -353,6 +417,9 @@ export const THEME_PALETTES: Record<ThemeId, ThemePalette> = {
     '--text-strong': '#ffffff',
     '--muted': '#ccc8b5',
     '--accent': '#a6e22e',
+    '--live': '#a6e22e',
+    '--ok': '#96cc28',
+    '--danger': '#f92672',
     '--placeholder': '#75715e',
     '--focus-shadow': 'rgba(166, 226, 46, 0.18)',
     '--diff-insert-bg': 'rgba(166, 226, 46, 0.15)',
@@ -388,6 +455,9 @@ export const THEME_PALETTES: Record<ThemeId, ThemePalette> = {
     '--text-strong': '#ffffff',
     '--muted': '#908caa',
     '--accent': '#c4a7e7',
+    '--live': '#9ccfd8',
+    '--ok': '#31748f',
+    '--danger': '#eb6f92',
     '--placeholder': '#6e6a86',
     '--focus-shadow': 'rgba(196, 167, 231, 0.18)',
     '--diff-insert-bg': 'rgba(156, 207, 216, 0.18)',
@@ -423,6 +493,9 @@ export const THEME_PALETTES: Record<ThemeId, ThemePalette> = {
     '--text-strong': '#ffffff',
     '--muted': '#828997',
     '--accent': '#61afef',
+    '--live': '#98c379',
+    '--ok': '#88b369',
+    '--danger': '#e06c75',
     '--placeholder': '#5c6370',
     '--focus-shadow': 'rgba(97, 175, 239, 0.18)',
     '--diff-insert-bg': 'rgba(152, 195, 121, 0.2)',
@@ -458,6 +531,9 @@ export const THEME_PALETTES: Record<ThemeId, ThemePalette> = {
     '--text-strong': '#f0f6fc',
     '--muted': '#8b949e',
     '--accent': '#58a6ff',
+    '--live': '#3fb950',
+    '--ok': '#2ea043',
+    '--danger': '#f85149',
     '--placeholder': '#6e7681',
     '--focus-shadow': 'rgba(88, 166, 255, 0.18)',
     '--diff-insert-bg': 'rgba(46, 160, 67, 0.22)',
@@ -493,6 +569,9 @@ export const THEME_PALETTES: Record<ThemeId, ThemePalette> = {
     '--text-strong': '#ffffff',
     '--muted': '#aa9478',
     '--accent': '#4f78f1',
+    '--live': '#80c57a',
+    '--ok': '#70b56a',
+    '--danger': '#cc7863',
     '--placeholder': '#5d5042',
     '--focus-shadow': 'rgba(79, 120, 241, 0.18)',
     '--diff-insert-bg': 'rgba(46, 160, 67, 0.2)',
@@ -528,6 +607,9 @@ export const THEME_PALETTES: Record<ThemeId, ThemePalette> = {
     '--text-strong': '#ffffff',
     '--muted': '#95a9cb',
     '--accent': '#77a7ff',
+    '--live': '#7fd0a4',
+    '--ok': '#6fc094',
+    '--danger': '#d98282',
     '--placeholder': '#516482',
     '--focus-shadow': 'rgba(119, 167, 255, 0.18)',
     '--diff-insert-bg': 'rgba(127, 208, 164, 0.16)',
@@ -563,6 +645,9 @@ export const THEME_PALETTES: Record<ThemeId, ThemePalette> = {
     '--text-strong': '#2a1d14',
     '--muted': '#7c6a5b',
     '--accent': '#db7a24',
+    '--live': '#5a8a54',
+    '--ok': '#4a7a44',
+    '--danger': '#b85e4a',
     '--placeholder': '#ae9b8b',
     '--focus-shadow': 'rgba(219, 122, 36, 0.18)',
     '--diff-insert-bg': 'rgba(109, 159, 102, 0.16)',
@@ -598,6 +683,9 @@ export const THEME_PALETTES: Record<ThemeId, ThemePalette> = {
     '--text-strong': '#ffffff',
     '--muted': '#aea597',
     '--accent': '#d97b3f',
+    '--live': '#8aa37a',
+    '--ok': '#7a936a',
+    '--danger': '#c97c68',
     '--placeholder': '#6f685f',
     '--focus-shadow': 'rgba(217, 123, 63, 0.18)',
     '--diff-insert-bg': 'rgba(138, 163, 122, 0.16)',
@@ -633,6 +721,9 @@ export const THEME_PALETTES: Record<ThemeId, ThemePalette> = {
     '--text-strong': '#2a1230',
     '--muted': '#875170',
     '--accent': '#efc31f',
+    '--live': '#4a9e3a',
+    '--ok': '#3d8a2e',
+    '--danger': '#c44a88',
     '--placeholder': '#bc91a8',
     '--focus-shadow': 'rgba(239, 195, 31, 0.18)',
     '--diff-insert-bg': 'rgba(126, 216, 112, 0.18)',
@@ -668,6 +759,9 @@ export const THEME_PALETTES: Record<ThemeId, ThemePalette> = {
     '--text-strong': '#2a2022',
     '--muted': '#866f72',
     '--accent': '#d67a57',
+    '--live': '#5a7a6a',
+    '--ok': '#4a6a5c',
+    '--danger': '#a85a62',
     '--placeholder': '#b9a7aa',
     '--focus-shadow': 'rgba(214, 122, 87, 0.18)',
     '--diff-insert-bg': 'rgba(127, 159, 143, 0.15)',
@@ -689,6 +783,7 @@ export const THEME_PALETTES: Record<ThemeId, ThemePalette> = {
 }
 
 export const THEME_LABELS: Record<ThemeId, string> = {
+  phosphor: 'phosphor',
   grass: 'grass',
   dark: 'dark',
   light: 'light',
@@ -712,7 +807,7 @@ export const THEME_LABELS: Record<ThemeId, string> = {
 
 export const THEME_IDS = Object.keys(THEME_PALETTES) as ThemeId[]
 
-export const THEME_VARIABLES = Object.keys(THEME_PALETTES.grass)
+export const THEME_VARIABLES = Object.keys(THEME_PALETTES.phosphor)
 
 export function cloneThemePalette(palette: ThemePalette): ThemePalette {
   return Object.fromEntries(Object.entries(palette))
@@ -726,6 +821,6 @@ export function applyThemePalette(palette: ThemePalette): void {
 }
 
 export function applyTheme(id: string): void {
-  const palette = THEME_PALETTES[id as ThemeId] ?? THEME_PALETTES.grass
+  const palette = THEME_PALETTES[id as ThemeId] ?? THEME_PALETTES.phosphor
   applyThemePalette(palette)
 }

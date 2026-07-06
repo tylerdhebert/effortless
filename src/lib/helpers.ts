@@ -12,9 +12,9 @@ export function formatTemplate(template: string) {
 }
 
 export const effortStatusColors: Record<string, string> = {
-  active: '#1565c0',
-  complete: '#2ecc71',
-  archived: '#9e9e9e',
+  active: 'var(--live)',
+  complete: 'var(--ok)',
+  archived: 'var(--muted)',
 }
 
 export function effortStatusColor(status: string): string {

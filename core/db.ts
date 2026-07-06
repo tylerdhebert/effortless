@@ -44,7 +44,7 @@ export function initializeSchema(db: AppDatabase): void {
       badge_notifications_enabled INTEGER NOT NULL DEFAULT 1,
       sound_notifications_enabled INTEGER NOT NULL DEFAULT 0,
       toast_duration_seconds INTEGER NOT NULL DEFAULT 5,
-      theme TEXT NOT NULL DEFAULT 'grass'
+      theme TEXT NOT NULL DEFAULT 'phosphor'
     );
 
     INSERT OR IGNORE INTO app_state (id, version, updated_at)
@@ -200,6 +200,8 @@ export function initializeSchema(db: AppDatabase): void {
     );
 
   `)
+
+  db.exec(`UPDATE app_state SET theme = 'phosphor' WHERE theme = 'grass'`)
 
   db.exec(`UPDATE agent_runs SET purpose = 'extra' WHERE purpose NOT IN ('main', 'fork', 'extra')`)
 
