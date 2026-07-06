@@ -67,7 +67,7 @@ function App() {
   const [deleteEffortOpen, setDeleteEffortOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [activeTerminalTabKey, setActiveTerminalTabKey] = useState('main')
-  const [openTaskPageIds, setOpenTaskPageIds] = useState<number[]>([])
+  const [openTaskPageIdsByEffort, setOpenTaskPageIdsByEffort] = useState<Record<number, number[]>>({})
   const [activeEffortDrawer, setActiveEffortDrawer] = useState<EffortRailDrawer | null>(null)
   const [effortDescriptionExpanded, setEffortDescriptionExpanded] = useState(false)
   const [drawerWidth, setDrawerWidth] = useState<number | null>(null)
@@ -106,6 +106,7 @@ function App() {
   const preserveSelectionOnEffortChangeRef = useRef(false)
   const bootstrapLiveAttachmentIdsRef = useRef<Set<string> | null>(null)
   const liveSessionGraceRef = useRef(new Map<number, LiveSessionCacheEntry>())
+  const activeTerminalTabKeyByEffortRef = useRef<Record<number, string>>({})
 
   const effortsQuery = useQuery({
     queryKey: ['efforts'],
@@ -168,6 +169,24 @@ function App() {
 
   const selectedEffort =
     effortsQuery.data?.find((effort) => effort.id === selectedEffortId) ?? effortsQuery.data?.[0]
+
+  const openTaskPageIds = useMemo(() => {
+    if (!selectedEffort) return []
+    return openTaskPageIdsByEffort[selectedEffort.id] ?? []
+  }, [openTaskPageIdsByEffort, selectedEffort])
+
+  const rememberActiveTerminalTabKey = useCallback((
+    value: string | ((current: string) => string),
+    effortId: number | null | undefined = selectedEffort?.id,
+  ) => {
+    setActiveTerminalTabKey((current) => {
+      const next = typeof value === 'function' ? value(current) : value
+      if (effortId != null) {
+        activeTerminalTabKeyByEffortRef.current[effortId] = next
+      }
+      return next
+    })
+  }, [selectedEffort?.id])
 
   const tasksQuery = useQuery({
     queryKey: ['tasks', selectedEffort?.id],
@@ -422,10 +441,11 @@ function App() {
   ])
 
   useEffect(() => {
+    if (tasksQuery.data === undefined || tasksQuery.isLoading) return
     if (!terminalTabs.some((tab) => tab.key === activeTerminalTabKey)) {
-      setActiveTerminalTabKey('main')
+      rememberActiveTerminalTabKey('main')
     }
-  }, [activeTerminalTabKey, terminalTabs])
+  }, [activeTerminalTabKey, rememberActiveTerminalTabKey, tasksQuery.data, tasksQuery.isLoading, terminalTabs])
 
   const buildQuery = useQuery({
     queryKey: ['task-build', activePageTask?.id],
@@ -494,23 +514,32 @@ function App() {
         : null
 
   async function refreshAgentRunState(tabKey?: string | null) {
-    setActiveTerminalTabKey(tabKey ?? 'main')
+    rememberActiveTerminalTabKey(tabKey ?? 'main')
     await queryClient.invalidateQueries({ queryKey: ['agent-runs'] })
     await queryClient.invalidateQueries({ queryKey: ['agent-runs', 'live-sessions'] })
     await queryClient.invalidateQueries({ queryKey: ['app-state'] })
   }
 
-  const openTaskPage = useCallback((taskId: number) => {
-    setOpenTaskPageIds((current) => (current.includes(taskId) ? current : [...current, taskId]))
-    setActiveTerminalTabKey(`work-task-${taskId}`)
+  const openTaskPage = useCallback((taskId: number, effortId = selectedEffort?.id) => {
+    if (effortId == null) return
+    setOpenTaskPageIdsByEffort((current) => {
+      const effortTaskIds = current[effortId] ?? []
+      if (effortTaskIds.includes(taskId)) return current
+      return { ...current, [effortId]: [...effortTaskIds, taskId] }
+    })
+    rememberActiveTerminalTabKey(`work-task-${taskId}`, effortId)
     setActiveEffortDrawer(null)
-  }, [])
+  }, [rememberActiveTerminalTabKey, selectedEffort?.id])
 
   const closeTaskPage = useCallback((key: string) => {
+    if (!selectedEffort) return
     const taskId = Number(key.replace('work-task-', ''))
-    setOpenTaskPageIds((current) => current.filter((id) => id !== taskId))
-    setActiveTerminalTabKey((current) => (current === key ? 'main' : current))
-  }, [])
+    setOpenTaskPageIdsByEffort((current) => ({
+      ...current,
+      [selectedEffort.id]: (current[selectedEffort.id] ?? []).filter((id) => id !== taskId),
+    }))
+    rememberActiveTerminalTabKey((current) => (current === key ? 'main' : current))
+  }, [rememberActiveTerminalTabKey, selectedEffort])
 
   const handleAttentionNavigate = useCallback((target: AttentionNavigateTarget) => {
     setSurfaceMode('effort')
@@ -529,7 +558,7 @@ function App() {
     if (target.taskId != null) {
       setSelectedTaskId(target.taskId)
       setSelectedPlanId(null)
-      openTaskPage(target.taskId)
+      openTaskPage(target.taskId, target.effortId)
     }
   }, [openTaskPage])
 
@@ -538,9 +567,15 @@ function App() {
   }, [])
 
   useEffect(() => {
+    if (!selectedEffort || tasksQuery.data === undefined || tasksQuery.isLoading) return
     const taskIds = new Set((tasksQuery.data ?? []).map((task) => task.id))
-    setOpenTaskPageIds((current) => current.filter((id) => taskIds.has(id)))
-  }, [tasksQuery.data])
+    setOpenTaskPageIdsByEffort((current) => {
+      const effortTaskIds = current[selectedEffort.id] ?? []
+      const nextTaskIds = effortTaskIds.filter((id) => taskIds.has(id))
+      if (nextTaskIds.length === effortTaskIds.length) return current
+      return { ...current, [selectedEffort.id]: nextTaskIds }
+    })
+  }, [selectedEffort, tasksQuery.data, tasksQuery.isLoading])
 
   const commitsQuery = useQuery({
     queryKey: ['task-commits', activePageTask?.id],
@@ -764,7 +799,7 @@ function App() {
       return prepared.run
     },
     onSuccess: async (run) => {
-      setActiveTerminalTabKey(run.terminalTabKey ?? 'main')
+      rememberActiveTerminalTabKey(run.terminalTabKey ?? 'main')
       setActiveEffortDrawer(null)
       await queryClient.invalidateQueries({ queryKey: ['agent-runs'] })
       await queryClient.invalidateQueries({ queryKey: ['agent-runs', 'live-sessions'] })
@@ -779,8 +814,9 @@ function App() {
   }, [effortsQuery.data, selectedEffortId])
 
   useEffect(() => {
-    setActiveTerminalTabKey('main')
-  }, [selectedEffortId])
+    if (!selectedEffort) return
+    rememberActiveTerminalTabKey(activeTerminalTabKeyByEffortRef.current[selectedEffort.id] ?? 'main', selectedEffort.id)
+  }, [rememberActiveTerminalTabKey, selectedEffort])
 
   useEffect(() => {
     setEffortDescriptionExpanded(false)
@@ -801,7 +837,7 @@ function App() {
   useEffect(() => {
     return window.effortless.onAgentRunTerminalEvent((event) => {
       if (event.kind === 'started') {
-        setActiveTerminalTabKey(event.body ?? 'main')
+        rememberActiveTerminalTabKey(event.body ?? 'main')
         void queryClient.invalidateQueries({ queryKey: ['agent-runs'] })
         void queryClient.invalidateQueries({ queryKey: ['agent-runs', 'live-sessions'] })
         void queryClient.invalidateQueries({ queryKey: ['app-state'] })
@@ -820,7 +856,7 @@ function App() {
         void queryClient.invalidateQueries({ queryKey: ['attention'] })
       }
     })
-  }, [queryClient, selectedEffort?.id])
+  }, [queryClient, rememberActiveTerminalTabKey, selectedEffort?.id])
 
   useEffect(() => {
     if (preserveSelectionOnEffortChangeRef.current) {
@@ -891,7 +927,7 @@ function App() {
     if (notification.kind === 'task-review') {
       setSelectedTaskId(notification.entityId)
       setSelectedPlanId(null)
-      openTaskPage(notification.entityId)
+      openTaskPage(notification.entityId, notification.effortId)
       return
     }
 
@@ -899,11 +935,11 @@ function App() {
       if (notification.taskId) {
         setSelectedTaskId(notification.taskId)
         setSelectedPlanId(null)
-        openTaskPage(notification.taskId)
+        openTaskPage(notification.taskId, notification.effortId)
       } else {
         setActiveEffortDrawer(null)
       }
-      setActiveTerminalTabKey(notification.terminalTabKey ?? 'main')
+      rememberActiveTerminalTabKey(notification.terminalTabKey ?? 'main', notification.effortId)
       return
     }
 
@@ -916,7 +952,7 @@ function App() {
         setSelectedPlanId(null)
       }
       if (notification.terminalTabKey) {
-        setActiveTerminalTabKey(notification.terminalTabKey)
+        rememberActiveTerminalTabKey(notification.terminalTabKey, notification.effortId)
         setActiveEffortDrawer(null)
       }
     }
@@ -1274,7 +1310,7 @@ function App() {
                   onForkMain={() => forkMainRun.mutate()}
                   onResume={(runId) => resumeAgentRun.mutate(runId)}
                   onSelectTab={(key) => {
-                    setActiveTerminalTabKey(key)
+                    rememberActiveTerminalTabKey(key)
                     setTerminalMenuOpen(false)
                   }}
                   onOpenTask={(taskId) => {

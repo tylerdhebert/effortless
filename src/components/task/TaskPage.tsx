@@ -316,203 +316,205 @@ export function TaskPage({
         ) : null}
       </header>
 
-      {showGateStrip ? (
-        <div className={styles['gate-strip']}>
-          <Stamp label="awaiting verdict" tone="gate" />
-          <p className={styles['gate-strip-summary']}>{gateSummary}</p>
-          {latestReview ? (
-            <div className={styles['gate-strip-actions']}>
-              <button
-                type="button"
-                className={styles.primary}
-                onClick={() => onApplyReview(latestReview.id)}
-                disabled={isApplyingReview}
-              >
-                apply verdict
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowChangeRequest((open) => !open)}
-                disabled={isRequestingReviewChanges}
-              >
-                request changes
-              </button>
-            </div>
-          ) : null}
-          {showChangeRequest && latestReview ? (
-            <form
-              className={styles['gate-change-request']}
-              onSubmit={(event) => {
-                event.preventDefault()
-                if (reviewFeedback.trim()) {
-                  onRequestReviewChanges({ reviewId: latestReview.id, body: reviewFeedback })
-                }
-              }}
-            >
-              <textarea
-                aria-label="review feedback"
-                value={reviewFeedback}
-                onChange={(event) => setReviewFeedback(event.target.value)}
-                rows={4}
-                placeholder="what should change before this ships?"
-              />
-              <button type="submit" className={styles.primary} disabled={isRequestingReviewChanges || !reviewFeedback.trim()}>
-                submit changes request
-              </button>
-            </form>
-          ) : null}
-        </div>
-      ) : null}
-
-      <section className={styles['implementation-section']}>
-        <div className={styles['implementation-section-header']}>
-          <h4 className={styles['implementation-eyebrow']}>implementation</h4>
-          <div className={styles['implementation-build-cluster']}>
-            {latestBuild ? (
-              <span className="meta-line">
-                <Ref value={latestBuild.shortRef} />{' '}
-                <Stamp label={latestBuild.status} tone={statusTone(latestBuild.status)} />
-              </span>
-            ) : (
-              <span className={styles['implementation-build-empty']}>no builds yet</span>
-            )}
-          </div>
-        </div>
-
-        <div className={styles['implementation-controls']}>
-          <PillSwitcher
-            ariaLabel="implementation diff type"
-            options={[
-              { id: 'uncommitted', label: 'uncommitted' },
-              { id: 'branch', label: 'branch' },
-              { id: 'combined', label: 'combined' },
-            ]}
-            value={diffType}
-            onChange={setDiffType}
-          />
-          <PillSwitcher
-            ariaLabel="implementation diff view type"
-            options={[
-              { id: 'unified', label: 'unified' },
-              { id: 'split', label: 'split' },
-            ]}
-            value={diffViewType}
-            onChange={setDiffViewType}
-          />
-        </div>
-
-        {diffView?.error ? (
-          <GitViewEmpty error={diffView.error} />
-        ) : fileEntries.length > 0 ? (
-          <div className={styles['implementation-layout']}>
-            <div className={styles['implementation-file-list']}>
-              {fileEntries.map((entry) => (
+      <div className={styles['task-page-body']}>
+        {showGateStrip ? (
+          <div className={styles['gate-strip']}>
+            <Stamp label="awaiting verdict" tone="gate" />
+            <p className={styles['gate-strip-summary']}>{gateSummary}</p>
+            {latestReview ? (
+              <div className={styles['gate-strip-actions']}>
                 <button
-                  key={entry.path}
                   type="button"
-                  className={`${styles['implementation-file']} ${activeFileEntry?.path === entry.path ? styles.active : ''}`}
-                  onClick={() => setActiveFilePath(entry.path)}
+                  className={styles.primary}
+                  onClick={() => onApplyReview(latestReview.id)}
+                  disabled={isApplyingReview}
                 >
-                  <div>
-                    <strong>{entry.path.split('/').slice(-1)[0] || entry.path}</strong>
-                    <span>{entry.path.split('/').slice(0, -1).join('/')}</span>
-                  </div>
-                  <small>
-                    {entry.added > 0 ? `+${entry.added} ` : ''}{entry.removed > 0 ? `-${entry.removed}` : ''}
-                  </small>
+                  apply verdict
                 </button>
-              ))}
-            </div>
-            <div className={styles['implementation-diff-panel']}>
-              {activeFileEntry ? (
-                <DiffFile file={activeFileEntry.file} viewType={diffViewType} />
+                <button
+                  type="button"
+                  onClick={() => setShowChangeRequest((open) => !open)}
+                  disabled={isRequestingReviewChanges}
+                >
+                  request changes
+                </button>
+              </div>
+            ) : null}
+            {showChangeRequest && latestReview ? (
+              <form
+                className={styles['gate-change-request']}
+                onSubmit={(event) => {
+                  event.preventDefault()
+                  if (reviewFeedback.trim()) {
+                    onRequestReviewChanges({ reviewId: latestReview.id, body: reviewFeedback })
+                  }
+                }}
+              >
+                <textarea
+                  aria-label="review feedback"
+                  value={reviewFeedback}
+                  onChange={(event) => setReviewFeedback(event.target.value)}
+                  rows={4}
+                  placeholder="what should change before this ships?"
+                />
+                <button type="submit" className={styles.primary} disabled={isRequestingReviewChanges || !reviewFeedback.trim()}>
+                  submit changes request
+                </button>
+              </form>
+            ) : null}
+          </div>
+        ) : null}
+
+        <section className={styles['implementation-section']}>
+          <div className={styles['implementation-section-header']}>
+            <h4 className={styles['implementation-eyebrow']}>implementation</h4>
+            <div className={styles['implementation-build-cluster']}>
+              {latestBuild ? (
+                <span className="meta-line">
+                  <Ref value={latestBuild.shortRef} />{' '}
+                  <Stamp label={latestBuild.status} tone={statusTone(latestBuild.status)} />
+                </span>
               ) : (
-                <p className="empty-state">select a file to view its diff</p>
+                <span className={styles['implementation-build-empty']}>no builds yet</span>
               )}
             </div>
           </div>
-        ) : diffView?.output ? (
-          <pre>{diffView.output}</pre>
-        ) : (
-          <p className="empty-state">no diff output</p>
-        )}
-      </section>
 
-      <div className={styles['supporting-grid']}>
-        <article className={styles['supporting-card']}>
-          <div className={styles['supporting-card-section']}>
-            <h4 className={styles['supporting-eyebrow']}>commits</h4>
-            {commitView?.error ? (
-              <GitViewEmpty error={commitView.error} />
-            ) : commitView?.output ? (
-              <>
-                <p className={styles['supporting-message']}>{firstLine(commitView.output)}</p>
-                <details className={styles['supporting-details']}>
-                  <summary>details</summary>
-                  <pre>{commitView.output}</pre>
-                </details>
-              </>
-            ) : (
-              <p className={styles['supporting-message']}>no commits ahead of base</p>
-            )}
+          <div className={styles['implementation-controls']}>
+            <PillSwitcher
+              ariaLabel="implementation diff type"
+              options={[
+                { id: 'uncommitted', label: 'uncommitted' },
+                { id: 'branch', label: 'branch' },
+                { id: 'combined', label: 'combined' },
+              ]}
+              value={diffType}
+              onChange={setDiffType}
+            />
+            <PillSwitcher
+              ariaLabel="implementation diff view type"
+              options={[
+                { id: 'unified', label: 'unified' },
+                { id: 'split', label: 'split' },
+              ]}
+              value={diffViewType}
+              onChange={setDiffViewType}
+            />
           </div>
 
-          <div className={styles['supporting-card-section']}>
-            <h4 className={styles['supporting-eyebrow']}>conflicts</h4>
-            {conflictView?.error ? (
-              <GitViewEmpty error={conflictView.error} />
-            ) : conflictView?.hasConflicts ? (
-              <>
-                <p className={styles['supporting-message']}>
-                  {conflictView.files.length > 0
-                    ? `${conflictView.files.length} conflicted file${conflictView.files.length === 1 ? '' : 's'}`
-                    : 'conflicts found'}
-                </p>
-                {conflictView.files.length > 0 || conflictView.details ? (
+          {diffView?.error ? (
+            <GitViewEmpty error={diffView.error} />
+          ) : fileEntries.length > 0 ? (
+            <div className={styles['implementation-layout']}>
+              <div className={styles['implementation-file-list']}>
+                {fileEntries.map((entry) => (
+                  <button
+                    key={entry.path}
+                    type="button"
+                    className={`${styles['implementation-file']} ${activeFileEntry?.path === entry.path ? styles.active : ''}`}
+                    onClick={() => setActiveFilePath(entry.path)}
+                  >
+                    <div>
+                      <strong>{entry.path.split('/').slice(-1)[0] || entry.path}</strong>
+                      <span>{entry.path.split('/').slice(0, -1).join('/')}</span>
+                    </div>
+                    <small>
+                      {entry.added > 0 ? `+${entry.added} ` : ''}{entry.removed > 0 ? `-${entry.removed}` : ''}
+                    </small>
+                  </button>
+                ))}
+              </div>
+              <div className={styles['implementation-diff-panel']}>
+                {activeFileEntry ? (
+                  <DiffFile file={activeFileEntry.file} viewType={diffViewType} />
+                ) : (
+                  <p className="empty-state">select a file to view its diff</p>
+                )}
+              </div>
+            </div>
+          ) : diffView?.output ? (
+            <pre>{diffView.output}</pre>
+          ) : (
+            <p className="empty-state">no diff output</p>
+          )}
+        </section>
+
+        <div className={styles['supporting-grid']}>
+          <article className={styles['supporting-card']}>
+            <div className={styles['supporting-card-section']}>
+              <h4 className={styles['supporting-eyebrow']}>commits</h4>
+              {commitView?.error ? (
+                <GitViewEmpty error={commitView.error} />
+              ) : commitView?.output ? (
+                <>
+                  <p className={styles['supporting-message']}>{firstLine(commitView.output)}</p>
                   <details className={styles['supporting-details']}>
                     <summary>details</summary>
-                    {conflictView.files.length > 0 ? (
-                      <p className={styles['supporting-message']}>{conflictView.files.join(', ')}</p>
-                    ) : null}
-                    {conflictView.details ? <pre>{conflictView.details}</pre> : null}
+                    <pre>{commitView.output}</pre>
                   </details>
-                ) : null}
-              </>
-            ) : (
-              <p className={styles['supporting-message']}>no conflicts detected</p>
-            )}
-          </div>
-        </article>
+                </>
+              ) : (
+                <p className={styles['supporting-message']}>no commits ahead of base</p>
+              )}
+            </div>
 
-        <article className={styles['supporting-card']}>
-          <div className={styles['supporting-card-section']}>
-            <h4 className={styles['supporting-eyebrow']}>comments</h4>
-            <CommentStream comments={comments} />
-          </div>
-
-          <div className={styles['supporting-card-section']}>
-            <h4 className={styles['supporting-eyebrow']}>artifact</h4>
-            <p className={styles['artifact-readout']}>{task.artifact ?? 'no artifact yet'}</p>
-            {reviews.length > 0 ? (
-              <details className={styles['review-history']}>
-                <summary>review history</summary>
-                <ul className={styles['review-history-list']}>
-                  {reviews.map((review) => (
-                    <li key={review.id} className={styles['review-history-item']}>
-                      <span className={styles['review-history-meta']}>
-                        <Ref value={review.shortRef} />{' '}
-                        <Stamp label={review.verdict} tone={statusTone(review.verdict)} compact />
-                      </span>
-                      {review.summary ? (
-                        <span className={styles['review-history-summary']}>{review.summary}</span>
+            <div className={styles['supporting-card-section']}>
+              <h4 className={styles['supporting-eyebrow']}>conflicts</h4>
+              {conflictView?.error ? (
+                <GitViewEmpty error={conflictView.error} />
+              ) : conflictView?.hasConflicts ? (
+                <>
+                  <p className={styles['supporting-message']}>
+                    {conflictView.files.length > 0
+                      ? `${conflictView.files.length} conflicted file${conflictView.files.length === 1 ? '' : 's'}`
+                      : 'conflicts found'}
+                  </p>
+                  {conflictView.files.length > 0 || conflictView.details ? (
+                    <details className={styles['supporting-details']}>
+                      <summary>details</summary>
+                      {conflictView.files.length > 0 ? (
+                        <p className={styles['supporting-message']}>{conflictView.files.join(', ')}</p>
                       ) : null}
-                    </li>
-                  ))}
-                </ul>
-              </details>
-            ) : null}
-          </div>
-        </article>
+                      {conflictView.details ? <pre>{conflictView.details}</pre> : null}
+                    </details>
+                  ) : null}
+                </>
+              ) : (
+                <p className={styles['supporting-message']}>no conflicts detected</p>
+              )}
+            </div>
+          </article>
+
+          <article className={styles['supporting-card']}>
+            <div className={styles['supporting-card-section']}>
+              <h4 className={styles['supporting-eyebrow']}>comments</h4>
+              <CommentStream comments={comments} />
+            </div>
+
+            <div className={styles['supporting-card-section']}>
+              <h4 className={styles['supporting-eyebrow']}>artifact</h4>
+              <p className={styles['artifact-readout']}>{task.artifact ?? 'no artifact yet'}</p>
+              {reviews.length > 0 ? (
+                <details className={styles['review-history']}>
+                  <summary>review history</summary>
+                  <ul className={styles['review-history-list']}>
+                    {reviews.map((review) => (
+                      <li key={review.id} className={styles['review-history-item']}>
+                        <span className={styles['review-history-meta']}>
+                          <Ref value={review.shortRef} />{' '}
+                          <Stamp label={review.verdict} tone={statusTone(review.verdict)} compact />
+                        </span>
+                        {review.summary ? (
+                          <span className={styles['review-history-summary']}>{review.summary}</span>
+                        ) : null}
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              ) : null}
+            </div>
+          </article>
+        </div>
       </div>
     </div>
   )

@@ -1,17 +1,25 @@
 .task-page {
   display: flex;
   flex-direction: column;
-  gap: var(--space-section);
   min-height: 0;
   height: 100%;
   padding: var(--space-section);
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 .task-page-header {
   display: grid;
   gap: var(--space-tight);
   flex-shrink: 0;
+}
+
+.task-page-body {
+  display: grid;
+  gap: var(--space-section);
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding-top: var(--space-section);
 }
 
 .task-page-header-top {
