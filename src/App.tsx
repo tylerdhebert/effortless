@@ -1188,13 +1188,15 @@ function App() {
                                   ) : null}
                                 </>
                               ) : null}
-                              <button
-                                type="button"
-                                className="effort-description-toggle"
-                                onClick={() => setEffortDescriptionExpanded(false)}
-                              >
-                                collapse
-                              </button>
+                              <p className="effort-description-collapse">
+                                <button
+                                  type="button"
+                                  className="effort-description-toggle"
+                                  onClick={() => setEffortDescriptionExpanded(false)}
+                                >
+                                  collapse
+                                </button>
+                              </p>
                             </div>
                           )}
                         </div>

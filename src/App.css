@@ -341,7 +341,9 @@
 }
 
 .effort-description-expanded {
-  display: grid;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
   gap: 8px;
   min-width: 0;
 }
@@ -355,8 +357,17 @@
   white-space: pre-wrap;
 }
 
+.effort-description-collapse {
+  display: inline-flex;
+  align-items: baseline;
+  margin: 0;
+  max-width: 70ch;
+}
+
 .effort-description-toggle {
+  display: inline-flex;
   flex-shrink: 0;
+  margin: 0;
   border: none;
   padding: 0;
   background: transparent;
