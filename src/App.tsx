@@ -9,7 +9,6 @@ import {
   Home,
   ListOrdered,
   Plus,
-  ScrollText,
   Trash2,
   X,
 } from 'lucide-react'
@@ -46,7 +45,7 @@ import type { AgentProvider, AgentRun, LiveAgentRunSession, Task } from '../core
 import type { PendingNotification } from '../core/notifications'
 import './App.css'
 
-type EffortRailDrawer = 'description' | 'inputs' | 'plan' | 'tasks'
+type EffortRailDrawer = 'inputs' | 'plan' | 'tasks'
 type LiveSessionCacheEntry = {
   session: LiveAgentRunSession
   lastSeenAt: number
@@ -70,6 +69,7 @@ function App() {
   const [activeTerminalTabKey, setActiveTerminalTabKey] = useState('main')
   const [openTaskPageIds, setOpenTaskPageIds] = useState<number[]>([])
   const [activeEffortDrawer, setActiveEffortDrawer] = useState<EffortRailDrawer | null>(null)
+  const [effortDescriptionExpanded, setEffortDescriptionExpanded] = useState(false)
   const [drawerWidth, setDrawerWidth] = useState<number | null>(null)
   const [drawerResizing, setDrawerResizing] = useState(false)
 
@@ -205,8 +205,6 @@ function App() {
   const template = selectedEffort?.template ?? null
   const supportsPlans = template ? effortSupportsPlans(template) : false
   const supportsTasks = template ? effortSupportsTasks(template) : false
-  const usesBugfixOverview = template === 'bugfix'
-
 
   const taskPendingInputIds = useMemo(() => {
     const set = new Set<number>()
@@ -785,6 +783,10 @@ function App() {
   }, [selectedEffortId])
 
   useEffect(() => {
+    setEffortDescriptionExpanded(false)
+  }, [selectedEffortId])
+
+  useEffect(() => {
     if (!appStateQuery.data) return
     if (observedAppVersion === null) {
       setObservedAppVersion(appStateQuery.data.version)
@@ -1143,6 +1145,61 @@ function App() {
                         </select>
                       </label>
                     </div>
+                    {(() => {
+                      const descriptionPreview = selectedEffort.description.split(/\r?\n/, 1)[0]
+                      const hasSummary =
+                        (selectedEffort.status === 'complete' || selectedEffort.status === 'archived') &&
+                        Boolean(selectedEffort.summary)
+                      const canExpand = Boolean(selectedEffort.description.trim()) || hasSummary
+                      if (!descriptionPreview && !canExpand) {
+                        return null
+                      }
+
+                      return (
+                        <div className="effort-header-description">
+                          {!effortDescriptionExpanded ? (
+                            <p className="effort-description-preview">
+                              <span className="effort-description-preview-text">{descriptionPreview}</span>
+                              {canExpand ? (
+                                <button
+                                  type="button"
+                                  className="effort-description-toggle"
+                                  onClick={() => setEffortDescriptionExpanded(true)}
+                                >
+                                  expand
+                                </button>
+                              ) : null}
+                            </p>
+                          ) : (
+                            <div className="effort-description-expanded">
+                              {selectedEffort.description ? (
+                                <p className="effort-description-full">{selectedEffort.description}</p>
+                              ) : null}
+                              {hasSummary ? (
+                                <>
+                                  {selectedEffort.template === 'investigation' ? (
+                                    <EffortSummarySection label="findings" summary={selectedEffort.summary} />
+                                  ) : null}
+                                  {selectedEffort.template === 'delivery' ? (
+                                    <EffortSummarySection label="effort summary" summary={selectedEffort.summary} />
+                                  ) : null}
+                                  {selectedEffort.template === 'bugfix' ? (
+                                    <EffortSummarySection label="bugfix summary" summary={selectedEffort.summary} />
+                                  ) : null}
+                                </>
+                              ) : null}
+                              <button
+                                type="button"
+                                className="effort-description-toggle"
+                                onClick={() => setEffortDescriptionExpanded(false)}
+                              >
+                                collapse
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })()}
                   </div>
                 </div>
               </div>
@@ -1237,10 +1294,9 @@ function App() {
               </div>
               <aside className="effort-rail" aria-label="effort views">
                 {[
-                  { id: 'description' as const, label: 'description', Icon: ScrollText, badge: selectedEffort.shortRef },
                   { id: 'inputs' as const, label: 'inputs', Icon: CircleHelp, badge: pendingInputCount > 0 ? String(pendingInputCount) : String(inputsQuery.data?.length ?? 0) },
-                  { id: 'plan' as const, label: 'plan', Icon: ListOrdered, badge: supportsPlans ? String(plansQuery.data?.length ?? 0) : '', disabled: !supportsPlans },
                   { id: 'tasks' as const, label: 'tasks', Icon: Hammer, badge: supportsTasks ? String(filteredTasks.length) : '', disabled: !supportsTasks },
+                  { id: 'plan' as const, label: 'plan', Icon: ListOrdered, badge: supportsPlans ? String(plansQuery.data?.length ?? 0) : '', disabled: !supportsPlans },
                 ].map(({ id, label, Icon, badge, disabled }) => (
                   <button
                     key={id}
@@ -1288,35 +1344,6 @@ function App() {
                     </button>
                   </header>
                   <div className="effort-drawer-body">
-                    {activeEffortDrawer === 'description' ? (
-                      <div className="drawer-stack effort-zone-stack">
-                        {(selectedEffort.status === 'complete' || selectedEffort.status === 'archived') ? (
-                          <>
-                            {selectedEffort.template === 'investigation' ? (
-                              <EffortSummarySection label="findings" summary={selectedEffort.summary} />
-                            ) : null}
-                            {selectedEffort.template === 'delivery' ? (
-                              <EffortSummarySection label="effort summary" summary={selectedEffort.summary} />
-                            ) : null}
-                            {selectedEffort.template === 'bugfix' ? (
-                              <EffortSummarySection label="bugfix summary" summary={selectedEffort.summary} />
-                            ) : null}
-                          </>
-                        ) : null}
-                        <section className={`effort-zone-section effort-description-section ${usesBugfixOverview ? 'bugfix-description-section' : ''}`}>
-                          <h4>description</h4>
-                          <div className="drawer-effort-meta">
-                            <span className="meta-line">
-                              <Ref value={selectedEffort.shortRef} /> · {selectedEffort.template.replace('-', ' ')} ·{' '}
-                              <Stamp label={selectedEffort.status} tone={statusTone(selectedEffort.status)} />
-                            </span>
-                          </div>
-                          <div className="effort-zone-readout effort-description">
-                            <p>{selectedEffort.description}</p>
-                          </div>
-                        </section>
-                      </div>
-                    ) : null}
                     {activeEffortDrawer === 'inputs' ? (
                       <section className="input-section">
                         <InputRequestList
@@ -1596,8 +1623,6 @@ function getDefaultDrawerWidth(drawer: EffortRailDrawer | null): number {
 
 function effortDrawerTitle(drawer: EffortRailDrawer): string {
   switch (drawer) {
-    case 'description':
-      return 'description'
     case 'inputs':
       return 'inputs'
     case 'plan':
