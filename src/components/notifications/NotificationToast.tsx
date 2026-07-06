@@ -1,6 +1,10 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { ChevronLeft, ChevronRight, X } from 'lucide-react'
-import { formatNotificationKind, type PendingNotification } from '../../../core/notifications'
+import {
+  formatNotificationKind,
+  isInputRequestNotification,
+  type PendingNotification,
+} from '../../../core/notifications'
 import styles from './NotificationToast.module.css'
 
 type NotificationToastProps = {
@@ -50,11 +54,15 @@ export function NotificationToast({
     const arrived = notifications.filter((notification) => !prevIdsRef.current.has(notificationKey(notification)))
     prevIdsRef.current = currentIds
 
-    if (arrived.length > 0) {
-      setNewNotifications(arrived)
+    const bannerArrived = arrived.filter((notification) => !isInputRequestNotification(notification.kind))
+
+    if (bannerArrived.length > 0) {
+      setNewNotifications(bannerArrived)
       setVisible(true)
       setIndex(0)
+    }
 
+    if (arrived.length > 0) {
       if (osNotificationsEnabled) {
         for (const notification of arrived) {
           window.effortless.showOSNotification(

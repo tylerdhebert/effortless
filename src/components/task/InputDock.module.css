@@ -69,14 +69,14 @@
   left: 0;
   right: 0;
   height: 2px;
-  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  z-index: 2;
+  pointer-events: none;
 }
 
 .timer-bar {
-  height: 100%;
+  height: 2px;
   width: 100%;
   background: var(--accent);
-  transform-origin: left center;
   animation: input-dock-timer 10s linear forwards;
 }
 
@@ -86,17 +86,17 @@
 
 @keyframes input-dock-timer {
   from {
-    transform: scaleX(1);
+    width: 100%;
   }
   to {
-    transform: scaleX(0);
+    width: 0%;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .timer-bar {
     animation: none;
-    transform: scaleX(0);
+    width: 0%;
   }
 }
 
@@ -113,6 +113,12 @@
   font-size: 0.8rem;
   line-height: 1.45;
   color: var(--text);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
 }
 
 .answers {

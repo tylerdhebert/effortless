@@ -36,6 +36,10 @@ export function formatNotificationKind(kind: PendingNotificationKind): string {
   }
 }
 
+export function isInputRequestNotification(kind: PendingNotificationKind): boolean {
+  return kind === 'input-request' || kind === 'run-input-request'
+}
+
 export function listPendingNotifications(db: AppDatabase): PendingNotification[] {
   const notifications: PendingNotification[] = []
 
