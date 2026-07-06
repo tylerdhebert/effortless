@@ -201,7 +201,11 @@ export function initializeSchema(db: AppDatabase): void {
 
   `)
 
-  db.exec(`UPDATE app_state SET theme = 'phosphor' WHERE theme = 'grass'`)
+  const schemaVersion = db.pragma('user_version', { simple: true }) as number
+  if (schemaVersion < 1) {
+    db.exec(`UPDATE app_state SET theme = 'phosphor' WHERE theme = 'grass'`)
+    db.pragma('user_version = 1')
+  }
 
   db.exec(`UPDATE agent_runs SET purpose = 'extra' WHERE purpose NOT IN ('main', 'fork', 'extra')`)
 

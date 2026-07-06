@@ -13,7 +13,7 @@ declare module 'better-sqlite3' {
   export default class Database {
     constructor(filename: string, options?: Record<string, unknown>)
     exec(source: string): this
-    pragma(source: string): unknown
+    pragma(source: string, options?: { simple?: boolean }): unknown
     prepare<T = unknown>(source: string): Statement<T>
   }
 }
