@@ -1,10 +1,11 @@
-import { memo, useEffect, useMemo, useState } from 'react'
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useQuery } from '@tanstack/react-query'
 import { Diff, Hunk, parseDiff, tokenize } from 'react-diff-view'
 import type { FileData, ViewType } from 'react-diff-view'
 import 'react-diff-view/style/index.css'
 import { refractor as rawRefractor } from 'refractor'
-import { Play, RotateCcw, Send, X } from 'lucide-react'
+import { ChevronDown, Play, RotateCcw, Send, X } from 'lucide-react'
 import type {
   ActivityEvent,
   AgentProfile,
@@ -92,9 +93,12 @@ export function TaskPage({
   const [activeFilePath, setActiveFilePath] = useState<string | null>(null)
   const [reviewFeedback, setReviewFeedback] = useState('')
   const [showChangeRequest, setShowChangeRequest] = useState(false)
-  const [launchTarget, setLaunchTarget] = useState<'main' | 'task'>('main')
   const [launchProvider, setLaunchProvider] = useState<AgentProvider>(defaultProvider)
   const [launchProfileId, setLaunchProfileId] = useState<number | null>(defaultProfileId)
+  const [launchMenuOpen, setLaunchMenuOpen] = useState(false)
+  const [launchMenuPosition, setLaunchMenuPosition] = useState<{ top: number; left: number } | null>(null)
+  const launchButtonRef = useRef<HTMLDivElement | null>(null)
+  const launchMenuRef = useRef<HTMLDivElement | null>(null)
 
   const providers = useMemo(() => listAgentProviders(), [])
   const taskRepo = repos.find((repo) => repo.id === task.repoId) ?? null
@@ -107,14 +111,78 @@ export function TaskPage({
   const launchBusy = isLaunchingTask || isRerunningTask
   const showGateStrip = task.status === 'reviewing'
   const profileId = selectedProfile?.id ?? defaultProfileId ?? null
+  const mergePrimary = Boolean(task.status === 'accepted' && taskRepo && task.branchName)
+
+  const closeLaunchMenu = useCallback(() => {
+    setLaunchMenuOpen(false)
+  }, [])
+
+  const updateLaunchMenuPosition = useCallback(() => {
+    const button = launchButtonRef.current
+    if (!button) return
+    const buttonRect = button.getBoundingClientRect()
+    const menuWidth = 260
+    const maxLeft = Math.max(8, window.innerWidth - menuWidth - 8)
+    setLaunchMenuPosition({
+      top: buttonRect.bottom + 6,
+      left: Math.max(8, Math.min(buttonRect.left, maxLeft)),
+    })
+  }, [])
 
   useEffect(() => {
-    setLaunchTarget('main')
     setLaunchProvider(defaultProvider)
     setLaunchProfileId(defaultProfileId ?? profiles[0]?.id ?? null)
+    setLaunchMenuOpen(false)
     setReviewFeedback('')
     setShowChangeRequest(false)
   }, [task.id, defaultProvider, defaultProfileId, profiles])
+
+  useEffect(() => {
+    if (!launchMenuOpen) return
+
+    function handlePointerDown(event: MouseEvent) {
+      const target = event.target as Node
+      if (
+        !launchButtonRef.current?.contains(target) &&
+        !launchMenuRef.current?.contains(target)
+      ) {
+        closeLaunchMenu()
+      }
+    }
+
+    window.addEventListener('mousedown', handlePointerDown)
+    return () => window.removeEventListener('mousedown', handlePointerDown)
+  }, [closeLaunchMenu, launchMenuOpen])
+
+  useEffect(() => {
+    if (!launchMenuOpen) return
+
+    function handleKeydown(event: KeyboardEvent) {
+      if (event.key !== 'Escape') return
+      event.preventDefault()
+      event.stopPropagation()
+      closeLaunchMenu()
+    }
+
+    window.addEventListener('keydown', handleKeydown, true)
+    return () => window.removeEventListener('keydown', handleKeydown, true)
+  }, [closeLaunchMenu, launchMenuOpen])
+
+  useLayoutEffect(() => {
+    if (!launchMenuOpen) {
+      setLaunchMenuPosition(null)
+      return
+    }
+
+    updateLaunchMenuPosition()
+    const handle = () => updateLaunchMenuPosition()
+    window.addEventListener('resize', handle)
+    window.addEventListener('scroll', handle, true)
+    return () => {
+      window.removeEventListener('resize', handle)
+      window.removeEventListener('scroll', handle, true)
+    }
+  }, [launchMenuOpen, updateLaunchMenuPosition])
 
   const diffViewQuery = useQuery<TaskDiffView>({
     queryKey: ['task-diff', task.id, diffType],
@@ -216,104 +284,151 @@ export function TaskPage({
           <p className={styles['task-description']}>{task.description}</p>
         ) : null}
 
-        <div className={styles['task-launch-bar']}>
-          <div className={styles['task-launch-controls']}>
-            <label className={styles['task-launch-field']}>
-              <span>terminal</span>
-              <select
-                aria-label="task launch terminal"
-                value={launchTarget}
-                onChange={(event) => setLaunchTarget(event.target.value as 'main' | 'task')}
-              >
-                <option value="main">main effort terminal</option>
-                <option value="task">task terminal</option>
-              </select>
-            </label>
-            <label className={styles['task-launch-field']}>
-              <span>provider</span>
-              <select
-                aria-label="task launch provider"
-                value={launchProvider}
-                onChange={(event) => setLaunchProvider(event.target.value as AgentProvider)}
-              >
-                {providers.map((provider) => (
-                  <option key={provider.key} value={provider.key}>{provider.name}</option>
-                ))}
-              </select>
-            </label>
-            <label className={styles['task-launch-field']}>
-              <span>profile</span>
-              <select
-                aria-label="task launch profile"
-                value={launchProfileId == null ? '' : String(launchProfileId)}
-                onChange={(event) => setLaunchProfileId(event.target.value ? Number(event.target.value) : null)}
-                disabled={profiles.length === 0}
-              >
-                {profiles.map((profile) => (
-                  <option key={profile.id} value={profile.id}>{profile.name}</option>
-                ))}
-              </select>
-            </label>
-          </div>
-          <div className={styles['task-header-actions']}>
-            <button
-              type="button"
-              className={`${styles['task-header-action']} ${launchTarget === 'main' ? styles.primary : ''}`}
-              title="send task context to the main effort terminal"
-              onClick={() => onWorkOnTask({ task, provider: launchProvider, profileId })}
-              disabled={launchBusy}
-            >
-              <Send size={14} aria-hidden="true" />
-              <span>{launchBusy && launchTarget === 'main' ? 'sending' : 'work on this'}</span>
-            </button>
-            <button
-              type="button"
-              className={`${styles['task-header-action']} ${launchTarget === 'task' ? styles.primary : ''}`}
-              title="start a dedicated task terminal run"
-              onClick={() => onStartTaskRun({ task, provider: launchProvider, profileId })}
-              disabled={launchBusy || profiles.length === 0}
-            >
-              <Play size={14} aria-hidden="true" />
-              <span>{launchBusy && launchTarget === 'task' ? 'starting' : 'start task run'}</span>
-            </button>
-            {canRerun ? (
+        <div className={styles['task-split-row']}>
+          <div ref={launchButtonRef} className={styles['task-split-action']}>
+            {mergePrimary ? (
               <button
                 type="button"
-                className={styles['task-header-action']}
-                title="prepare a fresh task run with updated context"
-                onClick={() => onRerunTaskRun({ task, provider: launchProvider, profileId })}
-                disabled={launchBusy || profiles.length === 0}
+                className={styles['task-split-primary']}
+                title="merge task branch"
+                onClick={() => onMergeTask(task.id)}
+                disabled={isMergingTask}
               >
-                <RotateCcw size={14} aria-hidden="true" />
-                <span>{isRerunningTask ? 'rerunning' : 'rerun'}</span>
+                <span>{isMergingTask ? 'merging' : 'merge'}</span>
               </button>
-            ) : null}
+            ) : (
+              <button
+                type="button"
+                className={styles['task-split-primary']}
+                title="send task context to the main effort terminal"
+                onClick={() => onWorkOnTask({ task, provider: launchProvider, profileId })}
+                disabled={launchBusy}
+              >
+                <Send size={14} aria-hidden="true" />
+                <span>{launchBusy ? 'sending' : 'work on this'}</span>
+              </button>
+            )}
             <button
               type="button"
-              className={styles['task-header-action']}
-              title="run build"
-              onClick={() => onRunBuild(task.id)}
-              disabled={isRunningBuild || !taskRepo || !task.worktreePath}
+              className={styles['task-split-chevron']}
+              aria-label="task actions"
+              aria-expanded={launchMenuOpen}
+              title="task actions"
+              onClick={() => setLaunchMenuOpen((open) => !open)}
             >
-              <Play size={14} aria-hidden="true" />
-              <span>{isRunningBuild ? 'building' : 'run build'}</span>
-            </button>
-            <button
-              type="button"
-              className={styles['task-header-action']}
-              title="merge task branch"
-              onClick={() => onMergeTask(task.id)}
-              disabled={isMergingTask || task.status !== 'accepted' || !taskRepo || !task.branchName}
-            >
-              <span>{isMergingTask ? 'merging' : 'merge'}</span>
+              <ChevronDown size={13} aria-hidden="true" />
             </button>
           </div>
+          {launchMenuOpen && launchMenuPosition
+            ? createPortal(
+                <div
+                  ref={launchMenuRef}
+                  className={styles['task-action-menu']}
+                  role="menu"
+                  style={{ top: launchMenuPosition.top, left: launchMenuPosition.left }}
+                >
+                  <div className={styles['task-action-menu-fields']}>
+                    <label className={styles['task-action-menu-field']}>
+                      <span>provider</span>
+                      <select
+                        aria-label="task launch provider"
+                        value={launchProvider}
+                        onChange={(event) => setLaunchProvider(event.target.value as AgentProvider)}
+                      >
+                        {providers.map((provider) => (
+                          <option key={provider.key} value={provider.key}>{provider.name}</option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className={styles['task-action-menu-field']}>
+                      <span>profile</span>
+                      <select
+                        aria-label="task launch profile"
+                        value={launchProfileId == null ? '' : String(launchProfileId)}
+                        onChange={(event) => setLaunchProfileId(event.target.value ? Number(event.target.value) : null)}
+                        disabled={profiles.length === 0}
+                      >
+                        {profiles.map((profile) => (
+                          <option key={profile.id} value={profile.id}>{profile.name}</option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+                  {mainRunLive ? (
+                    <p className={styles['task-action-menu-hint']}>
+                      main is live — work on this sends context into the current session
+                    </p>
+                  ) : null}
+                  <div className={styles['task-action-menu-separator']} />
+                  <div className={styles['task-action-menu-section']}>
+                    {mergePrimary ? (
+                      <button
+                        type="button"
+                        className={styles['task-action-menu-item']}
+                        role="menuitem"
+                        onClick={() => {
+                          onWorkOnTask({ task, provider: launchProvider, profileId })
+                          closeLaunchMenu()
+                        }}
+                        disabled={launchBusy}
+                      >
+                        <Send size={13} aria-hidden="true" />
+                        <span>{launchBusy ? 'sending' : 'work on this'}</span>
+                      </button>
+                    ) : null}
+                    <button
+                      type="button"
+                      className={styles['task-action-menu-item']}
+                      role="menuitem"
+                      onClick={() => {
+                        onStartTaskRun({ task, provider: launchProvider, profileId })
+                        closeLaunchMenu()
+                      }}
+                      disabled={launchBusy || profiles.length === 0}
+                    >
+                      <Play size={13} aria-hidden="true" />
+                      <span>start task run</span>
+                    </button>
+                    {canRerun ? (
+                      <button
+                        type="button"
+                        className={styles['task-action-menu-item']}
+                        role="menuitem"
+                        onClick={() => {
+                          onRerunTaskRun({ task, provider: launchProvider, profileId })
+                          closeLaunchMenu()
+                        }}
+                        disabled={launchBusy || profiles.length === 0}
+                      >
+                        <RotateCcw size={13} aria-hidden="true" />
+                        <span>{isRerunningTask ? 'rerunning' : 'rerun'}</span>
+                      </button>
+                    ) : null}
+                    {!mergePrimary ? (
+                      <button
+                        type="button"
+                        className={styles['task-action-menu-item']}
+                        role="menuitem"
+                        title={
+                          task.status === 'accepted' && taskRepo && task.branchName
+                            ? 'merge task branch'
+                            : 'merge is available once the task is accepted'
+                        }
+                        onClick={() => {
+                          onMergeTask(task.id)
+                          closeLaunchMenu()
+                        }}
+                        disabled={isMergingTask || task.status !== 'accepted' || !taskRepo || !task.branchName}
+                      >
+                        <span>{isMergingTask ? 'merging' : 'merge'}</span>
+                      </button>
+                    ) : null}
+                  </div>
+                </div>,
+                document.body,
+              )
+            : null}
         </div>
-        {launchTarget === 'main' && mainRunLive ? (
-          <p className={styles['task-launch-note']}>
-            main is already live, so work on this sends context into the current session without changing provider or profile.
-          </p>
-        ) : null}
       </header>
 
       <div className={styles['task-page-body']}>
@@ -377,6 +492,16 @@ export function TaskPage({
               ) : (
                 <span className={styles['implementation-build-empty']}>no builds yet</span>
               )}
+              <button
+                type="button"
+                className={styles['implementation-build-action']}
+                title="run build"
+                onClick={() => onRunBuild(task.id)}
+                disabled={isRunningBuild || !taskRepo || !task.worktreePath}
+              >
+                <Play size={13} aria-hidden="true" />
+                <span>{isRunningBuild ? 'building' : 'run build'}</span>
+              </button>
             </div>
           </div>
 
