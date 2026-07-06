@@ -1,3 +1,4 @@
+import { CircleHelp } from 'lucide-react'
 import type { Task } from '../../../core/types'
 import { WarningIndicator } from '../notifications/WarningIndicator'
 import { Ref } from '../ui/Ref'
@@ -19,7 +20,7 @@ type TaskListProps = {
   onSelectTask: (taskId: number) => void
   pendingTaskIds?: Set<number>
   runBadgeByTaskId?: Map<number, string>
-  variant?: 'list' | 'strip'
+  variant?: 'list' | 'strip' | 'drawer'
 }
 
 export function TaskList({
@@ -35,7 +36,9 @@ export function TaskList({
   }
 
   return (
-    <div className={`${styles['task-list']} ${variant === 'strip' ? styles['task-list--strip'] : ''}`}>
+    <div className={`${styles['task-list']} ${
+      variant === 'strip' ? styles['task-list--strip'] : ''
+    }${variant === 'drawer' ? ` ${styles['task-list--drawer']}` : ''}`}>
       {tasks.map((task) => {
         const runBadge = runBadgeByTaskId?.get(task.id) ?? null
         return (
@@ -45,7 +48,23 @@ export function TaskList({
           className={`${styles['task-list-row']} ${task.id === selectedTaskId ? styles.selected : ''}`}
           onClick={() => onSelectTask(task.id)}
         >
-          {variant === 'strip' ? (
+          {variant === 'drawer' ? (
+            <>
+              <Ref value={task.shortRef} />
+              <Stamp label={task.status} tone={statusTone(task.status)} compact />
+              <span className={styles['task-list-drawer-title']}>{task.title}</span>
+              {pendingTaskIds?.has(task.id) ? (
+                <WarningIndicator title="needs input" size={12} />
+              ) : null}
+              <span
+                className={styles['task-list-drawer-hint']}
+                title={task.description || undefined}
+                aria-hidden={!task.description}
+              >
+                <CircleHelp size={13} />
+              </span>
+            </>
+          ) : variant === 'strip' ? (
             <>
               <span
                 className={styles['task-list-dot']}

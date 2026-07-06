@@ -298,26 +298,17 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
   gap: 8px;
+  margin-left: auto;
 }
 
-.implementation-build-cluster button {
-  min-height: 28px;
-  border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--line));
-  border-radius: 8px;
-  background: var(--button);
-  color: var(--text);
-  cursor: pointer;
-  font-size: 0.68rem;
-  font-weight: 650;
+.implementation-build-empty {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--muted);
   letter-spacing: 0.04em;
   text-transform: lowercase;
-  padding: 4px 8px;
-}
-
-.implementation-build-cluster button:disabled {
-  cursor: wait;
-  opacity: 0.55;
 }
 
 .implementation-controls {
@@ -416,13 +407,14 @@
 
 .supporting-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-section);
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  align-items: start;
 }
 
 .supporting-card {
   display: grid;
-  gap: var(--space-section);
+  gap: 14px;
   padding: var(--space-section);
   border: 1px solid var(--effort-section-border);
   border-radius: 12px;
@@ -432,36 +424,39 @@
 
 .supporting-card-section {
   display: grid;
-  gap: 10px;
+  gap: 6px;
 }
 
-.supporting-card-header {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.supporting-card-header strong {
-  font-size: 0.82rem;
-  letter-spacing: 0.04em;
-  text-transform: lowercase;
-}
-
-.supporting-card-header small {
-  color: var(--muted);
+.supporting-eyebrow {
+  margin: 0;
+  font-family: var(--font-mono);
   font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: lowercase;
+  color: var(--text-strong);
 }
 
-.supporting-card-section p {
+.supporting-message {
   margin: 0;
   color: var(--muted);
   font-size: 0.8rem;
+  line-height: 1.45;
 }
 
-.supporting-card-section pre {
+.supporting-details {
   margin: 0;
-  max-height: 240px;
+}
+
+.supporting-details summary {
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.74rem;
+  user-select: none;
+}
+
+.supporting-details pre {
+  margin: 6px 0 0;
   overflow: auto;
   border: 1px solid var(--line);
   border-radius: 10px;
@@ -475,6 +470,43 @@
   word-break: break-word;
 }
 
+.review-history {
+  margin: 0;
+}
+
+.review-history summary {
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.74rem;
+  user-select: none;
+}
+
+.review-history-list {
+  display: grid;
+  gap: 8px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.review-history-item {
+  display: grid;
+  gap: 4px;
+}
+
+.review-history-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.review-history-summary {
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
 .artifact-readout {
   margin: 0;
   padding: 8px 10px;
@@ -485,11 +517,6 @@
   line-height: 1.55;
   white-space: pre-wrap;
   word-break: break-word;
-}
-
-.conflict-block {
-  display: grid;
-  gap: 8px;
 }
 
 .git-view-empty {

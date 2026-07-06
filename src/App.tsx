@@ -396,7 +396,8 @@ function App() {
         if (!task) return null
         return {
           key: `work-task-${taskId}`,
-          label: `${task.shortRef} work`,
+          label: task.shortRef,
+          tooltip: task.title,
           run: null,
           hasLiveSession: false,
           providerLive: false,
@@ -483,6 +484,7 @@ function App() {
   const openTaskPage = useCallback((taskId: number) => {
     setOpenTaskPageIds((current) => (current.includes(taskId) ? current : [...current, taskId]))
     setActiveTerminalTabKey(`work-task-${taskId}`)
+    setActiveEffortDrawer(null)
   }, [])
 
   const closeTaskPage = useCallback((key: string) => {
@@ -1287,59 +1289,58 @@ function App() {
                     ) : null}
                     {activeEffortDrawer === 'tasks' ? (
                       supportsTasks ? (
-                        <section className="task-section">
-                          <div className="task-workspace">
-                            <div className="task-switcher-row">
-                              <TaskList
-                                tasks={filteredTasks}
-                                selectedTaskId={activePageTaskId ?? selectedTaskId}
-                                onSelectTask={openTaskPage}
-                                pendingTaskIds={taskPendingInputIds}
-                                runBadgeByTaskId={runBadgeByTaskId}
-                                variant="strip"
-                              />
-                              <div className="task-switcher-actions">
-                                {taskRepoOptions.length > 0 ? (
-                                  <select
-                                    aria-label="filter tasks by repo"
-                                    value={taskRepoFilter}
-                                    onChange={(e) => setTaskRepoFilter(e.target.value)}
-                                    disabled={taskRepoOptions.length <= 1}
-                                  >
-                                    <option value="all">all repos</option>
-                                    {taskRepoOptions.map(([repoId, repoName]) => (
-                                      <option key={repoId} value={repoId}>{repoName}</option>
-                                    ))}
-                                  </select>
-                                ) : null}
-                                <button
-                                  type="button"
-                                  onClick={() => setTaskCreateOpen((open) => !open)}
-                                >
-                                  <Plus size={14} />
-                                  <span>{taskCreateOpen ? 'hide' : 'new'}</span>
-                                </button>
-                              </div>
-                            </div>
-                            {taskCreateOpen ? (
-                              <div className="task-create-drawer">
-                                <TaskCreationForm
-                                  effortId={selectedEffort.id}
-                                  repos={reposQuery.data ?? []}
-                                  isCreating={taskMutations.createTask.isPending}
-                                  onCreate={(input) => {
-                                    taskMutations.createTask.mutate(input, {
-                                      onSuccess: (task) => {
-                                        setSelectedTaskId(task.id)
-                                        setTaskCreateOpen(false)
-                                        openTaskPage(task.id)
-                                      },
-                                    })
-                                  }}
-                                />
-                              </div>
-                            ) : null}
+                        <section className="task-drawer">
+                          <div className="task-drawer-header">
+                            {taskRepoOptions.length > 0 ? (
+                              <select
+                                aria-label="filter tasks by repo"
+                                value={taskRepoFilter}
+                                onChange={(e) => setTaskRepoFilter(e.target.value)}
+                                disabled={taskRepoOptions.length <= 1}
+                              >
+                                <option value="all">all repos</option>
+                                {taskRepoOptions.map(([repoId, repoName]) => (
+                                  <option key={repoId} value={repoId}>{repoName}</option>
+                                ))}
+                              </select>
+                            ) : (
+                              <span />
+                            )}
+                            <button
+                              type="button"
+                              className="task-drawer-new"
+                              onClick={() => setTaskCreateOpen((open) => !open)}
+                            >
+                              <Plus size={14} />
+                              <span>{taskCreateOpen ? 'hide' : 'new'}</span>
+                            </button>
                           </div>
+                          {taskCreateOpen ? (
+                            <div className="task-drawer-create">
+                              <TaskCreationForm
+                                effortId={selectedEffort.id}
+                                repos={reposQuery.data ?? []}
+                                isCreating={taskMutations.createTask.isPending}
+                                onCreate={(input) => {
+                                  taskMutations.createTask.mutate(input, {
+                                    onSuccess: (task) => {
+                                      setSelectedTaskId(task.id)
+                                      setTaskCreateOpen(false)
+                                      openTaskPage(task.id)
+                                    },
+                                  })
+                                }}
+                              />
+                            </div>
+                          ) : null}
+                          <TaskList
+                            tasks={filteredTasks}
+                            selectedTaskId={activePageTaskId ?? selectedTaskId}
+                            onSelectTask={openTaskPage}
+                            pendingTaskIds={taskPendingInputIds}
+                            runBadgeByTaskId={runBadgeByTaskId}
+                            variant="drawer"
+                          />
                         </section>
                       ) : (
                         <p className="empty-state">no task surface for this effort</p>

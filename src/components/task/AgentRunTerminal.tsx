@@ -59,6 +59,7 @@ type TerminalPalette = {
 type TerminalTab = {
   key: string
   label: string
+  tooltip?: string | null
   run: AgentRun | null
   hasLiveSession?: boolean
   providerLive?: boolean
@@ -625,7 +626,7 @@ export function AgentRunTerminal({
               <div
                 key={tab.key}
                 className={`${styles['stage-tab']} ${styles.work} ${isActive ? styles.active : ''}`}
-                title={tab.label}
+                title={tab.tooltip ?? tab.label}
               >
                 <button
                   type="button"

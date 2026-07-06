@@ -374,15 +374,8 @@ export function TaskPage({
                 <Stamp label={latestBuild.status} tone={statusTone(latestBuild.status)} />
               </span>
             ) : (
-              <span className="meta-line">no builds yet</span>
+              <span className={styles['implementation-build-empty']}>no builds yet</span>
             )}
-            <button
-              type="button"
-              onClick={() => onRunBuild(task.id)}
-              disabled={isRunningBuild || !taskRepo || !task.worktreePath}
-            >
-              run build
-            </button>
           </div>
         </div>
 
@@ -448,59 +441,76 @@ export function TaskPage({
       <div className={styles['supporting-grid']}>
         <article className={styles['supporting-card']}>
           <div className={styles['supporting-card-section']}>
-            <div className={styles['supporting-card-header']}>
-              <strong>commits</strong>
-            </div>
+            <h4 className={styles['supporting-eyebrow']}>commits</h4>
             {commitView?.error ? (
               <GitViewEmpty error={commitView.error} />
             ) : commitView?.output ? (
-              <pre>{commitView.output}</pre>
+              <>
+                <p className={styles['supporting-message']}>{firstLine(commitView.output)}</p>
+                <details className={styles['supporting-details']}>
+                  <summary>details</summary>
+                  <pre>{commitView.output}</pre>
+                </details>
+              </>
             ) : (
-              <p>no commits ahead of base</p>
+              <p className={styles['supporting-message']}>no commits ahead of base</p>
             )}
           </div>
 
           <div className={styles['supporting-card-section']}>
-            <div className={styles['supporting-card-header']}>
-              <strong>conflicts</strong>
-              {conflictView ? (
-                <small>
-                  {conflictView.error
-                    ? 'merge status unavailable'
-                    : conflictView.hasConflicts
-                      ? 'conflicts found'
-                      : 'merge is clean'}
-                </small>
-              ) : null}
-            </div>
+            <h4 className={styles['supporting-eyebrow']}>conflicts</h4>
             {conflictView?.error ? (
               <GitViewEmpty error={conflictView.error} />
             ) : conflictView?.hasConflicts ? (
-              <div className={styles['conflict-block']}>
-                {conflictView.files.length > 0 ? (
-                  <p>{conflictView.files.join(', ')}</p>
+              <>
+                <p className={styles['supporting-message']}>
+                  {conflictView.files.length > 0
+                    ? `${conflictView.files.length} conflicted file${conflictView.files.length === 1 ? '' : 's'}`
+                    : 'conflicts found'}
+                </p>
+                {conflictView.files.length > 0 || conflictView.details ? (
+                  <details className={styles['supporting-details']}>
+                    <summary>details</summary>
+                    {conflictView.files.length > 0 ? (
+                      <p className={styles['supporting-message']}>{conflictView.files.join(', ')}</p>
+                    ) : null}
+                    {conflictView.details ? <pre>{conflictView.details}</pre> : null}
+                  </details>
                 ) : null}
-                {conflictView.details ? <pre>{conflictView.details}</pre> : null}
-              </div>
+              </>
             ) : (
-              <p>no conflicts detected</p>
+              <p className={styles['supporting-message']}>no conflicts detected</p>
             )}
           </div>
         </article>
 
         <article className={styles['supporting-card']}>
           <div className={styles['supporting-card-section']}>
-            <div className={styles['supporting-card-header']}>
-              <strong>comments</strong>
-            </div>
+            <h4 className={styles['supporting-eyebrow']}>comments</h4>
             <CommentStream comments={comments} />
           </div>
 
           <div className={styles['supporting-card-section']}>
-            <div className={styles['supporting-card-header']}>
-              <strong>artifact</strong>
-            </div>
+            <h4 className={styles['supporting-eyebrow']}>artifact</h4>
             <p className={styles['artifact-readout']}>{task.artifact ?? 'no artifact yet'}</p>
+            {reviews.length > 0 ? (
+              <details className={styles['review-history']}>
+                <summary>review history</summary>
+                <ul className={styles['review-history-list']}>
+                  {reviews.map((review) => (
+                    <li key={review.id} className={styles['review-history-item']}>
+                      <span className={styles['review-history-meta']}>
+                        <Ref value={review.shortRef} />{' '}
+                        <Stamp label={review.verdict} tone={statusTone(review.verdict)} compact />
+                      </span>
+                      {review.summary ? (
+                        <span className={styles['review-history-summary']}>{review.summary}</span>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            ) : null}
           </div>
         </article>
       </div>

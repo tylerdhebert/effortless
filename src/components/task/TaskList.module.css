@@ -10,6 +10,59 @@
   padding-right: 4px;
 }
 
+.task-list--drawer {
+  display: grid;
+  grid-template-columns: 1fr;
+  align-content: start;
+  gap: 6px;
+  height: auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0;
+}
+
+.task-list--drawer .task-list-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 0;
+  padding: 8px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  overflow: hidden;
+}
+
+.task-list--drawer .task-list-row:hover {
+  background: var(--surface);
+  border-color: color-mix(in srgb, var(--line) 70%, transparent);
+}
+
+.task-list--drawer .task-list-row.selected {
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+  border-color: color-mix(in srgb, var(--accent) 28%, transparent);
+  box-shadow: none;
+}
+
+.task-list-drawer-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.8rem;
+  color: var(--text);
+  text-align: left;
+}
+
+.task-list-drawer-hint {
+  display: inline-flex;
+  flex: 0 0 auto;
+  color: var(--muted);
+  opacity: 0.72;
+}
+
 .task-list--strip {
   display: flex;
   align-items: center;
