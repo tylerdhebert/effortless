@@ -894,7 +894,7 @@
 
 .effort-drawer .task-workspace {
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-rows: auto auto;
   min-height: 0;
   align-self: stretch;
   overflow: hidden;
@@ -945,11 +945,6 @@
   font-size: 0.68rem;
   font-weight: 700;
   padding: 4px 8px;
-}
-
-.effort-drawer--tasks .task-workspace > .effort-zone {
-  grid-row: 3;
-  min-height: 0;
 }
 
 .effort-drawer--tasks .task-create-drawer {

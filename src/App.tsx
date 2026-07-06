@@ -25,8 +25,7 @@ import { PlanSection } from './components/effort/PlanSection'
 import { Sidebar } from './components/sidebar/Sidebar'
 import { AgentRunTerminal } from './components/task/AgentRunTerminal'
 import { TaskCreationForm } from './components/task/TaskCreationForm'
-import { TaskDetailPane } from './components/task/TaskDetailPane'
-import { TaskWorkPane } from './components/task/TaskWorkPane'
+import { TaskPage } from './components/task/TaskPage'
 import { TaskList } from './components/task/TaskList'
 import { getAgentProviderConfig, listAgentProviders } from '../core/agentProviders'
 import { countActiveEffortRuns, pickTaskRunBadge } from './lib/runStatus'
@@ -68,7 +67,7 @@ function App() {
   const [deleteEffortOpen, setDeleteEffortOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [activeTerminalTabKey, setActiveTerminalTabKey] = useState('main')
-  const [openWorkTaskIds, setOpenWorkTaskIds] = useState<number[]>([])
+  const [openTaskPageIds, setOpenTaskPageIds] = useState<number[]>([])
   const [activeEffortDrawer, setActiveEffortDrawer] = useState<EffortRailDrawer | null>(null)
   const [drawerWidth, setDrawerWidth] = useState<number | null>(null)
   const [drawerResizing, setDrawerResizing] = useState(false)
@@ -201,8 +200,6 @@ function App() {
     enabled: Boolean(selectedEffort),
   })
 
-  const selectedTask =
-    tasksQuery.data?.find((task) => task.id === selectedTaskId) ?? tasksQuery.data?.[0] ?? null
   const pendingInputCount = inputsQuery.data?.filter((input) => input.status === 'pending').length ?? 0
   const template = selectedEffort?.template ?? null
   const supportsPlans = template ? effortSupportsPlans(template) : false
@@ -235,16 +232,27 @@ function App() {
     return (tasksQuery.data ?? []).filter((t) => String(t.repoId) === taskRepoFilter)
   }, [tasksQuery.data, taskRepoFilter])
 
+  const activePageTaskId = useMemo(() => {
+    if (!activeTerminalTabKey.startsWith('work-task-')) return null
+    const taskId = Number(activeTerminalTabKey.replace('work-task-', ''))
+    return Number.isFinite(taskId) ? taskId : null
+  }, [activeTerminalTabKey])
+
+  const activePageTask = useMemo(() => {
+    if (activePageTaskId == null) return null
+    return tasksQuery.data?.find((task) => task.id === activePageTaskId) ?? null
+  }, [activePageTaskId, tasksQuery.data])
+
   const commentsQuery = useQuery({
-    queryKey: ['task-comments', selectedTask?.id],
-    queryFn: () => window.effortless.listTaskComments(selectedTask!.id),
-    enabled: Boolean(selectedTask),
+    queryKey: ['task-comments', activePageTask?.id],
+    queryFn: () => window.effortless.listTaskComments(activePageTask!.id),
+    enabled: Boolean(activePageTask),
   })
 
   const reviewsQuery = useQuery({
-    queryKey: ['reviews', selectedTask?.id],
-    queryFn: () => window.effortless.listReviews(selectedTask!.id),
-    enabled: Boolean(selectedTask),
+    queryKey: ['reviews', activePageTask?.id],
+    queryFn: () => window.effortless.listReviews(activePageTask!.id),
+    enabled: Boolean(activePageTask),
   })
 
   const effortRunsQuery = useQuery({
@@ -333,10 +341,10 @@ function App() {
     return countActiveEffortRuns(effortRunsQuery.data ?? [], liveSessionIds, providerLiveRunIds)
   }, [effortRunsQuery.data, liveSessionIds, providerLiveRunIds])
 
-  const selectedTaskRuns = useMemo(() => {
-    if (!selectedTask) return []
-    return (effortRunsQuery.data ?? []).filter((run) => run.taskId === selectedTask.id)
-  }, [effortRunsQuery.data, selectedTask])
+  const activePageTaskRuns = useMemo(() => {
+    if (!activePageTask) return []
+    return (effortRunsQuery.data ?? []).filter((run) => run.taskId === activePageTask.id)
+  }, [effortRunsQuery.data, activePageTask])
 
   useEffect(() => {
     if (bootstrapLiveAttachmentIdsRef.current !== null) return
@@ -382,7 +390,7 @@ function App() {
         workTaskId: null,
       }
     })
-    const workTabs = openWorkTaskIds
+    const workTabs = openTaskPageIds
       .map((taskId) => {
         const task = tasks.find((candidate) => candidate.id === taskId)
         if (!task) return null
@@ -410,7 +418,7 @@ function App() {
     liveSessionIds,
     providerLiveRunIds,
     tasksQuery.data,
-    openWorkTaskIds,
+    openTaskPageIds,
   ])
 
   useEffect(() => {
@@ -419,21 +427,10 @@ function App() {
     }
   }, [activeTerminalTabKey, terminalTabs])
 
-  const activeWorkTask = useMemo(() => {
-    const tab = terminalTabs.find((candidate) => candidate.key === activeTerminalTabKey)
-    if (!tab?.workTaskId) return null
-    return tasksQuery.data?.find((task) => task.id === tab.workTaskId) ?? null
-  }, [activeTerminalTabKey, terminalTabs, tasksQuery.data])
-
-  const activeWorkTaskRuns = useMemo(() => {
-    if (!activeWorkTask) return []
-    return (effortRunsQuery.data ?? []).filter((run) => run.taskId === activeWorkTask.id)
-  }, [effortRunsQuery.data, activeWorkTask])
-
   const buildQuery = useQuery({
-    queryKey: ['task-build', activeWorkTask?.id],
-    queryFn: () => window.effortless.getLatestTaskBuild(activeWorkTask!.id),
-    enabled: Boolean(activeWorkTask),
+    queryKey: ['task-build', activePageTask?.id],
+    queryFn: () => window.effortless.getLatestTaskBuild(activePageTask!.id),
+    enabled: Boolean(activePageTask),
   })
 
   const activeTerminalRun = useMemo(() => {
@@ -483,32 +480,32 @@ function App() {
     await queryClient.invalidateQueries({ queryKey: ['app-state'] })
   }
 
-  const openWorkView = useCallback((taskId: number) => {
-    setOpenWorkTaskIds((current) => (current.includes(taskId) ? current : [...current, taskId]))
+  const openTaskPage = useCallback((taskId: number) => {
+    setOpenTaskPageIds((current) => (current.includes(taskId) ? current : [...current, taskId]))
     setActiveTerminalTabKey(`work-task-${taskId}`)
   }, [])
 
-  const closeWorkView = useCallback((key: string) => {
+  const closeTaskPage = useCallback((key: string) => {
     const taskId = Number(key.replace('work-task-', ''))
-    setOpenWorkTaskIds((current) => current.filter((id) => id !== taskId))
+    setOpenTaskPageIds((current) => current.filter((id) => id !== taskId))
     setActiveTerminalTabKey((current) => (current === key ? 'main' : current))
   }, [])
 
   useEffect(() => {
     const taskIds = new Set((tasksQuery.data ?? []).map((task) => task.id))
-    setOpenWorkTaskIds((current) => current.filter((id) => taskIds.has(id)))
+    setOpenTaskPageIds((current) => current.filter((id) => taskIds.has(id)))
   }, [tasksQuery.data])
 
   const commitsQuery = useQuery({
-    queryKey: ['task-commits', activeWorkTask?.id],
-    queryFn: () => window.effortless.getTaskCommits(activeWorkTask!.id),
-    enabled: Boolean(activeWorkTask),
+    queryKey: ['task-commits', activePageTask?.id],
+    queryFn: () => window.effortless.getTaskCommits(activePageTask!.id),
+    enabled: Boolean(activePageTask),
   })
 
   const conflictsQuery = useQuery({
-    queryKey: ['task-conflicts', activeWorkTask?.id],
-    queryFn: () => window.effortless.getTaskConflicts(activeWorkTask!.id),
-    enabled: Boolean(activeWorkTask),
+    queryKey: ['task-conflicts', activePageTask?.id],
+    queryFn: () => window.effortless.getTaskConflicts(activePageTask!.id),
+    enabled: Boolean(activePageTask),
   })
 
   const { createEffort, deleteEffort } = useEffortMutations(selectedEffort?.id ?? null)
@@ -843,7 +840,7 @@ function App() {
     if (notification.kind === 'task-review') {
       setSelectedTaskId(notification.entityId)
       setSelectedPlanId(null)
-      setActiveEffortDrawer('tasks')
+      openTaskPage(notification.entityId)
       return
     }
 
@@ -851,7 +848,7 @@ function App() {
       if (notification.taskId) {
         setSelectedTaskId(notification.taskId)
         setSelectedPlanId(null)
-        setActiveEffortDrawer('tasks')
+        openTaskPage(notification.taskId)
       } else {
         setActiveEffortDrawer(null)
       }
@@ -879,12 +876,6 @@ function App() {
       setSelectedPlanId(plansQuery.data[0].id)
     }
   }, [plansQuery.data, selectedPlanId])
-
-  useEffect(() => {
-    if (!selectedTaskId && tasksQuery.data?.[0]) {
-      setSelectedTaskId(tasksQuery.data[0].id)
-    }
-  }, [selectedTaskId, tasksQuery.data])
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -1128,20 +1119,39 @@ function App() {
                   ptyAvailable={ptyAvailable}
                   emptyLabel="ready for effort"
                   menuOpen={terminalMenuOpen}
-                  workPane={activeWorkTask ? (
-                    <TaskWorkPane
-                      task={activeWorkTask}
+                  workPane={activePageTask ? (
+                    <TaskPage
+                      task={activePageTask}
                       repos={reposQuery.data ?? []}
-                      taskRuns={activeWorkTaskRuns}
+                      profiles={agentProfilesQuery.data ?? []}
+                      defaultProvider={selectedEffort.defaultProvider}
+                      defaultProfileId={selectedEffort.defaultProfileId ?? effortDefaultProfile?.id ?? null}
+                      mainRunLive={Boolean(mainTerminalTab?.run && providerLiveRunIds.has(mainTerminalTab.run.id))}
+                      taskRuns={activePageTaskRuns}
                       liveSessionIds={liveSessionIds}
                       providerLiveRunIds={providerLiveRunIds}
+                      reviews={reviewsQuery.data ?? []}
+                      comments={commentsQuery.data ?? []}
                       latestBuild={buildQuery.data ?? null}
                       commitView={commitsQuery.data ?? null}
                       conflictView={conflictsQuery.data ?? null}
-                      onClose={() => closeWorkView(`work-task-${activeWorkTask.id}`)}
+                      onRunBuild={(taskId) => taskMutations.runBuild.mutate(taskId)}
+                      onWorkOnTask={(input) => sendTaskToEffortSession.mutate(input)}
+                      onStartTaskRun={(input) => startTaskRun.mutate(input)}
+                      onRerunTaskRun={(input) => rerunTaskRun.mutate(input)}
+                      onMergeTask={(taskId) => taskMutations.mergeTask.mutate(taskId)}
+                      onApplyReview={(reviewId) => reviewMutations.applyReview.mutate({ reviewId })}
+                      onRequestReviewChanges={(input) => reviewMutations.requestReviewChanges.mutate(input)}
+                      isRunningBuild={taskMutations.runBuild.isPending}
+                      isLaunchingTask={sendTaskToEffortSession.isPending || startTaskRun.isPending}
+                      isRerunningTask={rerunTaskRun.isPending}
+                      isMergingTask={taskMutations.mergeTask.isPending}
+                      isApplyingReview={reviewMutations.applyReview.isPending}
+                      isRequestingReviewChanges={reviewMutations.requestReviewChanges.isPending}
+                      onClose={() => closeTaskPage(`work-task-${activePageTask.id}`)}
                     />
                   ) : null}
-                  onCloseWorkTab={closeWorkView}
+                  onCloseWorkTab={closeTaskPage}
                   onStart={() => {
                     startEffortRun.mutate({
                       effortId: selectedEffort.id,
@@ -1156,8 +1166,7 @@ function App() {
                     setTerminalMenuOpen(false)
                   }}
                   onOpenTask={(taskId) => {
-                    setSelectedTaskId(taskId)
-                    setActiveEffortDrawer('tasks')
+                    openTaskPage(taskId)
                   }}
                   onStop={(runId) => taskMutations.stopAgentRun.mutate(runId)}
                   onToggleMenu={setTerminalMenuOpen}
@@ -1283,8 +1292,8 @@ function App() {
                             <div className="task-switcher-row">
                               <TaskList
                                 tasks={filteredTasks}
-                                selectedTaskId={selectedTaskId}
-                                onSelectTask={setSelectedTaskId}
+                                selectedTaskId={activePageTaskId ?? selectedTaskId}
+                                onSelectTask={openTaskPage}
                                 pendingTaskIds={taskPendingInputIds}
                                 runBadgeByTaskId={runBadgeByTaskId}
                                 variant="strip"
@@ -1323,39 +1332,13 @@ function App() {
                                       onSuccess: (task) => {
                                         setSelectedTaskId(task.id)
                                         setTaskCreateOpen(false)
+                                        openTaskPage(task.id)
                                       },
                                     })
                                   }}
                                 />
                               </div>
                             ) : null}
-                            <TaskDetailPane
-                              task={selectedTask}
-                              repos={reposQuery.data ?? []}
-                              profiles={agentProfilesQuery.data ?? []}
-                              defaultProvider={selectedEffort.defaultProvider}
-                              defaultProfileId={selectedEffort.defaultProfileId ?? effortDefaultProfile?.id ?? null}
-                              mainRunLive={Boolean(mainTerminalTab?.run && providerLiveRunIds.has(mainTerminalTab.run.id))}
-                              taskRuns={selectedTaskRuns}
-                              liveSessionIds={liveSessionIds}
-                              providerLiveRunIds={providerLiveRunIds}
-                              reviews={reviewsQuery.data ?? []}
-                              comments={commentsQuery.data ?? []}
-                              onOpenWorkView={() => openWorkView(selectedTask!.id)}
-                              onRunBuild={(taskId) => taskMutations.runBuild.mutate(taskId)}
-                              onWorkOnTask={(input) => sendTaskToEffortSession.mutate(input)}
-                              onStartTaskRun={(input) => startTaskRun.mutate(input)}
-                              onRerunTaskRun={(input) => rerunTaskRun.mutate(input)}
-                              onMergeTask={(taskId) => taskMutations.mergeTask.mutate(taskId)}
-                              onApplyReview={(reviewId) => reviewMutations.applyReview.mutate({ reviewId })}
-                              onRequestReviewChanges={(input) => reviewMutations.requestReviewChanges.mutate(input)}
-                              isRunningBuild={taskMutations.runBuild.isPending}
-                              isLaunchingTask={sendTaskToEffortSession.isPending || startTaskRun.isPending}
-                              isRerunningTask={rerunTaskRun.isPending}
-                              isMergingTask={taskMutations.mergeTask.isPending}
-                              isApplyingReview={reviewMutations.applyReview.isPending}
-                              isRequestingReviewChanges={reviewMutations.requestReviewChanges.isPending}
-                            />
                           </div>
                         </section>
                       ) : (
