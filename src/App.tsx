@@ -30,11 +30,9 @@ import { TaskWorkPane } from './components/task/TaskWorkPane'
 import { TaskList } from './components/task/TaskList'
 import { getAgentProviderConfig, listAgentProviders } from '../core/agentProviders'
 import { countActiveEffortRuns, pickTaskRunBadge } from './lib/runStatus'
-import {
-  effortStatusColor,
-  effortSupportsPlans,
-  effortSupportsTasks,
-} from './lib/helpers'
+import { effortStatusColor, effortSupportsPlans, effortSupportsTasks } from './lib/helpers'
+import { Ref } from './components/ui/Ref'
+import { Stamp, statusTone } from './components/ui/Stamp'
 import { MANAGE_SECTIONS, type ManageSection } from './lib/manageSections'
 import { useEffortMutations } from './hooks/useEffortMutations'
 import { useInputMutations } from './hooks/useInputMutations'
@@ -1059,10 +1057,8 @@ function App() {
                     <h2>{selectedEffort.title}</h2>
                     <div className="effort-header-meta">
                       <span className="meta-line">
-                        {selectedEffort.shortRef} · {selectedEffort.template.replace('-', ' ')} ·{' '}
-                        <span className="meta-status" style={{ color: effortStatusColor(selectedEffort.status) }}>
-                          {selectedEffort.status}
-                        </span>
+                        <Ref value={selectedEffort.shortRef} /> · {selectedEffort.template.replace('-', ' ')} ·{' '}
+                        <Stamp label={selectedEffort.status} tone={statusTone(selectedEffort.status)} />
                         {activeEffortRunCount > 0 ? ` · ${activeEffortRunCount} live` : ''}
                       </span>
                       <label className="effort-profile-chip">
@@ -1242,7 +1238,8 @@ function App() {
                           <h4>description</h4>
                           <div className="drawer-effort-meta">
                             <span className="meta-line">
-                              {selectedEffort.shortRef} · {selectedEffort.template.replace('-', ' ')} · {selectedEffort.status}
+                              <Ref value={selectedEffort.shortRef} /> · {selectedEffort.template.replace('-', ' ')} ·{' '}
+                              <Stamp label={selectedEffort.status} tone={statusTone(selectedEffort.status)} />
                             </span>
                           </div>
                           <div className="effort-zone-readout effort-description">

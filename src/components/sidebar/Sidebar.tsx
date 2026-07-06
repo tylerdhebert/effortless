@@ -3,6 +3,7 @@ import type { Effort, Task } from '../../../core/types'
 import type { PendingNotification } from '../../../core/notifications'
 import { ChevronsLeft, Plus, Filter } from 'lucide-react'
 import { formatTemplate, effortStatusColor } from '../../lib/helpers'
+import { Ref } from '../ui/Ref'
 import { MANAGE_SECTIONS, type ManageSection } from '../../lib/manageSections'
 import { WarningIndicator } from '../notifications/WarningIndicator'
 import { NotificationFooter } from '../notifications/NotificationFooter'
@@ -253,7 +254,7 @@ export function Sidebar({
                       <WarningIndicator title="needs input" size={12} />
                     ) : null}
                   </span>
-                  <span>{effort.shortRef}</span>
+                  <Ref value={effort.shortRef} />
                   <small>{formatTemplate(effort.template)}</small>
                   <span
                     className={styles['effort-row-status-dot']}

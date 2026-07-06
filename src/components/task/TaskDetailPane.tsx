@@ -10,6 +10,8 @@ import type {
   Review,
 } from '../../../core/types'
 import { resolveRunBadgeLabel } from '../../lib/runStatus'
+import { Ref } from '../ui/Ref'
+import { Stamp, statusTone } from '../ui/Stamp'
 import { listAgentProviders } from '../../../core/agentProviders'
 import { CommentStream } from './CommentStream'
 import { ReviewHistory } from './ReviewHistory'
@@ -120,19 +122,20 @@ export function TaskDetailPane({
 
         <div className={styles['expanded-meta']}>
           <span className="meta-line">
-            {task.shortRef} · {task.status} · {taskRepo?.name ?? 'no repo'} · {task.branchName ?? 'no branch'} ·{' '}
+            <Ref value={task.shortRef} /> · <Stamp label={task.status} tone={statusTone(task.status)} /> ·{' '}
+            {taskRepo?.name ?? 'no repo'} · {task.branchName ?? 'no branch'} ·{' '}
             <span title={task.worktreePath ?? 'no worktree yet'}>
               {task.worktreePath ? task.worktreePath.split(/[\\/]/).pop() : 'no worktree yet'}
             </span>
-            {taskRuns.length > 0 ? (
-              <>
-                {' · '}
-                {taskRuns.slice(0, 4).map((run) => {
-                  const badge = resolveRunBadgeLabel(run, liveSessionIds, providerLiveRunIds) ?? run.status
-                  return `${run.shortRef} ${badge}`
-                }).join(' · ')}
-              </>
-            ) : null}
+            {taskRuns.slice(0, 4).map((run) => {
+              const badge = resolveRunBadgeLabel(run, liveSessionIds, providerLiveRunIds) ?? run.status
+              return (
+                <span key={run.id}>
+                  {' · '}
+                  <Ref value={run.shortRef} /> <Stamp label={badge} tone={statusTone(badge)} compact />
+                </span>
+              )
+            })}
           </span>
         </div>
 

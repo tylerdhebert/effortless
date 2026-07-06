@@ -1,0 +1,38 @@
+.stamp {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.09em;
+  line-height: 1;
+  padding: 3px 7px;
+  border-radius: 3px;
+  border: 1px solid color-mix(in srgb, var(--stamp-color) 55%, transparent);
+  color: var(--stamp-color);
+  background: color-mix(in srgb, var(--stamp-color) 8%, transparent);
+}
+
+.compact {
+  font-size: 0.6rem;
+  padding: 2px 5px;
+}
+
+.toneNeutral {
+  --stamp-color: var(--muted);
+}
+
+.toneLive {
+  --stamp-color: var(--live);
+}
+
+.toneGate {
+  --stamp-color: var(--accent);
+}
+
+.toneOk {
+  --stamp-color: var(--ok);
+}
+
+.toneDanger {
+  --stamp-color: var(--danger);
+}

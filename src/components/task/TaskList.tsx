@@ -1,5 +1,7 @@
 import type { Task } from '../../../core/types'
 import { WarningIndicator } from '../notifications/WarningIndicator'
+import { Ref } from '../ui/Ref'
+import { Stamp, statusTone } from '../ui/Stamp'
 import styles from './TaskList.module.css'
 
 const statusColors: Record<string, string> = {
@@ -50,13 +52,15 @@ export function TaskList({
                 style={{ background: statusColors[task.status] ?? statusColors.open }}
                 aria-hidden="true"
               />
-              <span className={styles['task-list-ref']}>{task.shortRef}</span>
-              {runBadge ? <span className={styles['task-list-run-badge']}>{runBadge}</span> : null}
+              <Ref value={task.shortRef} />
+              {runBadge ? (
+                <Stamp label={runBadge} tone={statusTone(runBadge)} compact />
+              ) : null}
               {pendingTaskIds?.has(task.id) ? (
                 <WarningIndicator title="needs input" size={12} />
               ) : null}
               <span className={styles['task-list-flyout']}>
-                <span className={styles['task-list-flyout-kicker']}>{task.status}</span>
+                <Stamp label={task.status} tone={statusTone(task.status)} compact />
                 <strong>{task.title}</strong>
                 <span>{task.description}</span>
               </span>
@@ -69,14 +73,16 @@ export function TaskList({
                   style={{ background: statusColors[task.status] ?? statusColors.open }}
                   aria-hidden="true"
                 />
-                <span className={styles['task-list-ref']}>{task.shortRef}</span>
-                {runBadge ? <span className={styles['task-list-run-badge']}>{runBadge}</span> : null}
+                <Ref value={task.shortRef} />
+                {runBadge ? (
+                  <Stamp label={runBadge} tone={statusTone(runBadge)} compact />
+                ) : null}
                 {pendingTaskIds?.has(task.id) ? (
                   <WarningIndicator title="needs input" size={12} />
                 ) : null}
               </div>
               <div className={styles['task-list-status-row']}>
-                <span className={styles['task-list-status']}>{task.status}</span>
+                <Stamp label={task.status} tone={statusTone(task.status)} />
               </div>
               <strong className={styles['task-list-title']}>{task.title}</strong>
             </>

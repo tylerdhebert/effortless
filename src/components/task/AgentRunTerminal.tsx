@@ -4,6 +4,8 @@ import { Terminal } from '@xterm/xterm'
 import '@xterm/xterm/css/xterm.css'
 import { ChevronDown, ExternalLink, Play, Plus, RotateCcw, Square, SquareTerminal, X } from 'lucide-react'
 import type { AgentRun, LiveAgentRunSession } from '../../../core/types'
+import { Ref } from '../ui/Ref'
+import { Stamp, statusTone } from '../ui/Stamp'
 import styles from './AgentRunTerminal.module.css'
 
 type TerminalEntry = {
@@ -662,7 +664,12 @@ export function AgentRunTerminal({
             {isWorkTabActive
               ? activeTab?.branchLabel ?? 'no branch'
               : activeRun
-                ? `${activeTab?.label ?? 'run'} - ${activeRun.shortRef} - ${displayStatus}`
+                ? (
+                  <>
+                    {activeTab?.label ?? 'run'} · <Ref value={activeRun.shortRef} /> ·{' '}
+                    <Stamp label={displayStatus} tone={statusTone(displayStatus)} compact />
+                  </>
+                )
                 : emptyLabel}
           </span>
         </div>
@@ -741,7 +748,7 @@ export function AgentRunTerminal({
                       }}
                     >
                       <strong>{tab.label}</strong>
-                      <span>{tab.run?.shortRef ?? 'no run'}</span>
+                      {tab.run?.shortRef ? <Ref value={tab.run.shortRef} /> : <span>no run</span>}
                       {renderMenuStatus(status)}
                       <span>{tab.profileLabel ?? 'no profile'}</span>
                       <span>{tab.branchLabel ?? (tab.key === 'main' ? 'effort' : 'no branch')}</span>
@@ -882,13 +889,7 @@ function resolveRunStatus(
 }
 
 function renderMenuStatus(status: string) {
-  const cls = status === 'ready' ? '' : status
-  return (
-    <span className={styles['menu-status']}>
-      {cls ? <span className={`${styles['menu-status-dot']} ${styles[cls] ?? ''}`} /> : null}
-      <span className={`${styles['menu-status-label']} ${styles[cls] ?? ''}`}>{status}</span>
-    </span>
-  )
+  return <Stamp label={status} tone={statusTone(status)} compact />
 }
 
 function resumeDisabledTitle(run: AgentRun | null, runLive: boolean | undefined, isStarting: boolean): string {
