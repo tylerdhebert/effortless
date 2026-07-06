@@ -31,15 +31,14 @@
 
 .profileButton:hover {
   border-color: color-mix(in srgb, var(--accent) 14%, transparent);
-  background: rgba(255, 255, 255, 0.02);
+  background: color-mix(in srgb, var(--text) 4%, transparent);
   transform: translateY(-1px);
 }
 
 .profileButton.selected {
   border-color: color-mix(in srgb, var(--accent) 18%, transparent);
   background:
-    linear-gradient(90deg, color-mix(in srgb, var(--accent) 11%, transparent), rgba(255, 255, 255, 0.025) 24%),
-    rgba(255, 255, 255, 0.02);
+    color-mix(in srgb, var(--accent) 8%, transparent);
   box-shadow: inset 3px 0 0 var(--accent);
 }
 
@@ -182,7 +181,7 @@
 .variables code {
   border: 1px solid var(--line);
   border-radius: var(--radius-ctl);
-  background: rgba(255, 255, 255, 0.025);
+  background: color-mix(in srgb, var(--text) 4%, transparent);
   color: var(--text);
   font-size: var(--text-sm);
   padding: 5px 7px;

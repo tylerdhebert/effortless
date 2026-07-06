@@ -87,7 +87,7 @@
 .close-button {
   border: 1px solid var(--line);
   border-radius: var(--radius-ctl);
-  background: rgba(255, 255, 255, 0.03);
+  background: color-mix(in srgb, var(--text) 4%, transparent);
   color: var(--muted);
   cursor: pointer;
   font-size: var(--text-xs);
@@ -124,7 +124,7 @@
 }
 
 .entry:hover {
-  background: rgba(255, 255, 255, 0.04);
+  background: color-mix(in srgb, var(--text) 7%, transparent);
 }
 
 .entry-icon {

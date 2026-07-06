@@ -10,12 +10,12 @@
   gap: 6px;
   padding: 10px 12px;
   border-radius: var(--radius-ctl);
-  background: rgba(255, 255, 255, 0.018);
+  background: color-mix(in srgb, var(--text) 4%, transparent);
   transition: background 120ms ease;
 }
 
 .comment:hover {
-  background: rgba(255, 255, 255, 0.032);
+  background: color-mix(in srgb, var(--text) 7%, transparent);
 }
 
 .comment-header {

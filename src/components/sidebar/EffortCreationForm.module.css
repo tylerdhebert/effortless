@@ -58,9 +58,9 @@
   display: grid;
   gap: 8px;
   align-content: start;
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  border: 1px solid color-mix(in srgb, var(--line) 75%, transparent);
   border-radius: var(--radius-card);
-  background: rgba(255, 255, 255, 0.025);
+  background: color-mix(in srgb, var(--text) 4%, transparent);
   color: var(--text);
   padding: 16px;
   text-align: left;

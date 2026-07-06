@@ -29,7 +29,7 @@
 .input-tabs button.active {
   border-color: var(--line-strong);
   color: var(--text);
-  background: rgba(255, 255, 255, 0.04);
+  background: color-mix(in srgb, var(--text) 7%, transparent);
 }
 
 .input-cards {
@@ -170,7 +170,7 @@
 .input-choice-list span {
   border: 1px solid var(--line);
   border-radius: var(--radius-pill);
-  background: rgba(255, 255, 255, 0.055);
+  background: color-mix(in srgb, var(--text) 7%, transparent);
   padding: 4px 8px;
   color: var(--muted);
   font-size: var(--text-xs);

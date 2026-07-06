@@ -27,7 +27,7 @@
   min-width: 0;
   border: 1px solid var(--line);
   border-radius: var(--radius-ctl);
-  background: rgba(255, 255, 255, 0.02);
+  background: color-mix(in srgb, var(--text) 4%, transparent);
   color: var(--text);
   font: inherit;
   font-size: var(--text-sm);
@@ -43,7 +43,7 @@
 .form textarea:focus,
 .form select:focus {
   border-color: var(--line-strong);
-  background: rgba(255, 255, 255, 0.035);
+  background: color-mix(in srgb, var(--text) 4%, transparent);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 8%, transparent);
 }
 

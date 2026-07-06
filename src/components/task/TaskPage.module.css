@@ -92,8 +92,7 @@
   border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--line));
   border-radius: var(--radius-ctl);
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--accent) 6%, transparent), transparent 50%),
-    var(--field);
+    color-mix(in srgb, var(--accent) 4%, var(--field));
   color: var(--text);
   padding: 0 28px 0 8px;
   font-size: var(--text-sm);
@@ -105,13 +104,11 @@
 
 .task-launch-field select:hover {
   border-color: color-mix(in srgb, var(--accent) 50%, transparent);
-  box-shadow: 0 0 14px color-mix(in srgb, var(--accent) 14%, transparent);
 }
 
 .task-launch-field select:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 20%, transparent),
-    0 0 18px color-mix(in srgb, var(--accent) 14%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 20%, transparent);
   outline: none;
 }
 
@@ -143,8 +140,7 @@
   border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--line));
   border-radius: var(--radius-ctl);
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--accent) 6%, transparent), transparent 60%),
-    var(--button);
+    color-mix(in srgb, var(--accent) 4%, var(--button));
   color: var(--text);
   cursor: pointer;
   padding: 0 10px;
@@ -161,8 +157,7 @@
 .task-header-action.primary {
   border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--accent) 18%, transparent), color-mix(in srgb, var(--accent) 6%, transparent) 60%),
-    var(--button);
+    color-mix(in srgb, var(--accent) 12%, var(--button));
   color: var(--text-strong);
 }
 
@@ -170,7 +165,6 @@
   border-color: color-mix(in srgb, var(--accent) 50%, transparent);
   color: var(--text-strong);
   transform: translateY(-1px);
-  box-shadow: 0 0 14px color-mix(in srgb, var(--accent) 12%, transparent);
 }
 
 .task-header-action:disabled {
@@ -229,8 +223,7 @@
 .gate-strip-actions button.primary {
   border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--accent) 18%, transparent), color-mix(in srgb, var(--accent) 6%, transparent) 60%),
-    var(--button);
+    color-mix(in srgb, var(--accent) 12%, var(--button));
   color: var(--text-strong);
 }
 
@@ -346,7 +339,7 @@
 
 .implementation-file:hover {
   border-color: color-mix(in srgb, var(--accent) 16%, transparent);
-  background: rgba(255, 255, 255, 0.03);
+  background: color-mix(in srgb, var(--text) 4%, transparent);
   color: var(--text);
 }
 
@@ -414,7 +407,6 @@
   border: 1px solid var(--effort-section-border);
   border-radius: var(--radius-card);
   background: var(--effort-section-bg);
-  box-shadow: inset 0 1px 0 color-mix(in srgb, white 4%, transparent);
 }
 
 .supporting-card-section {
