@@ -351,7 +351,9 @@ function App() {
     const profiles = agentProfilesQuery.data ?? []
     const tasks = tasksQuery.data ?? []
     const tabKeys = new Set<string>(['main'])
-    tabKeys.add(activeTerminalTabKey)
+    if (!activeTerminalTabKey.startsWith('work-task-')) {
+      tabKeys.add(activeTerminalTabKey)
+    }
     for (const run of runs) {
       tabKeys.add(run.terminalTabKey ?? 'main')
     }
