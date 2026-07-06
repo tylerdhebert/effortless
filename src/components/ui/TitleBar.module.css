@@ -32,7 +32,7 @@
   width: 22px;
   height: 22px;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--radius-ctl);
   background: transparent;
   color: var(--muted);
   cursor: pointer;
@@ -50,7 +50,7 @@
 
 .window-control.close:hover {
   background: rgba(242, 118, 101, 0.12);
-  color: #f27665;
+  color: var(--danger);
 }
 
 .title-bar-content {
@@ -64,9 +64,9 @@
 .app-title {
   color: var(--muted);
   font-family: var(--font-display);
-  font-size: 0.72rem;
+  font-size: var(--text-sm);
   font-weight: 600;
-  letter-spacing: 0.08em;
+  letter-spacing: var(--track-label);
   text-transform: lowercase;
 }
 
@@ -76,7 +76,7 @@
   gap: 2px;
   margin-left: 12px;
   padding: 2px;
-  border-radius: 8px;
+  border-radius: var(--radius-ctl);
   background: rgba(255, 255, 255, 0.04);
   -webkit-app-region: no-drag;
 }
@@ -88,7 +88,7 @@
   width: 24px;
   height: 22px;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--radius-ctl);
   background: transparent;
   color: var(--muted);
   cursor: pointer;

@@ -17,11 +17,11 @@
   flex: 1;
   padding: 6px 10px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-ctl);
   background: var(--button);
   color: var(--muted);
-  font-size: 0.72rem;
-  letter-spacing: 0.04em;
+  font-size: var(--text-sm);
+  letter-spacing: var(--track-label);
   cursor: pointer;
   transition: border-color 140ms ease, color 140ms ease, background 140ms ease;
 }
@@ -86,27 +86,27 @@
 .input-card-header-left span,
 .input-card-header-left strong {
   color: var(--muted);
-  font-size: 0.69rem;
-  letter-spacing: 0.04em;
+  font-size: var(--text-xs);
+  letter-spacing: var(--track-label);
 }
 
 .input-card-time {
   color: var(--muted);
-  font-size: 0.69rem;
-  letter-spacing: 0.04em;
+  font-size: var(--text-xs);
+  letter-spacing: var(--track-label);
   margin-left: auto;
   flex-shrink: 0;
 }
 
 .input-card-agent {
   color: rgb(140, 207, 98);
-  font-size: 0.69rem;
-  letter-spacing: 0.04em;
+  font-size: var(--text-xs);
+  letter-spacing: var(--track-label);
 }
 
 .input-card-prompt {
   margin: 0;
-  font-size: 0.86rem;
+  font-size: var(--text-md);
   line-height: 1.4;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -120,8 +120,8 @@
 
 .input-card-status {
   color: var(--muted);
-  font-size: 0.69rem;
-  letter-spacing: 0.04em;
+  font-size: var(--text-xs);
+  letter-spacing: var(--track-label);
 }
 
 .input-answer-form {
@@ -133,13 +133,13 @@
   justify-self: start;
   min-height: 32px;
   border: 1px solid var(--line-strong);
-  border-radius: 10px;
+  border-radius: var(--radius-ctl);
   background: var(--button);
   color: var(--text);
   cursor: pointer;
-  font-size: 0.76rem;
-  font-weight: 650;
-  letter-spacing: 0.04em;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  letter-spacing: var(--track-label);
   text-transform: lowercase;
   padding: 7px 10px;
   transition:
@@ -169,25 +169,25 @@
 
 .input-choice-list span {
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: rgba(255, 255, 255, 0.055);
   padding: 4px 8px;
   color: var(--muted);
-  font-size: 0.69rem;
-  letter-spacing: 0.04em;
+  font-size: var(--text-xs);
+  letter-spacing: var(--track-label);
 }
 
 .input-choice {
   justify-self: start;
   min-height: 32px;
   border: 1px solid var(--line-strong);
-  border-radius: 10px;
+  border-radius: var(--radius-ctl);
   background: var(--button);
   color: var(--text);
   cursor: pointer;
-  font-size: 0.76rem;
-  font-weight: 650;
-  letter-spacing: 0.04em;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  letter-spacing: var(--track-label);
   text-transform: lowercase;
   padding: 7px 10px;
   transition:
@@ -229,8 +229,8 @@
 
 .input-answer-context span {
   color: var(--muted);
-  font-size: 0.69rem;
-  letter-spacing: 0.04em;
+  font-size: var(--text-xs);
+  letter-spacing: var(--track-label);
 }
 
 .input-answer-context p {

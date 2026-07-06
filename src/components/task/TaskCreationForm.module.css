@@ -26,11 +26,11 @@
 .form select {
   min-width: 0;
   border: 1px solid var(--line);
-  border-radius: 7px;
+  border-radius: var(--radius-ctl);
   background: rgba(255, 255, 255, 0.02);
   color: var(--text);
   font: inherit;
-  font-size: 0.78rem;
+  font-size: var(--text-sm);
   padding: 8px 9px;
   outline: none;
   transition:
@@ -64,12 +64,12 @@
 .form button {
   min-height: 34px;
   border: 1px solid var(--line-strong);
-  border-radius: 7px;
+  border-radius: var(--radius-ctl);
   background: var(--button);
   color: var(--text);
   cursor: pointer;
-  font-size: 0.76rem;
-  font-weight: 650;
+  font-size: var(--text-sm);
+  font-weight: 600;
   padding: 7px 11px;
   transition:
     border-color 140ms ease,

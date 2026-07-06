@@ -1,6 +1,6 @@
 .markdown-document {
   color: var(--text);
-  font-size: 0.92rem;
+  font-size: var(--text-base);
   line-height: 1.72;
 }
 
@@ -16,20 +16,20 @@
 .markdown-document h2,
 .markdown-document h3 {
   margin: 0 0 0.75rem;
-  color: #edf4e2;
+  color: var(--text-strong);
   line-height: 1.2;
 }
 
 .markdown-document h1 {
-  font-size: 1.24rem;
+  font-size: var(--text-xl);
 }
 
 .markdown-document h2 {
-  font-size: 1.08rem;
+  font-size: var(--text-lg);
 }
 
 .markdown-document h3 {
-  font-size: 0.96rem;
+  font-size: var(--text-base);
 }
 
 .markdown-document p,
@@ -53,7 +53,7 @@
 
 .markdown-document blockquote {
   border-left: 2px solid color-mix(in srgb, var(--accent) 28%, transparent);
-  color: #c8cfbb;
+  color: var(--text);
   padding-left: 1rem;
 }
 
@@ -64,9 +64,9 @@
 
 .markdown-inline-code {
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
+  border-radius: var(--radius-ctl);
   background: rgba(255, 255, 255, 0.04);
-  color: #eef3e7;
+  color: var(--text-strong);
   font-family: var(--font-mono);
   font-size: 0.84em;
   padding: 0.08rem 0.42rem;
@@ -75,15 +75,15 @@
 .markdown-code-block {
   overflow-x: auto;
   border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: 14px;
+  border-radius: var(--radius-card);
   background: rgba(9, 11, 8, 0.92);
   padding: 14px;
 }
 
 .markdown-code-block code {
-  color: #d5ddc8;
+  color: var(--text);
   font-family: var(--font-mono);
-  font-size: 0.82rem;
+  font-size: var(--text-md);
   line-height: 1.55;
 }
 
@@ -105,7 +105,7 @@
 }
 
 .markdown-document th {
-  color: #eef3e7;
+  color: var(--text-strong);
   background: rgba(255, 255, 255, 0.045);
 }
 

@@ -37,7 +37,7 @@
 .sidebar-dot {
   width: 8px;
   height: 8px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--accent);
   box-shadow: 0 0 14px color-mix(in srgb, var(--accent) 50%, transparent);
 }
@@ -55,7 +55,7 @@
   padding: 0;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 9px;
+  border-radius: var(--radius-ctl);
   color: var(--muted);
   cursor: pointer;
   transition: all 140ms ease;
@@ -95,7 +95,7 @@
   gap: 6px;
   width: 100%;
   border: 1px solid transparent;
-  border-radius: 16px;
+  border-radius: var(--radius-card);
   background: transparent;
   cursor: pointer;
   padding: 12px 12px 12px 14px;
@@ -123,13 +123,13 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 0.94rem;
-  font-weight: 620;
-  letter-spacing: -0.015em;
+  font-size: var(--text-base);
+  font-weight: 600;
+  letter-spacing: var(--track-tight);
 }
 
 .effort-row small {
-  color: #7d8573;
+  color: var(--muted);
 }
 
 .effort-row-heading {
@@ -149,7 +149,7 @@
 .effort-row-status-dot {
   width: 7px;
   height: 7px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   margin-left: auto;
   flex-shrink: 0;
 }
@@ -164,7 +164,7 @@
   gap: 10px;
   width: 100%;
   border: 1px solid var(--line);
-  border-radius: 16px;
+  border-radius: var(--radius-card);
   background: var(--panel);
   cursor: pointer;
   padding: 12px 12px 12px 14px;
@@ -197,9 +197,9 @@
 
 .manage-card-heading strong {
   color: var(--text-strong);
-  font-size: 0.96rem;
-  font-weight: 620;
-  letter-spacing: -0.015em;
+  font-size: var(--text-base);
+  font-weight: 600;
+  letter-spacing: var(--track-tight);
 }
 
 .manage-card-icon {
@@ -208,7 +208,7 @@
   width: 26px;
   height: 26px;
   border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 9px;
+  border-radius: var(--radius-ctl);
   background: rgba(255, 255, 255, 0.025);
   color: var(--muted);
   transition:
@@ -241,8 +241,8 @@
   border: 0;
   background: transparent;
   color: var(--muted);
-  font-size: 0.72rem;
-  letter-spacing: 0.04em;
+  font-size: var(--text-sm);
+  letter-spacing: var(--track-label);
   cursor: pointer;
   transition: all 140ms ease;
 }
@@ -262,10 +262,10 @@
   min-width: 18px;
   height: 18px;
   padding: 0 5px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--accent);
   color: var(--body-bg);
-  font-size: 0.62rem;
+  font-size: var(--text-xs);
   font-weight: 700;
   margin-left: auto;
 }
@@ -285,9 +285,9 @@
 
 .filter-section-label {
   color: var(--muted);
-  font-size: 0.65rem;
+  font-size: var(--text-xs);
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: var(--track-label);
   text-transform: lowercase;
 }
 
@@ -300,10 +300,10 @@
 .filter-pill {
   padding: 3px 10px;
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: transparent;
   color: var(--muted);
-  font-size: 0.68rem;
+  font-size: var(--text-xs);
   cursor: pointer;
   transition: all 140ms ease;
 }
@@ -331,7 +331,7 @@
 .sidebar-footer > .icon-btn {
   width: 32px;
   height: 32px;
-  border-radius: 9px;
+  border-radius: var(--radius-ctl);
 }
 
 .add-effort-btn {
@@ -342,7 +342,7 @@
   padding: 0;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 9px;
+  border-radius: var(--radius-ctl);
   color: var(--muted);
   cursor: pointer;
   transition: all 150ms ease;

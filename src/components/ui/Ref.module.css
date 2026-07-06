@@ -1,6 +1,6 @@
 .ref {
   font-family: var(--font-mono);
-  font-size: 0.72rem;
-  letter-spacing: 0.06em;
+  font-size: var(--text-sm);
+  letter-spacing: var(--track-label);
   color: var(--muted);
 }

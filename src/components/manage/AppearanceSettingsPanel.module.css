@@ -2,7 +2,7 @@
   display: grid;
   gap: 18px;
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--radius-card);
   background: color-mix(in srgb, var(--panel) 82%, transparent);
   padding: 18px;
   width: 100%;
@@ -21,9 +21,9 @@
 
 .panelHeader h3 {
   margin: 0;
-  font-size: 0.76rem;
+  font-size: var(--text-sm);
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: var(--track-label);
   text-transform: lowercase;
 }
 
@@ -39,7 +39,7 @@
   gap: 10px;
   padding: 10px;
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--radius-ctl);
   background: rgba(255, 255, 255, 0.02);
   color: var(--text);
   cursor: pointer;
@@ -73,7 +73,7 @@
   width: 24px;
   height: 24px;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
+  border-radius: var(--radius-ctl);
   background: rgba(255, 255, 255, 0.03);
   color: var(--muted);
 }
@@ -93,12 +93,12 @@
   height: 100%;
   box-sizing: border-box;
   padding: 7px;
-  border-radius: 12px;
+  border-radius: var(--radius-card);
   overflow: hidden;
 }
 
 .previewSidebar {
-  border-radius: 9px;
+  border-radius: var(--radius-ctl);
 }
 
 .previewMain {
@@ -116,12 +116,12 @@
 .previewAccent {
   width: 16px;
   height: 16px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
 }
 
 .previewLine {
   height: 8px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   flex: 1;
   opacity: 0.85;
 }
@@ -131,12 +131,12 @@
   align-content: start;
   gap: 6px;
   padding: 8px;
-  border-radius: 10px;
+  border-radius: var(--radius-ctl);
 }
 
 .previewSwatch {
   height: 14px;
-  border-radius: 7px;
+  border-radius: var(--radius-ctl);
 }
 
 .cardFooter {
@@ -147,9 +147,9 @@
 }
 
 .label {
-  font-size: 0.78rem;
-  font-weight: 650;
-  letter-spacing: 0.02em;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  letter-spacing: var(--track-label);
   color: var(--text-strong);
 }
 
@@ -162,7 +162,7 @@
 .swatch {
   width: 12px;
   height: 12px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   flex-shrink: 0;
   border: 1px solid rgba(255, 255, 255, 0.15);
 }
@@ -173,7 +173,7 @@
   margin: 0 14px 14px;
   padding: 16px;
   border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 12px;
+  border-radius: var(--radius-card);
   background: rgba(255, 255, 255, 0.02);
 }
 
@@ -192,16 +192,16 @@
 
 .customHeaderCopy h4 {
   margin: 0;
-  font-size: 0.82rem;
+  font-size: var(--text-md);
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: var(--track-label);
   text-transform: lowercase;
 }
 
 .customHeaderCopy p {
   margin: 0;
   color: var(--muted);
-  font-size: 0.82rem;
+  font-size: var(--text-md);
   line-height: 1.5;
 }
 
@@ -219,7 +219,7 @@
   height: 32px;
   padding: 0 12px;
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--radius-ctl);
   background: rgba(255, 255, 255, 0.03);
   color: var(--muted);
   cursor: pointer;
@@ -241,8 +241,8 @@
 
 .importError {
   margin: 0;
-  color: #f38ba8;
-  font-size: 0.8rem;
+  color: var(--danger);
+  font-size: var(--text-md);
 }
 
 .customPreviewBand {
@@ -261,16 +261,16 @@
   gap: 14px;
   padding: 14px;
   border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 14px;
+  border-radius: var(--radius-card);
   background: rgba(255, 255, 255, 0.015);
 }
 
 .customGroupHeader h5 {
   margin: 0;
   color: var(--muted);
-  font-size: 0.72rem;
+  font-size: var(--text-sm);
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: var(--track-label);
   text-transform: lowercase;
 }
 
@@ -287,9 +287,9 @@
 
 .variableLabel {
   color: var(--muted);
-  font-size: 0.72rem;
-  font-weight: 650;
-  letter-spacing: 0.03em;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  letter-spacing: var(--track-label);
 }
 
 .variableControls {
@@ -302,7 +302,7 @@
 .variablePreview {
   width: 20px;
   height: 20px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   border: 1px solid rgba(255, 255, 255, 0.14);
   background: var(--button);
 }
@@ -311,7 +311,7 @@
 .colorInputPlaceholder {
   width: 36px;
   height: 30px;
-  border-radius: 9px;
+  border-radius: var(--radius-ctl);
 }
 
 .colorInput {
@@ -327,7 +327,7 @@
 
 .colorInput::-webkit-color-swatch {
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--radius-ctl);
 }
 
 .colorInputPlaceholder {

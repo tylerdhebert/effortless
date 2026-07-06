@@ -14,13 +14,13 @@
   flex: 0 0 auto;
   min-height: 38px;
   border: 1px solid var(--line-strong);
-  border-radius: 10px;
+  border-radius: var(--radius-ctl);
   background: var(--button);
   color: var(--muted);
   cursor: pointer;
-  font-size: 0.76rem;
-  font-weight: 650;
-  letter-spacing: 0.03em;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  letter-spacing: var(--track-label);
   padding: 0 11px;
   transition:
     border-color 140ms ease,
@@ -40,7 +40,7 @@
   z-index: 90;
   overflow: hidden;
   border: 1px solid var(--line-strong);
-  border-radius: 12px;
+  border-radius: var(--radius-card);
   background: rgba(12, 14, 11, 0.98);
   box-shadow: 0 24px 52px rgba(0, 0, 0, 0.5);
 }
@@ -67,14 +67,14 @@
   overflow: hidden;
   color: var(--muted);
   font-family: var(--font-mono);
-  font-size: 0.68rem;
+  font-size: var(--text-xs);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .syncing {
   color: var(--muted);
-  font-size: 0.68rem;
+  font-size: var(--text-xs);
 }
 
 .popover-actions {
@@ -86,11 +86,11 @@
 .popover-actions button,
 .close-button {
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-ctl);
   background: rgba(255, 255, 255, 0.03);
   color: var(--muted);
   cursor: pointer;
-  font-size: 0.7rem;
+  font-size: var(--text-xs);
   padding: 6px 8px;
 }
 
@@ -139,7 +139,7 @@
   min-width: 0;
   overflow: hidden;
   font-family: var(--font-mono);
-  font-size: 0.74rem;
+  font-size: var(--text-sm);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -147,7 +147,7 @@
 .empty {
   margin: 0;
   color: var(--muted);
-  font-size: 0.78rem;
+  font-size: var(--text-sm);
   padding: 14px 12px;
 }
 

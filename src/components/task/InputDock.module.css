@@ -18,9 +18,8 @@
   border: none;
   background: transparent;
   color: var(--muted);
-  font-family: var(--font-mono);
-  font-size: 0.68rem;
-  letter-spacing: 0.04em;
+  font-size: var(--text-xs);
+  letter-spacing: var(--track-label);
   cursor: pointer;
   padding: 2px 4px;
 }
@@ -36,7 +35,7 @@
   padding: 10px 12px 12px;
   border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--line));
   border-left: 3px solid var(--accent);
-  border-radius: 10px;
+  border-radius: var(--radius-ctl);
   background: color-mix(in srgb, var(--field) 92%, black 8%);
   box-shadow:
     0 8px 22px rgba(0, 0, 0, 0.22),
@@ -110,7 +109,7 @@
 
 .prompt {
   margin: 0;
-  font-size: 0.8rem;
+  font-size: var(--text-md);
   line-height: 1.45;
   color: var(--text);
   overflow: hidden;
@@ -129,11 +128,11 @@
 
 .answer-btn {
   border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--line));
-  border-radius: 7px;
+  border-radius: var(--radius-ctl);
   background: color-mix(in srgb, var(--accent) 6%, transparent);
   color: var(--text);
   font-family: var(--font-body);
-  font-size: 0.74rem;
+  font-size: var(--text-sm);
   padding: 5px 10px;
   cursor: pointer;
 }
@@ -157,20 +156,20 @@
 .text-form input {
   min-width: 0;
   border: 1px solid color-mix(in srgb, var(--line) 90%, transparent);
-  border-radius: 7px;
+  border-radius: var(--radius-ctl);
   background: var(--field);
   color: var(--text);
   font: inherit;
-  font-size: 0.78rem;
+  font-size: var(--text-sm);
   padding: 6px 8px;
 }
 
 .text-form button {
   border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
-  border-radius: 7px;
+  border-radius: var(--radius-ctl);
   background: color-mix(in srgb, var(--accent) 10%, transparent);
   color: var(--text);
-  font-size: 0.74rem;
+  font-size: var(--text-sm);
   padding: 6px 10px;
   cursor: pointer;
 }

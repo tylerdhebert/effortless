@@ -7,7 +7,7 @@
   width: fit-content;
   max-width: 100%;
   border: 1px solid color-mix(in srgb, var(--line) 90%, transparent);
-  border-radius: 8px;
+  border-radius: var(--radius-ctl);
   background: rgba(255, 255, 255, 0.018);
   box-shadow: none;
   padding: 2px;
@@ -18,7 +18,7 @@
   top: 4px;
   bottom: 4px;
   overflow: hidden;
-  border-radius: 6px;
+  border-radius: var(--radius-ctl);
   pointer-events: none;
 }
 
@@ -43,13 +43,13 @@
   justify-content: center;
   min-height: 28px;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--radius-ctl);
   background: transparent;
   box-shadow: none;
   color: var(--muted);
   cursor: pointer;
-  font-size: 0.68rem;
-  font-weight: 650;
+  font-size: var(--text-xs);
+  font-weight: 600;
   letter-spacing: 0;
   line-height: 1;
   white-space: nowrap;
