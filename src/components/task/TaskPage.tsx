@@ -5,7 +5,7 @@ import { Diff, Hunk, parseDiff, tokenize } from 'react-diff-view'
 import type { FileData, ViewType } from 'react-diff-view'
 import 'react-diff-view/style/index.css'
 import { refractor as rawRefractor } from 'refractor'
-import { ChevronDown, Play, RotateCcw, Send, X } from 'lucide-react'
+import { ChevronDown, ChevronsLeft, ChevronsRight, Play, RotateCcw, Send, X } from 'lucide-react'
 import type {
   ActivityEvent,
   AgentProfile,
@@ -97,8 +97,14 @@ export function TaskPage({
   const [launchProfileId, setLaunchProfileId] = useState<number | null>(defaultProfileId)
   const [launchMenuOpen, setLaunchMenuOpen] = useState(false)
   const [launchMenuPosition, setLaunchMenuPosition] = useState<{ top: number; left: number } | null>(null)
+  const [activityCollapsed, setActivityCollapsed] = useState(false)
+  const [workbenchPopover, setWorkbenchPopover] = useState<'commits' | 'conflicts' | null>(null)
+  const [workbenchPopoverPosition, setWorkbenchPopoverPosition] = useState<{ top: number; left: number } | null>(null)
   const launchButtonRef = useRef<HTMLDivElement | null>(null)
   const launchMenuRef = useRef<HTMLDivElement | null>(null)
+  const commitsButtonRef = useRef<HTMLButtonElement | null>(null)
+  const conflictsButtonRef = useRef<HTMLButtonElement | null>(null)
+  const workbenchPopoverRef = useRef<HTMLDivElement | null>(null)
 
   const providers = useMemo(() => listAgentProviders(), [])
   const taskRepo = repos.find((repo) => repo.id === task.repoId) ?? null
@@ -112,9 +118,22 @@ export function TaskPage({
   const showGateStrip = task.status === 'reviewing'
   const profileId = selectedProfile?.id ?? defaultProfileId ?? null
   const mergePrimary = Boolean(task.status === 'accepted' && taskRepo && task.branchName)
+  const commitLines = useMemo(
+    () => commitView?.output.split('\n').map((line) => line.trim()).filter(Boolean) ?? [],
+    [commitView?.output],
+  )
+  const conflictCount = conflictView?.files.length ?? 0
+  const showConflictBadge = Boolean(conflictView?.hasConflicts)
+  const workbenchLayoutClass = activityCollapsed
+    ? `${styles['implementation-workbench']} ${styles['activity-collapsed']}`
+    : styles['implementation-workbench']
 
   const closeLaunchMenu = useCallback(() => {
     setLaunchMenuOpen(false)
+  }, [])
+
+  const closeWorkbenchPopover = useCallback(() => {
+    setWorkbenchPopover(null)
   }, [])
 
   const updateLaunchMenuPosition = useCallback(() => {
@@ -129,12 +148,25 @@ export function TaskPage({
     })
   }, [])
 
+  const updateWorkbenchPopoverPosition = useCallback((kind: 'commits' | 'conflicts') => {
+    const button = kind === 'commits' ? commitsButtonRef.current : conflictsButtonRef.current
+    if (!button) return
+    const buttonRect = button.getBoundingClientRect()
+    const menuWidth = 420
+    const maxLeft = Math.max(8, window.innerWidth - menuWidth - 8)
+    setWorkbenchPopoverPosition({
+      top: buttonRect.bottom + 6,
+      left: Math.max(8, Math.min(buttonRect.right - menuWidth, maxLeft)),
+    })
+  }, [])
+
   useEffect(() => {
     setLaunchProvider(defaultProvider)
     setLaunchProfileId(defaultProfileId ?? profiles[0]?.id ?? null)
     setLaunchMenuOpen(false)
     setReviewFeedback('')
     setShowChangeRequest(false)
+    setWorkbenchPopover(null)
   }, [task.id, defaultProvider, defaultProfileId, profiles])
 
   useEffect(() => {
@@ -155,6 +187,24 @@ export function TaskPage({
   }, [closeLaunchMenu, launchMenuOpen])
 
   useEffect(() => {
+    if (!workbenchPopover) return
+
+    function handlePointerDown(event: MouseEvent) {
+      const target = event.target as Node
+      if (
+        !commitsButtonRef.current?.contains(target) &&
+        !conflictsButtonRef.current?.contains(target) &&
+        !workbenchPopoverRef.current?.contains(target)
+      ) {
+        closeWorkbenchPopover()
+      }
+    }
+
+    window.addEventListener('mousedown', handlePointerDown)
+    return () => window.removeEventListener('mousedown', handlePointerDown)
+  }, [closeWorkbenchPopover, workbenchPopover])
+
+  useEffect(() => {
     if (!launchMenuOpen) return
 
     function handleKeydown(event: KeyboardEvent) {
@@ -167,6 +217,20 @@ export function TaskPage({
     window.addEventListener('keydown', handleKeydown, true)
     return () => window.removeEventListener('keydown', handleKeydown, true)
   }, [closeLaunchMenu, launchMenuOpen])
+
+  useEffect(() => {
+    if (!workbenchPopover) return
+
+    function handleKeydown(event: KeyboardEvent) {
+      if (event.key !== 'Escape') return
+      event.preventDefault()
+      event.stopPropagation()
+      closeWorkbenchPopover()
+    }
+
+    window.addEventListener('keydown', handleKeydown, true)
+    return () => window.removeEventListener('keydown', handleKeydown, true)
+  }, [closeWorkbenchPopover, workbenchPopover])
 
   useLayoutEffect(() => {
     if (!launchMenuOpen) {
@@ -183,6 +247,22 @@ export function TaskPage({
       window.removeEventListener('scroll', handle, true)
     }
   }, [launchMenuOpen, updateLaunchMenuPosition])
+
+  useLayoutEffect(() => {
+    if (!workbenchPopover) {
+      setWorkbenchPopoverPosition(null)
+      return
+    }
+
+    updateWorkbenchPopoverPosition(workbenchPopover)
+    const handle = () => updateWorkbenchPopoverPosition(workbenchPopover)
+    window.addEventListener('resize', handle)
+    window.addEventListener('scroll', handle, true)
+    return () => {
+      window.removeEventListener('resize', handle)
+      window.removeEventListener('scroll', handle, true)
+    }
+  }, [updateWorkbenchPopoverPosition, workbenchPopover])
 
   const diffViewQuery = useQuery<TaskDiffView>({
     queryKey: ['task-diff', task.id, diffType],
@@ -481,9 +561,55 @@ export function TaskPage({
         ) : null}
 
         <section className={styles['implementation-section']}>
-          <div className={styles['implementation-section-header']}>
-            <h4 className={styles['implementation-eyebrow']}>implementation</h4>
-            <div className={styles['implementation-build-cluster']}>
+          <div className={styles['implementation-toolbar']}>
+            <div className={styles['implementation-switchers']}>
+              <PillSwitcher
+                ariaLabel="implementation diff type"
+                options={[
+                  { id: 'uncommitted', label: 'uncommitted' },
+                  { id: 'branch', label: 'branch' },
+                  { id: 'combined', label: 'combined' },
+                ]}
+                value={diffType}
+                onChange={setDiffType}
+              />
+              <PillSwitcher
+                ariaLabel="implementation diff view type"
+                options={[
+                  { id: 'unified', label: 'unified' },
+                  { id: 'split', label: 'split' },
+                ]}
+                value={diffViewType}
+                onChange={setDiffViewType}
+              />
+            </div>
+
+            <div className={styles['implementation-toolbar-actions']}>
+              <button
+                ref={commitsButtonRef}
+                type="button"
+                className={`${styles['workbench-chip']} ${commitLines.length === 0 ? styles.muted : ''}`}
+                title={commitView?.error ? firstLine(commitView.error) : undefined}
+                disabled={commitLines.length === 0}
+                onClick={() => {
+                  if (commitLines.length === 0) return
+                  setWorkbenchPopover((current) => current === 'commits' ? null : 'commits')
+                }}
+              >
+                {commitView?.error ? 'commits' : commitLines.length > 0 ? `${commitLines.length} commits` : 'no commits'}
+              </button>
+              {showConflictBadge ? (
+                <button
+                  ref={conflictsButtonRef}
+                  type="button"
+                  className={`${styles['workbench-chip']} ${styles.warning}`}
+                  onClick={() => {
+                    setWorkbenchPopover((current) => current === 'conflicts' ? null : 'conflicts')
+                  }}
+                >
+                  {conflictCount > 0 ? `${conflictCount} conflicts` : 'conflicts'}
+                </button>
+              ) : null}
               {latestBuild ? (
                 <span className="meta-line">
                   <Ref value={latestBuild.shortRef} />{' '}
@@ -505,32 +631,8 @@ export function TaskPage({
             </div>
           </div>
 
-          <div className={styles['implementation-controls']}>
-            <PillSwitcher
-              ariaLabel="implementation diff type"
-              options={[
-                { id: 'uncommitted', label: 'uncommitted' },
-                { id: 'branch', label: 'branch' },
-                { id: 'combined', label: 'combined' },
-              ]}
-              value={diffType}
-              onChange={setDiffType}
-            />
-            <PillSwitcher
-              ariaLabel="implementation diff view type"
-              options={[
-                { id: 'unified', label: 'unified' },
-                { id: 'split', label: 'split' },
-              ]}
-              value={diffViewType}
-              onChange={setDiffViewType}
-            />
-          </div>
-
-          {diffView?.error ? (
-            <GitViewEmpty error={diffView.error} />
-          ) : fileEntries.length > 0 ? (
-            <div className={styles['implementation-layout']}>
+          <div className={workbenchLayoutClass}>
+            {fileEntries.length > 0 ? (
               <div className={styles['implementation-file-list']}>
                 {fileEntries.map((entry) => (
                   <button
@@ -549,97 +651,105 @@ export function TaskPage({
                   </button>
                 ))}
               </div>
-              <div className={styles['implementation-diff-panel']}>
-                {activeFileEntry ? (
-                  <DiffFile file={activeFileEntry.file} viewType={diffViewType} />
-                ) : (
-                  <p className="empty-state">select a file to view its diff</p>
-                )}
+            ) : (
+              <div className={styles['implementation-file-list']}>
+                <p className="empty-state">no files</p>
               </div>
-            </div>
-          ) : diffView?.output ? (
-            <pre>{diffView.output}</pre>
-          ) : (
-            <p className="empty-state">no diff output</p>
-          )}
-        </section>
-
-        <div className={styles['supporting-grid']}>
-          <article className={styles['supporting-card']}>
-            <div className={styles['supporting-card-section']}>
-              <h4 className={styles['supporting-eyebrow']}>commits</h4>
-              {commitView?.error ? (
-                <GitViewEmpty error={commitView.error} />
-              ) : commitView?.output ? (
-                <>
-                  <p className={styles['supporting-message']}>{firstLine(commitView.output)}</p>
-                  <details className={styles['supporting-details']}>
-                    <summary>details</summary>
-                    <pre>{commitView.output}</pre>
-                  </details>
-                </>
+            )}
+            <div className={styles['implementation-diff-panel']}>
+              {diffView?.error ? (
+                <GitViewEmpty error={diffView.error} />
+              ) : activeFileEntry ? (
+                <DiffFile file={activeFileEntry.file} viewType={diffViewType} />
+              ) : diffView?.output ? (
+                <pre>{diffView.output}</pre>
               ) : (
-                <p className={styles['supporting-message']}>no commits ahead of base</p>
+                <p className="empty-state">no diff output</p>
               )}
             </div>
-
-            <div className={styles['supporting-card-section']}>
-              <h4 className={styles['supporting-eyebrow']}>conflicts</h4>
-              {conflictView?.error ? (
-                <GitViewEmpty error={conflictView.error} />
-              ) : conflictView?.hasConflicts ? (
+            <aside className={styles['activity-rail']} aria-label="activity">
+              {activityCollapsed ? (
+                <button
+                  type="button"
+                  className={styles['activity-collapse-toggle']}
+                  aria-label="expand activity"
+                  title="expand activity"
+                  onClick={() => setActivityCollapsed(false)}
+                >
+                  <ChevronsLeft size={14} aria-hidden="true" />
+                </button>
+              ) : (
                 <>
-                  <p className={styles['supporting-message']}>
-                    {conflictView.files.length > 0
-                      ? `${conflictView.files.length} conflicted file${conflictView.files.length === 1 ? '' : 's'}`
-                      : 'conflicts found'}
-                  </p>
-                  {conflictView.files.length > 0 || conflictView.details ? (
-                    <details className={styles['supporting-details']}>
-                      <summary>details</summary>
-                      {conflictView.files.length > 0 ? (
-                        <p className={styles['supporting-message']}>{conflictView.files.join(', ')}</p>
+                  <div className={styles['activity-rail-header']}>
+                    <h4 className={styles['activity-eyebrow']}>activity</h4>
+                    <button
+                      type="button"
+                      className={styles['activity-collapse-toggle']}
+                      aria-label="collapse activity"
+                      title="collapse activity"
+                      onClick={() => setActivityCollapsed(true)}
+                    >
+                      <ChevronsRight size={14} aria-hidden="true" />
+                    </button>
+                  </div>
+                  <div className={styles['activity-rail-body']}>
+                    <div className={styles['activity-section']}>
+                      <CommentStream comments={comments} />
+                    </div>
+                    <div className={styles['activity-section']}>
+                      <h4 className={styles['activity-eyebrow']}>artifact</h4>
+                      <p className={styles['artifact-readout']}>{task.artifact ?? 'no artifact yet'}</p>
+                      {reviews.length > 0 ? (
+                        <details className={styles['review-history']}>
+                          <summary>review history</summary>
+                          <ul className={styles['review-history-list']}>
+                            {reviews.map((review) => (
+                              <li key={review.id} className={styles['review-history-item']}>
+                                <span className={styles['review-history-meta']}>
+                                  <Ref value={review.shortRef} />{' '}
+                                  <Stamp label={review.verdict} tone={statusTone(review.verdict)} compact />
+                                </span>
+                                {review.summary ? (
+                                  <span className={styles['review-history-summary']}>{review.summary}</span>
+                                ) : null}
+                              </li>
+                            ))}
+                          </ul>
+                        </details>
                       ) : null}
-                      {conflictView.details ? <pre>{conflictView.details}</pre> : null}
-                    </details>
-                  ) : null}
+                    </div>
+                  </div>
                 </>
-              ) : (
-                <p className={styles['supporting-message']}>no conflicts detected</p>
               )}
-            </div>
-          </article>
-
-          <article className={styles['supporting-card']}>
-            <div className={styles['supporting-card-section']}>
-              <h4 className={styles['supporting-eyebrow']}>comments</h4>
-              <CommentStream comments={comments} />
-            </div>
-
-            <div className={styles['supporting-card-section']}>
-              <h4 className={styles['supporting-eyebrow']}>artifact</h4>
-              <p className={styles['artifact-readout']}>{task.artifact ?? 'no artifact yet'}</p>
-              {reviews.length > 0 ? (
-                <details className={styles['review-history']}>
-                  <summary>review history</summary>
-                  <ul className={styles['review-history-list']}>
-                    {reviews.map((review) => (
-                      <li key={review.id} className={styles['review-history-item']}>
-                        <span className={styles['review-history-meta']}>
-                          <Ref value={review.shortRef} />{' '}
-                          <Stamp label={review.verdict} tone={statusTone(review.verdict)} compact />
-                        </span>
-                        {review.summary ? (
-                          <span className={styles['review-history-summary']}>{review.summary}</span>
-                        ) : null}
-                      </li>
-                    ))}
-                  </ul>
-                </details>
-              ) : null}
-            </div>
-          </article>
-        </div>
+            </aside>
+          </div>
+          {workbenchPopover && workbenchPopoverPosition
+            ? createPortal(
+                <div
+                  ref={workbenchPopoverRef}
+                  className={styles['workbench-popover']}
+                  role="dialog"
+                  style={{ top: workbenchPopoverPosition.top, left: workbenchPopoverPosition.left }}
+                >
+                  {workbenchPopover === 'commits' ? (
+                    <>
+                      <h4>commits</h4>
+                      <pre>{commitLines.join('\n')}</pre>
+                    </>
+                  ) : (
+                    <>
+                      <h4>conflicts</h4>
+                      {conflictView?.files.length ? (
+                        <p className={styles['workbench-popover-files']}>{conflictView.files.join(', ')}</p>
+                      ) : null}
+                      {conflictView?.details ? <pre>{conflictView.details}</pre> : null}
+                    </>
+                  )}
+                </div>,
+                document.body,
+              )
+            : null}
+        </section>
       </div>
     </div>
   )

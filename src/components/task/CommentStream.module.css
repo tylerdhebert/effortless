@@ -1,8 +1,6 @@
 .comment-stream {
   display: grid;
   gap: 2px;
-  max-height: 320px;
-  overflow-y: auto;
 }
 
 .comment {
