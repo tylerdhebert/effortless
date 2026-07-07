@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { applyTheme, applyThemePalette, cloneThemePalette, THEME_PALETTES, type ThemePalette } from './themes'
+import { applyTheme, type ThemeId } from './themes'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   CircleHelp,
@@ -45,6 +45,7 @@ import { useTaskMutations } from './hooks/useTaskMutations'
 import { useNotifications } from './hooks/useNotifications'
 import type { AgentProvider, AgentRun, LiveAgentRunSession, Task } from '../core/types'
 import type { PendingNotification } from '../core/notifications'
+import type { ThemePreference } from '../core/db'
 import './App.css'
 
 type EffortRailDrawer = 'inputs' | 'plan' | 'tasks'
@@ -57,6 +58,11 @@ type LiveSessionCacheEntry = {
 const DEFAULT_TERMINAL_SIZE = { cols: 100, rows: 24 }
 const LIVE_SESSION_GRACE_MS = 5000
 const FORK_MAIN_PROMPT = 'Continue from main as a forked Effortless session. Keep scope tight and update durable state with efl.'
+
+function resolveThemePreference(preference: ThemePreference): ThemeId {
+  if (preference !== 'system') return preference
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+}
 
 function App() {
   const queryClient = useQueryClient()
@@ -106,8 +112,6 @@ function App() {
   const [focusedInputId, setFocusedInputId] = useState<number | null>(null)
   const [drawerClosedAt, setDrawerClosedAt] = useState(0)
   const [observedAppVersion, setObservedAppVersion] = useState<number | null>(null)
-  const [customThemePalette, setCustomThemePalette] = useState<ThemePalette | null>(null)
-  const [customThemeActive, setCustomThemeActive] = useState(false)
   const [terminalStartSize, setTerminalStartSize] = useState(DEFAULT_TERMINAL_SIZE)
   const preserveSelectionOnEffortChangeRef = useRef(false)
   const bootstrapLiveAttachmentIdsRef = useRef<Set<string> | null>(null)
@@ -141,30 +145,18 @@ function App() {
   })
 
   useEffect(() => {
-    if (!customThemeActive && appStateQuery.data?.theme) {
-      applyTheme(appStateQuery.data.theme)
-    }
-  }, [appStateQuery.data?.theme, customThemeActive])
+    const themePreference = appStateQuery.data?.theme
+    if (!themePreference) return
 
-  useEffect(() => {
-    if (!appStateQuery.data) return
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+    const syncTheme = () => applyTheme(resolveThemePreference(themePreference))
+    syncTheme()
 
-    if (appStateQuery.data.customThemePalette) {
-      setCustomThemePalette((current) => current ?? cloneThemePalette(appStateQuery.data.customThemePalette!))
-    } else if (!customThemePalette && appStateQuery.data.theme) {
-      const basePalette =
-        THEME_PALETTES[appStateQuery.data.theme as keyof typeof THEME_PALETTES] ?? THEME_PALETTES.phosphor
-      setCustomThemePalette(cloneThemePalette(basePalette))
-    }
+    if (themePreference !== 'system') return
 
-    setCustomThemeActive(appStateQuery.data.customThemeActive)
-  }, [appStateQuery.data, customThemePalette])
-
-  useEffect(() => {
-    if (customThemeActive && customThemePalette) {
-      applyThemePalette(customThemePalette)
-    }
-  }, [customThemeActive, customThemePalette])
+    mediaQuery.addEventListener('change', syncTheme)
+    return () => mediaQuery.removeEventListener('change', syncTheme)
+  }, [appStateQuery.data?.theme])
 
   const { notifications, count: notificationCount, isLoading: notificationsLoading } = useNotifications()
 
@@ -784,18 +776,8 @@ function App() {
       badgeNotificationsEnabled?: boolean
       soundNotificationsEnabled?: boolean
       toastDurationSeconds?: number
-      theme?: string
+      theme?: ThemePreference
     }) => window.effortless.updateNotificationSettings(settings),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['app-state'] })
-    },
-  })
-
-  const updateCustomThemeState = useMutation({
-    mutationFn: (state: {
-      customThemeActive: boolean
-      customThemePalette: Record<string, string> | null
-    }) => window.effortless.updateCustomThemeState(state),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['app-state'] })
     },
@@ -1072,32 +1054,6 @@ function App() {
     setActiveEffortDrawer(null)
   }, [selectedEffort?.id])
 
-  function resolveBaseCustomPalette(): ThemePalette {
-    const themeId = appStateQuery.data?.theme
-    const basePalette =
-      themeId && themeId in THEME_PALETTES
-        ? THEME_PALETTES[themeId as keyof typeof THEME_PALETTES]
-        : THEME_PALETTES.phosphor
-    return cloneThemePalette(basePalette)
-  }
-
-  function ensureCustomPalette(): ThemePalette {
-    return customThemePalette ?? resolveBaseCustomPalette()
-  }
-
-  function handleActivateCustomTheme() {
-    const palette = ensureCustomPalette()
-    if (!customThemePalette) {
-      setCustomThemePalette(palette)
-    }
-    applyThemePalette(palette)
-    setCustomThemeActive(true)
-    updateCustomThemeState.mutate({
-      customThemeActive: true,
-      customThemePalette: palette,
-    })
-  }
-
   function openEffortDrawer(drawer: EffortRailDrawer) {
     if (drawer === 'plan' && !supportsPlans) return
     if (drawer === 'tasks' && !supportsTasks) return
@@ -1108,15 +1064,6 @@ function App() {
         return null
       }
       return drawer
-    })
-  }
-
-  function handleUpdateCustomTheme(palette: ThemePalette) {
-    setCustomThemePalette(palette)
-    setCustomThemeActive(true)
-    updateCustomThemeState.mutate({
-      customThemeActive: true,
-      customThemePalette: palette,
     })
   }
 
@@ -1317,19 +1264,10 @@ function App() {
               updateNotificationSettings.mutate(settings)
             }
             isUpdatingNotificationSettings={updateNotificationSettings.isPending}
-            currentTheme={appStateQuery.data?.theme ?? 'phosphor'}
-            customTheme={ensureCustomPalette()}
-            customThemeActive={customThemeActive}
+            currentTheme={appStateQuery.data?.theme ?? 'system'}
             onUpdateTheme={(theme) => {
-              setCustomThemeActive(false)
-              updateCustomThemeState.mutate({
-                customThemeActive: false,
-                customThemePalette: ensureCustomPalette(),
-              })
               updateNotificationSettings.mutate({ theme })
             }}
-            onActivateCustomTheme={handleActivateCustomTheme}
-            onUpdateCustomTheme={handleUpdateCustomTheme}
           />
         </div>
 

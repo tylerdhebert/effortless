@@ -43,7 +43,7 @@ import type {
 } from '../core/types'
 import type { AttentionSnapshot } from '../core/attention'
 import type { PendingNotification } from '../core/notifications'
-import type { NotificationSettings } from '../core/db'
+import type { NotificationSettings, ThemePreference } from '../core/db'
 
 contextBridge.exposeInMainWorld('effortless', {
   platform: process.platform,
@@ -60,9 +60,7 @@ contextBridge.exposeInMainWorld('effortless', {
       badgeNotificationsEnabled: boolean
       soundNotificationsEnabled: boolean
       toastDurationSeconds: number
-      theme: string
-      customThemeActive: boolean
-      customThemePalette: Record<string, string> | null
+      theme: ThemePreference
     }>,
   browsePath: (targetPath?: string | null, includeFiles = false) =>
     ipcRenderer.invoke('filesystem:browse', targetPath, includeFiles) as Promise<{
@@ -242,24 +240,6 @@ contextBridge.exposeInMainWorld('effortless', {
       badgeNotificationsEnabled: boolean
       soundNotificationsEnabled: boolean
       toastDurationSeconds: number
-      theme: string
-      customThemeActive: boolean
-      customThemePalette: Record<string, string> | null
-    }>,
-  updateCustomThemeState: (state: {
-    customThemeActive: boolean
-    customThemePalette: Record<string, string> | null
-  }) =>
-    ipcRenderer.invoke('theme:custom:update', state) as Promise<{
-      version: number
-      updatedAt: string
-      osNotificationsEnabled: boolean
-      bannerNotificationsEnabled: boolean
-      badgeNotificationsEnabled: boolean
-      soundNotificationsEnabled: boolean
-      toastDurationSeconds: number
-      theme: string
-      customThemeActive: boolean
-      customThemePalette: Record<string, string> | null
+      theme: ThemePreference
     }>,
 })

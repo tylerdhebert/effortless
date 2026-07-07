@@ -5,6 +5,7 @@ import { getAppPaths } from './appPaths'
 import { DEFAULT_INSTRUCTIONS_BODY } from './defaultInstructions'
 
 export type AppDatabase = Database
+export type ThemePreference = 'system' | 'dark' | 'light'
 export type AppState = {
   version: number
   updatedAt: string
@@ -13,7 +14,14 @@ export type AppState = {
   badgeNotificationsEnabled: boolean
   soundNotificationsEnabled: boolean
   toastDurationSeconds: number
-  theme: string
+  theme: ThemePreference
+}
+
+const DEFAULT_THEME: ThemePreference = 'system'
+const THEME_PREFERENCES = new Set<string>(['system', 'dark', 'light'])
+
+function normalizeThemePreference(theme: string | null | undefined): ThemePreference {
+  return theme && THEME_PREFERENCES.has(theme) ? (theme as ThemePreference) : DEFAULT_THEME
 }
 
 export function openDatabase(): AppDatabase {
@@ -44,7 +52,7 @@ export function initializeSchema(db: AppDatabase): void {
       badge_notifications_enabled INTEGER NOT NULL DEFAULT 1,
       sound_notifications_enabled INTEGER NOT NULL DEFAULT 0,
       toast_duration_seconds INTEGER NOT NULL DEFAULT 5,
-      theme TEXT NOT NULL DEFAULT 'phosphor'
+      theme TEXT NOT NULL DEFAULT 'system'
     );
 
     INSERT OR IGNORE INTO app_state (id, version, updated_at)
@@ -203,7 +211,6 @@ export function initializeSchema(db: AppDatabase): void {
 
   const schemaVersion = db.pragma('user_version', { simple: true }) as number
   if (schemaVersion < 1) {
-    db.exec(`UPDATE app_state SET theme = 'phosphor' WHERE theme = 'grass'`)
     db.pragma('user_version = 1')
   }
 
@@ -320,7 +327,7 @@ export type NotificationSettings = {
   badgeNotificationsEnabled?: boolean
   soundNotificationsEnabled?: boolean
   toastDurationSeconds?: number
-  theme?: string
+  theme?: ThemePreference
 }
 
 export function updateNotificationSettings(
@@ -343,7 +350,7 @@ export function updateNotificationSettings(
     settings.badgeNotificationsEnabled ?? current.badgeNotificationsEnabled ? 1 : 0,
     settings.soundNotificationsEnabled ?? current.soundNotificationsEnabled ? 1 : 0,
     settings.toastDurationSeconds ?? current.toastDurationSeconds,
-    settings.theme ?? current.theme,
+    normalizeThemePreference(settings.theme ?? current.theme),
   )
   bumpAppState(db)
   return getAppState(db)
@@ -375,7 +382,7 @@ export function getAppState(db: AppDatabase): AppState {
     badgeNotificationsEnabled: Boolean(row.badge_notifications_enabled),
     soundNotificationsEnabled: Boolean(row.sound_notifications_enabled),
     toastDurationSeconds: row.toast_duration_seconds,
-    theme: row.theme,
+    theme: normalizeThemePreference(row.theme),
   }
 }
 

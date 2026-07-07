@@ -15,7 +15,6 @@ import { getPtyRuntimeStatus, RunManager } from './runManager'
 import { startCliCommandServer, type CliCommandServer } from './cliCommandServer'
 import { getAppState, openDatabase, updateNotificationSettings } from '../core/db'
 import type { NotificationSettings } from '../core/db'
-import { getCustomThemeState, updateCustomThemeState } from '../core/themeConfig'
 import { listEfforts, createEffort, deleteEffort, updateEffortDefaultProfile, updateEffortDefaultProvider, updateEffortSummary } from '../core/efforts'
 import { browsePath } from '../core/filesystem'
 import { listAttention } from '../core/attention'
@@ -120,13 +119,8 @@ function bootstrapRunManager(): void {
   runManager.reconcilePersistedRunsOnStartup()
 }
 
-async function getRendererAppState() {
-  const appState = getAppState(db)
-  const customThemeState = await getCustomThemeState()
-  return {
-    ...appState,
-    ...customThemeState,
-  }
+function getRendererAppState() {
+  return getAppState(db)
 }
 
 ipcMain.handle('app-state:get', () => getRendererAppState())
@@ -158,10 +152,6 @@ ipcMain.handle('notifications:show-os', (_event, title: string, body: string) =>
 })
 ipcMain.handle('notifications:updateSettings', async (_event, settings: NotificationSettings) => {
   updateNotificationSettings(db, settings)
-  return getRendererAppState()
-})
-ipcMain.handle('theme:custom:update', async (_event, state: { customThemeActive: boolean; customThemePalette: Record<string, string> | null }) => {
-  await updateCustomThemeState(state)
   return getRendererAppState()
 })
 

@@ -2,6 +2,7 @@
 
 import type { AttentionSnapshot } from '../core/attention'
 import type { PendingNotification } from '../core/notifications'
+import type { ThemePreference } from '../core/db'
 import type {
   AnswerInputRequestInput,
   ApplyReviewInput,
@@ -61,9 +62,7 @@ interface Window {
         badgeNotificationsEnabled: boolean
         soundNotificationsEnabled: boolean
         toastDurationSeconds: number
-        theme: string
-        customThemeActive: boolean
-        customThemePalette: Record<string, string> | null
+        theme: ThemePreference
       }>
       browsePath: (targetPath?: string | null, includeFiles?: boolean) => Promise<{
         path: string
@@ -176,7 +175,7 @@ interface Window {
         badgeNotificationsEnabled?: boolean
         soundNotificationsEnabled?: boolean
         toastDurationSeconds?: number
-        theme?: string
+        theme?: ThemePreference
       }) => Promise<{
         version: number
         updatedAt: string
@@ -185,24 +184,7 @@ interface Window {
         badgeNotificationsEnabled: boolean
         soundNotificationsEnabled: boolean
         toastDurationSeconds: number
-        theme: string
-        customThemeActive: boolean
-        customThemePalette: Record<string, string> | null
-      }>
-      updateCustomThemeState: (state: {
-        customThemeActive: boolean
-        customThemePalette: Record<string, string> | null
-      }) => Promise<{
-        version: number
-        updatedAt: string
-        osNotificationsEnabled: boolean
-        bannerNotificationsEnabled: boolean
-        badgeNotificationsEnabled: boolean
-        soundNotificationsEnabled: boolean
-        toastDurationSeconds: number
-        theme: string
-        customThemeActive: boolean
-        customThemePalette: Record<string, string> | null
+        theme: ThemePreference
       }>
     }
   }

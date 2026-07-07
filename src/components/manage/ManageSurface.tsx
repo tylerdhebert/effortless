@@ -8,7 +8,7 @@ import type {
   UpdateAgentProfileInput,
   SetInstructionsInput,
 } from '../../../core/types'
-import type { ThemePalette } from '../../themes'
+import type { ThemePreference } from '../../../core/db'
 import { PathPicker } from '../ui/PathPicker'
 import { NotificationSettingsPanel } from '../notifications/NotificationSettingsPanel'
 import { AppearanceSettingsPanel } from './AppearanceSettingsPanel'
@@ -52,12 +52,8 @@ type ManageSurfaceProps = {
     toastDurationSeconds?: number
   }) => void
   isUpdatingNotificationSettings?: boolean
-  currentTheme?: string
-  customTheme: ThemePalette
-  customThemeActive: boolean
-  onUpdateTheme?: (theme: string) => void
-  onActivateCustomTheme: () => void
-  onUpdateCustomTheme: (palette: ThemePalette) => void
+  currentTheme?: ThemePreference
+  onUpdateTheme?: (theme: ThemePreference) => void
 }
 
 export function ManageSurface({
@@ -85,11 +81,7 @@ export function ManageSurface({
   onUpdateNotificationSettings,
   isUpdatingNotificationSettings,
   currentTheme,
-  customTheme,
-  customThemeActive,
   onUpdateTheme,
-  onActivateCustomTheme,
-  onUpdateCustomTheme,
 }: ManageSurfaceProps) {
   const [selectedRepoKey, setSelectedRepoKey] = useState<string>('new')
   const [repoName, setRepoName] = useState('')
@@ -348,12 +340,8 @@ export function ManageSurface({
         ) : section === 'appearance' ? (
           <section className={`${styles['manage-surface']} ${styles['manage-surface-notifications']}`}>
             <AppearanceSettingsPanel
-              currentTheme={currentTheme ?? 'phosphor'}
-              customTheme={customTheme}
-              customThemeActive={customThemeActive}
+              currentTheme={currentTheme ?? 'system'}
               onUpdateTheme={onUpdateTheme ?? (() => {})}
-              onActivateCustomTheme={onActivateCustomTheme}
-              onUpdateCustomTheme={onUpdateCustomTheme}
             />
           </section>
         ) : null}
