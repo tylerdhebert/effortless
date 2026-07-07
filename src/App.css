@@ -143,6 +143,7 @@
 }
 
 .collapsed-sidebar-effort {
+  position: relative;
   display: grid;
   place-items: center;
   width: 28px;
@@ -153,6 +154,7 @@
   cursor: pointer;
   padding: 0;
   transition: background 120ms ease;
+  box-sizing: border-box;
 }
 
 .collapsed-sidebar-effort:hover {
@@ -168,6 +170,29 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
+  box-sizing: border-box;
+}
+
+.collapsed-sidebar-effort-dot.live {
+  background: var(--live);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--live) 50%, transparent);
+}
+
+.collapsed-sidebar-effort-dot.idle {
+  border: 1.5px solid var(--line-strong);
+  background: transparent;
+}
+
+.collapsed-sidebar-effort-pending-badge {
+  position: absolute;
+  top: 1px;
+  right: 4px;
+  display: grid;
+  place-items: center;
+  width: 10px;
+  height: 10px;
+  pointer-events: none;
+  box-sizing: border-box;
 }
 
 .collapsed-sidebar-effort-flyout {

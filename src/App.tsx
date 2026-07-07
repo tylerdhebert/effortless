@@ -17,6 +17,7 @@ import { EffortSummarySection } from './components/effort/EffortSummarySection'
 import { EffortCreationForm } from './components/sidebar/EffortCreationForm'
 import { InputRequestList } from './components/effort/InputRequestList'
 import { ManageSurface } from './components/manage/ManageSurface'
+import { WarningIndicator } from './components/notifications/WarningIndicator'
 import { NotificationFooter } from './components/notifications/NotificationFooter'
 import { NotificationToast } from './components/notifications/NotificationToast'
 import { TitleBar } from './components/ui/TitleBar'
@@ -30,7 +31,7 @@ import { TaskPage } from './components/task/TaskPage'
 import { TaskList } from './components/task/TaskList'
 import { getAgentProviderConfig, listAgentProviders } from '../core/agentProviders'
 import { countActiveEffortRuns, pickTaskRunBadge } from './lib/runStatus'
-import { effortStatusColor, effortSupportsPlans, effortSupportsTasks } from './lib/helpers'
+import { effortSupportsPlans, effortSupportsTasks } from './lib/helpers'
 import { Ref } from './components/ui/Ref'
 import { Stamp, statusTone } from './components/ui/Stamp'
 import { MANAGE_SECTIONS, type ManageSection } from './lib/manageSections'
@@ -335,6 +336,15 @@ function App() {
   }, [allRunsQuery.data, liveSessions])
   const providers = useMemo(() => listAgentProviders(), [])
   const liveSessionIds = useMemo(() => new Set(stableLiveSessions.map((session) => session.runId)), [stableLiveSessions])
+  const liveEffortIds = useMemo(() => {
+    const ids = new Set<number>()
+    for (const run of allRunsQuery.data ?? []) {
+      if (liveSessionIds.has(run.id)) {
+        ids.add(run.effortId)
+      }
+    }
+    return ids
+  }, [allRunsQuery.data, liveSessionIds])
   const providerLiveRunIds = useMemo(
     () => new Set(stableLiveSessions.filter((session) => session.providerLive).map((session) => session.runId)),
     [stableLiveSessions],
@@ -1219,6 +1229,8 @@ function App() {
                 key={effort.id}
                 effort={effort}
                 active={effort.id === selectedEffort?.id}
+                pending={effortPendingMap.get(effort.id) ?? false}
+                live={liveEffortIds.has(effort.id)}
                 onClick={() => {
                   setSelectedEffortId(effort.id)
                   setSurfaceMode('effort')
@@ -1242,6 +1254,7 @@ function App() {
             onSetManageSection={setManageSection}
             onOpenCreateEffort={() => setCreateEffortOpen(true)}
             effortPendingMap={effortPendingMap}
+            liveEffortIds={liveEffortIds}
             notificationCount={notificationCount}
             notifications={notifications}
             onNavigateNotification={handleNotificationNavigate}
@@ -1820,7 +1833,19 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => window.setTimeout(resolve, ms))
 }
 
-function CollapsedEffortDot({ effort, active, onClick }: { effort: { id: number; title: string; shortRef: string; status: string }; active: boolean; onClick: () => void }) {
+function CollapsedEffortDot({
+  effort,
+  active,
+  pending,
+  live,
+  onClick,
+}: {
+  effort: { id: number; title: string; shortRef: string; status: string }
+  active: boolean
+  pending: boolean
+  live: boolean
+  onClick: () => void
+}) {
   const [flyout, setFlyout] = useState<{ top: number; left: number } | null>(null)
   const btnRef = useRef<HTMLButtonElement>(null)
 
@@ -1838,10 +1863,12 @@ function CollapsedEffortDot({ effort, active, onClick }: { effort: { id: number;
         }}
         onMouseLeave={() => setFlyout(null)}
       >
-        <span
-          className="collapsed-sidebar-effort-dot"
-          style={{ background: effortStatusColor(effort.status) }}
-        />
+        <span className={`collapsed-sidebar-effort-dot ${live ? 'live' : 'idle'}`} />
+        {pending ? (
+          <span className="collapsed-sidebar-effort-pending-badge">
+            <WarningIndicator title="needs input" size={10} />
+          </span>
+        ) : null}
       </button>
       {flyout ? createPortal(
         <div

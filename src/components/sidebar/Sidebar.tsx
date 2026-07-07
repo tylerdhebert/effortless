@@ -21,6 +21,7 @@ type SidebarProps = {
   onSetManageSection: (section: ManageSection) => void
   onOpenCreateEffort: () => void
   effortPendingMap: Map<number, boolean>
+  liveEffortIds: Set<number>
   notificationCount: number
   notifications: PendingNotification[]
   onNavigateNotification: (notification: PendingNotification) => void
@@ -39,6 +40,7 @@ export function Sidebar({
   onSetManageSection,
   onOpenCreateEffort,
   effortPendingMap,
+  liveEffortIds,
   notificationCount,
   notifications,
   onNavigateNotification,
@@ -256,11 +258,14 @@ export function Sidebar({
                   </span>
                   <Ref value={effort.shortRef} />
                   <small>{formatTemplate(effort.template)}</small>
-                  <span
-                    className={styles['effort-row-status-dot']}
-                    style={{ background: effortStatusColor(effort.status) }}
-                    title={effort.status}
-                  />
+                  <span className={styles['effort-row-live-dot-slot']}>
+                    {liveEffortIds.has(effort.id) ? (
+                      <span
+                        className={styles['effort-row-live-dot']}
+                        title="agent running"
+                      />
+                    ) : null}
+                  </span>
                 </div>
                 <strong>{effort.title}</strong>
               </button>
