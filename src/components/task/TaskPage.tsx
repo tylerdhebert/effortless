@@ -5,7 +5,7 @@ import { Diff, Hunk, parseDiff, tokenize } from 'react-diff-view'
 import type { FileData, ViewType } from 'react-diff-view'
 import 'react-diff-view/style/index.css'
 import { refractor as rawRefractor } from 'refractor'
-import { ChevronDown, ChevronsLeft, ChevronsRight, Play, RotateCcw, Send, X } from 'lucide-react'
+import { ChevronDown, ChevronsLeft, ChevronsRight, Play, RotateCcw, Send } from 'lucide-react'
 import type {
   ActivityEvent,
   AgentProfile,
@@ -55,7 +55,6 @@ type TaskPageProps = {
   isMergingTask: boolean
   isApplyingReview: boolean
   isRequestingReviewChanges: boolean
-  onClose: () => void
 }
 
 export function TaskPage({
@@ -86,7 +85,6 @@ export function TaskPage({
   isMergingTask,
   isApplyingReview,
   isRequestingReviewChanges,
-  onClose,
 }: TaskPageProps) {
   const [diffType, setDiffType] = useState<'uncommitted' | 'branch' | 'combined'>('combined')
   const [diffViewType, setDiffViewType] = useState<ViewType>('unified')
@@ -330,15 +328,6 @@ export function TaskPage({
       <header className={styles['task-page-header']}>
         <div className={styles['task-page-header-top']}>
           <h3>{task.title}</h3>
-          <button
-            type="button"
-            className="icon-btn"
-            aria-label="close task page"
-            title="close"
-            onClick={onClose}
-          >
-            <X size={14} />
-          </button>
         </div>
 
         <div className={styles['expanded-meta']}>

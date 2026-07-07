@@ -1499,7 +1499,6 @@ function App() {
                       isMergingTask={taskMutations.mergeTask.isPending}
                       isApplyingReview={reviewMutations.applyReview.isPending}
                       isRequestingReviewChanges={reviewMutations.requestReviewChanges.isPending}
-                      onClose={() => closeTaskPage(`work-task-${activePageTask.id}`)}
                     />
                   ) : null}
                   onCloseWorkTab={closeTaskPage}
