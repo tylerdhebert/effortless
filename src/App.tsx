@@ -734,6 +734,12 @@ function App() {
     }
   }, [openTaskPage])
 
+  const handleAttentionRunNavigate = useCallback((run: AgentRun) => {
+    setSurfaceMode('effort')
+    setSelectedEffortId(run.effortId)
+    navigateToRunTab(run)
+  }, [navigateToRunTab])
+
   const openInputsDrawer = useCallback(() => {
     setActiveEffortDrawer('inputs')
   }, [])
@@ -1176,6 +1182,7 @@ function App() {
         surfaceMode={surfaceMode}
         onSetSurfaceMode={setSurfaceMode}
         onAttentionNavigate={handleAttentionNavigate}
+        onAttentionRunNavigate={handleAttentionRunNavigate}
       />
       {sidebarCollapsed ? (
         <aside className="collapsed-sidebar" aria-label="collapsed sidebar">
