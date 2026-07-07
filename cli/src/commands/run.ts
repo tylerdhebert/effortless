@@ -1,4 +1,3 @@
-import { listAgentProfiles } from '../../../core/agentProfiles'
 import {
   buildAgentRunEnvironment,
   getAgentRun,
@@ -15,7 +14,6 @@ import { listAgentProviders, parseAgentProvider } from '../../../core/agentProvi
 import { getEffortByRef } from '../../../core/efforts'
 import { db, resolveRunRef, resolveTask, startPreparedRun } from '../context'
 import {
-  printAgentProfile,
   printAgentProvider,
   printAgentRun,
   printAgentRunDetail,
@@ -23,13 +21,6 @@ import {
 
 export async function handleRun(surface: string, command: string): Promise<boolean> {
   if (surface !== 'run') return false
-
-  if (command === 'profiles') {
-    for (const profile of listAgentProfiles(db)) {
-      printAgentProfile(profile)
-    }
-    return true
-  }
 
   if (command === 'providers') {
     for (const provider of listAgentProviders()) {
@@ -44,23 +35,19 @@ export async function handleRun(surface: string, command: string): Promise<boole
     if (!taskRef && !effortRef) {
       throw new Error('run prepare requires --task or --effort')
     }
-    const profileId = resolveProfileId()
     const provider = resolveProvider()
     const prepared = taskRef
       ? await prepareTaskRun(db, {
           taskId: resolveTask(db, taskRef).id,
           provider,
-          profileId,
           label: option('--label') ?? undefined,
         })
       : await prepareEffortRun(db, {
           effortId: getEffortByRef(db, effortRef!).id,
           provider,
-          profileId,
           label: option('--label') ?? undefined,
     })
     printAgentRunDetail(prepared.run)
-    console.log(`profile ${prepared.profile.shortRef} ${prepared.profile.name}`)
     console.log('')
     console.log('env')
     for (const [name, value] of Object.entries(prepared.env)) {
@@ -158,15 +145,4 @@ function assertRunCanBeMarkedCancelled(run: AgentRun): void {
 function resolveProvider() {
   const value = option('--provider')
   return value ? parseAgentProvider(value) : null
-}
-
-function resolveProfileId(): number | null {
-  const value = option('--profile')
-  if (!value) return null
-
-  const profileId = Number(value)
-  if (!Number.isInteger(profileId) || profileId <= 0) {
-    throw new Error('--profile must be a positive numeric id')
-  }
-  return profileId
 }

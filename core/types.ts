@@ -35,7 +35,6 @@ export type Effort = {
   description: string
   template: EffortTemplate
   defaultProvider: AgentProvider
-  defaultProfileId: number | null
   acceptedPlanId: number | null
   status: EffortStatus
   summary: string | null
@@ -147,7 +146,6 @@ export type CreateEffortInput = {
   description: string
   template: EffortTemplate
   defaultProvider?: AgentProvider | null
-  defaultProfileId?: number | null
 }
 
 export type CreateTaskInput = {
@@ -254,7 +252,6 @@ export type LiveAgentRunSession = {
   runId: number
   effortId: number
   taskId: number | null
-  profileId: number
   provider: AgentProvider
   purpose: AgentRunPurpose
   terminalTabKey: string | null
@@ -282,43 +279,17 @@ export type SetInstructionsInput = {
   filePath?: string | null
 }
 
-export type AgentProfile = {
-  id: number
-  shortRef: string
-  name: string
-  environment: RunEnvironment
-  wslDistro: string | null
-  defaultCwdKind: 'task_worktree' | 'repo_root' | 'custom'
-  customCwd: string | null
-  env: Record<string, string>
-  createdAt: string
-  updatedAt: string
-}
-
-export type CreateAgentProfileInput = {
-  name: string
-  environment?: RunEnvironment
-  wslDistro?: string | null
-  defaultCwdKind?: AgentProfile['defaultCwdKind']
-  customCwd?: string | null
-  env?: Record<string, string>
-}
-
-export type UpdateAgentProfileInput = CreateAgentProfileInput & {
-  profileId: number
-}
-
 export type AgentRun = {
   id: number
   shortRef: string
   effortId: number
   taskId: number | null
-  profileId: number
   provider: AgentProvider
   purpose: AgentRunPurpose
   label: string
   status: AgentRunStatus
   environment: RunEnvironment
+  wslDistro: string | null
   cwd: string
   command: string
   providerSessionId: string | null
@@ -334,7 +305,6 @@ export type AgentRun = {
 export type PrepareTaskRunInput = {
   taskId: number
   provider?: AgentProvider | null
-  profileId?: number | null
   purpose?: AgentRunPurpose
   label?: string
 }
@@ -342,7 +312,6 @@ export type PrepareTaskRunInput = {
 export type PrepareEffortRunInput = {
   effortId: number
   provider?: AgentProvider | null
-  profileId?: number | null
   purpose?: AgentRunPurpose
   label?: string
 }

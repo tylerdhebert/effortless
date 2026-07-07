@@ -3,16 +3,15 @@
 import type { AttentionSnapshot } from '../core/attention'
 import type { PendingNotification } from '../core/notifications'
 import type { ThemePreference } from '../core/db'
+import type { ProviderEnvironmentSetting } from '../core/providerSettings'
 import type {
   AnswerInputRequestInput,
   ApplyReviewInput,
   ApproveTaskInput,
-  AgentProfile,
   AgentProvider,
   AgentRun,
   CheckpointTaskInput,
   ClaimTaskInput,
-  CreateAgentProfileInput,
   CreateEffortInput,
   DiffType,
   CreateInputRequestInput,
@@ -41,9 +40,9 @@ import type {
   PrepareResumeRunInput,
   PrepareTaskRunInput,
   SetInstructionsInput,
-  UpdateAgentProfileInput,
   UpdateRepoInput,
   UpdateTaskDetailsInput,
+  RunEnvironment,
 } from '../core/types'
 
 declare global {
@@ -85,7 +84,6 @@ interface Window {
       createEffort: (input: CreateEffortInput) => Promise<Effort>
       deleteEffort: (effortId: number) => Promise<void>
       updateEffortSummary: (effortId: number, summary: string) => Promise<Effort>
-      updateEffortDefaultProfile: (effortId: number, profileId: number | null) => Promise<Effort>
       updateEffortDefaultProvider: (effortId: number, provider: AgentProvider) => Promise<Effort>
       listTasks: (effortId: number) => Promise<Task[]>
       listAllTasks: () => Promise<Task[]>
@@ -113,33 +111,27 @@ interface Window {
       getTaskCommits: (taskId: number) => Promise<TaskCommitView>
       getTaskConflicts: (taskId: number) => Promise<TaskConflictView>
       updateTaskDetails: (input: UpdateTaskDetailsInput) => Promise<Task>
-      listAgentProfiles: () => Promise<AgentProfile[]>
-      createAgentProfile: (input: CreateAgentProfileInput) => Promise<AgentProfile>
-      updateAgentProfile: (input: UpdateAgentProfileInput) => Promise<AgentProfile>
-      deleteAgentProfile: (profileId: number) => Promise<void>
+      listProviderSettings: () => Promise<ProviderEnvironmentSetting[]>
+      updateProviderEnvironment: (input: { provider: AgentProvider; environment: RunEnvironment; wslDistro: string | null }) => Promise<ProviderEnvironmentSetting>
       listAgentRuns: (effortId?: number | null) => Promise<AgentRun[]>
       prepareEffortRun: (input: PrepareEffortRunInput) => Promise<{
         run: AgentRun
-        profile: AgentProfile
         provider: AgentProvider
         env: Record<string, string>
       }>
       prepareTaskRun: (input: PrepareTaskRunInput) => Promise<{
         run: AgentRun
         task: Task
-        profile: AgentProfile
         provider: AgentProvider
         env: Record<string, string>
       }>
       prepareResumeRun: (input: PrepareResumeRunInput) => Promise<{
         run: AgentRun
-        profile: AgentProfile
         provider: AgentProvider
         env: Record<string, string>
       }>
       prepareForkRun: (input: PrepareForkRunInput) => Promise<{
         run: AgentRun
-        profile: AgentProfile
         provider: AgentProvider
         env: Record<string, string>
       }>

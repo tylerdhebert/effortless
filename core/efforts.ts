@@ -1,7 +1,6 @@
 import type { AppDatabase } from './db'
 import { bumpAppState } from './db'
 import { DEFAULT_AGENT_PROVIDER, parseAgentProvider } from './agentProviders'
-import { getAgentProfile } from './agentProfiles'
 import type { AgentProvider, CreateEffortInput, Effort, EffortTemplate } from './types'
 
 const EFFORT_TEMPLATES: EffortTemplate[] = ['bugfix', 'delivery', 'investigation']
@@ -13,7 +12,6 @@ type EffortRow = {
   description: string
   template: Effort['template']
   default_provider: AgentProvider
-  default_profile_id: number | null
   accepted_plan_id: number | null
   status: Effort['status']
   summary: string | null
@@ -33,21 +31,17 @@ export function listEfforts(db: AppDatabase): Effort[] {
 export function createEffort(db: AppDatabase, input: CreateEffortInput): Effort {
   const template = parseEffortTemplate(input.template)
   const defaultProvider = input.defaultProvider ? parseAgentProvider(input.defaultProvider) : DEFAULT_AGENT_PROVIDER
-  const defaultProfileId = input.defaultProfileId ?? null
-  if (defaultProfileId != null) {
-    getAgentProfile(db, defaultProfileId)
-  }
   const now = new Date().toISOString()
   const result = db
     .prepare(
       `
       INSERT INTO efforts (
-        title, description, template, default_provider, default_profile_id, accepted_plan_id, status, created_at, updated_at
+        title, description, template, default_provider, accepted_plan_id, status, created_at, updated_at
       )
-      VALUES (?, ?, ?, ?, ?, NULL, 'active', ?, ?)
+      VALUES (?, ?, ?, ?, NULL, 'active', ?, ?)
     `,
     )
-    .run(input.title.trim(), input.description.trim(), template, defaultProvider, defaultProfileId, now, now)
+    .run(input.title.trim(), input.description.trim(), template, defaultProvider, now, now)
 
   const id = Number(result.lastInsertRowid)
   const shortRef = `eff-${id}`
@@ -109,19 +103,6 @@ export function updateEffortSummary(db: AppDatabase, effortId: number, summary: 
   return getEffort(db, effortId)
 }
 
-export function updateEffortDefaultProfile(db: AppDatabase, effortId: number, profileId: number | null): Effort {
-  if (profileId != null) {
-    getAgentProfile(db, profileId)
-  }
-  db.prepare(`UPDATE efforts SET default_profile_id = ?, updated_at = ? WHERE id = ?`).run(
-    profileId,
-    new Date().toISOString(),
-    effortId,
-  )
-  bumpAppState(db)
-  return getEffort(db, effortId)
-}
-
 export function updateEffortDefaultProvider(db: AppDatabase, effortId: number, provider: AgentProvider): Effort {
   db.prepare(`UPDATE efforts SET default_provider = ?, updated_at = ? WHERE id = ?`).run(
     parseAgentProvider(provider),
@@ -150,7 +131,6 @@ function mapEffort(row: EffortRow): Effort {
     description: row.description,
     template: row.template,
     defaultProvider: parseAgentProvider(row.default_provider),
-    defaultProfileId: row.default_profile_id,
     acceptedPlanId: row.accepted_plan_id,
     status: row.status,
     summary: row.summary,

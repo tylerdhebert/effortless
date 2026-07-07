@@ -3,7 +3,7 @@ import { Bell, FolderOpen, Palette, ScrollText, SquareTerminal } from 'lucide-re
 
 export type ManageSection =
   | 'repos'
-  | 'profiles'
+  | 'agents'
   | 'instructions'
   | 'notifications'
   | 'appearance'
@@ -14,7 +14,7 @@ export const MANAGE_SECTIONS: Array<{
   icon: LucideIcon
 }> = [
   { id: 'repos', label: 'repos', icon: FolderOpen },
-  { id: 'profiles', label: 'profiles', icon: SquareTerminal },
+  { id: 'agents', label: 'agents', icon: SquareTerminal },
   { id: 'instructions', label: 'instructions', icon: ScrollText },
   { id: 'notifications', label: 'notifications', icon: Bell },
   { id: 'appearance', label: 'appearance', icon: Palette },

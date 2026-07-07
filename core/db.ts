@@ -65,7 +65,6 @@ export function initializeSchema(db: AppDatabase): void {
       description TEXT NOT NULL,
       template TEXT NOT NULL,
       default_provider TEXT NOT NULL DEFAULT 'codex',
-      default_profile_id INTEGER REFERENCES agent_profiles(id),
       accepted_plan_id INTEGER,
       status TEXT NOT NULL,
       summary TEXT,
@@ -169,19 +168,10 @@ export function initializeSchema(db: AppDatabase): void {
 
     CREATE UNIQUE INDEX IF NOT EXISTS idx_instructions_repo ON instructions(COALESCE(repo_id, -1));
 
-    CREATE TABLE IF NOT EXISTS agent_profiles (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      short_ref TEXT UNIQUE,
-      name TEXT NOT NULL,
-      command_template TEXT NOT NULL,
-      fork_command_template TEXT,
-      environment TEXT NOT NULL,
-      wsl_distro TEXT,
-      default_cwd_kind TEXT NOT NULL,
-      custom_cwd TEXT,
-      env_json TEXT NOT NULL,
-      created_at TEXT NOT NULL,
-      updated_at TEXT NOT NULL
+    CREATE TABLE IF NOT EXISTS provider_settings (
+      provider TEXT PRIMARY KEY,
+      environment TEXT NOT NULL DEFAULT 'windows',
+      wsl_distro TEXT
     );
 
     CREATE TABLE IF NOT EXISTS agent_runs (
@@ -189,12 +179,12 @@ export function initializeSchema(db: AppDatabase): void {
       short_ref TEXT UNIQUE,
       effort_id INTEGER NOT NULL REFERENCES efforts(id) ON DELETE CASCADE,
       task_id INTEGER REFERENCES tasks(id) ON DELETE CASCADE,
-      profile_id INTEGER NOT NULL REFERENCES agent_profiles(id),
       provider TEXT NOT NULL DEFAULT 'codex',
       purpose TEXT NOT NULL,
       label TEXT NOT NULL,
       status TEXT NOT NULL,
       environment TEXT NOT NULL,
+      wsl_distro TEXT,
       cwd TEXT NOT NULL,
       command TEXT NOT NULL,
       provider_session_id TEXT,
@@ -216,14 +206,12 @@ export function initializeSchema(db: AppDatabase): void {
 
   db.exec(`UPDATE agent_runs SET purpose = 'extra' WHERE purpose NOT IN ('main', 'fork', 'extra')`)
 
-  const addedEffortProvider = ensureColumn(db, 'efforts', 'default_provider', `TEXT NOT NULL DEFAULT '${DEFAULT_AGENT_PROVIDER}'`)
-  ensureColumn(db, 'efforts', 'default_profile_id', 'INTEGER')
-  ensureColumn(db, 'agent_profiles', 'fork_command_template', 'TEXT')
-  const addedRunProvider = ensureColumn(db, 'agent_runs', 'provider', `TEXT NOT NULL DEFAULT '${DEFAULT_AGENT_PROVIDER}'`)
-
-  if (addedEffortProvider || addedRunProvider) {
-    migrateLegacyProviders(db, { efforts: addedEffortProvider, runs: addedRunProvider })
-  }
+  ensureColumn(db, 'efforts', 'default_provider', `TEXT NOT NULL DEFAULT '${DEFAULT_AGENT_PROVIDER}'`)
+  ensureColumn(db, 'agent_runs', 'provider', `TEXT NOT NULL DEFAULT '${DEFAULT_AGENT_PROVIDER}'`)
+  ensureColumn(db, 'agent_runs', 'wsl_distro', 'TEXT')
+  migrateLegacyProfileEnvironmentSettings(db)
+  removeLegacyProfileColumns(db)
+  db.exec(`DROP TABLE IF EXISTS agent_profiles;`)
 
   seedDefaultInstructions(db)
 }
@@ -233,45 +221,6 @@ function ensureColumn(db: AppDatabase, table: string, column: string, definition
   if (columns.some((candidate) => candidate.name === column)) return false
   db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`)
   return true
-}
-
-function migrateLegacyProviders(
-  db: AppDatabase,
-  targets: { efforts: boolean; runs: boolean },
-): void {
-  if (targets.efforts) {
-    db.exec(`
-      UPDATE efforts
-      SET default_provider = COALESCE((
-        SELECT CASE
-          WHEN lower(agent_profiles.command_template) LIKE '%opencode%' THEN 'opencode'
-          WHEN lower(agent_profiles.command_template) LIKE '%claude%' THEN 'claude'
-          WHEN lower(agent_profiles.command_template) LIKE '%cursor%' THEN 'cursor'
-          WHEN lower(agent_profiles.command_template) LIKE '%copilot%' THEN 'copilot'
-          ELSE 'codex'
-        END
-        FROM agent_profiles
-        WHERE agent_profiles.id = efforts.default_profile_id
-      ), default_provider)
-    `)
-  }
-
-  if (targets.runs) {
-    db.exec(`
-      UPDATE agent_runs
-      SET provider = COALESCE((
-        SELECT CASE
-          WHEN lower(agent_profiles.command_template) LIKE '%opencode%' THEN 'opencode'
-          WHEN lower(agent_profiles.command_template) LIKE '%claude%' THEN 'claude'
-          WHEN lower(agent_profiles.command_template) LIKE '%cursor%' THEN 'cursor'
-          WHEN lower(agent_profiles.command_template) LIKE '%copilot%' THEN 'copilot'
-          ELSE 'codex'
-        END
-        FROM agent_profiles
-        WHERE agent_profiles.id = agent_runs.profile_id
-      ), provider)
-    `)
-  }
 }
 
 function resetOldV2Schema(db: AppDatabase): void {
@@ -310,6 +259,127 @@ function resetOldV2Schema(db: AppDatabase): void {
 
     PRAGMA foreign_keys = ON;
   `)
+}
+
+function migrateLegacyProfileEnvironmentSettings(db: AppDatabase): void {
+  const agentProfiles = db
+    .prepare<{ name: string }>(`SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'agent_profiles'`)
+    .get()
+  if (!agentProfiles) return
+
+  const effortColumns = db.prepare<{ name: string }>(`PRAGMA table_info(efforts)`).all()
+  const runColumns = db.prepare<{ name: string }>(`PRAGMA table_info(agent_runs)`).all()
+  const effortsHaveDefaultProfile = effortColumns.some((column) => column.name === 'default_profile_id')
+  const runsHaveProfile = runColumns.some((column) => column.name === 'profile_id')
+
+  if (effortsHaveDefaultProfile) {
+    db.exec(`
+      INSERT OR REPLACE INTO provider_settings (provider, environment, wsl_distro)
+      SELECT efforts.default_provider, agent_profiles.environment, agent_profiles.wsl_distro
+      FROM efforts
+      JOIN agent_profiles ON agent_profiles.id = efforts.default_profile_id
+      WHERE efforts.default_profile_id IS NOT NULL
+    `)
+  }
+
+  if (runsHaveProfile) {
+    db.exec(`
+      UPDATE agent_runs
+      SET wsl_distro = (
+        SELECT agent_profiles.wsl_distro
+        FROM agent_profiles
+        WHERE agent_profiles.id = agent_runs.profile_id
+      )
+      WHERE profile_id IS NOT NULL
+    `)
+  }
+}
+
+function removeLegacyProfileColumns(db: AppDatabase): void {
+  const effortColumns = db.prepare<{ name: string }>(`PRAGMA table_info(efforts)`).all()
+  const runColumns = db.prepare<{ name: string }>(`PRAGMA table_info(agent_runs)`).all()
+  const effortsHaveDefaultProfile = effortColumns.some((column) => column.name === 'default_profile_id')
+  const runsHaveProfile = runColumns.some((column) => column.name === 'profile_id')
+
+  if (!effortsHaveDefaultProfile && !runsHaveProfile) {
+    return
+  }
+
+  db.exec(`PRAGMA foreign_keys = OFF;`)
+  try {
+    if (effortsHaveDefaultProfile) {
+      db.exec(`
+        CREATE TABLE efforts_new (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          short_ref TEXT UNIQUE,
+          title TEXT NOT NULL,
+          description TEXT NOT NULL,
+          template TEXT NOT NULL,
+          default_provider TEXT NOT NULL DEFAULT 'codex',
+          accepted_plan_id INTEGER,
+          status TEXT NOT NULL,
+          summary TEXT,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL
+        );
+
+        INSERT INTO efforts_new (
+          id, short_ref, title, description, template, default_provider, accepted_plan_id,
+          status, summary, created_at, updated_at
+        )
+        SELECT
+          id, short_ref, title, description, template, default_provider, accepted_plan_id,
+          status, summary, created_at, updated_at
+        FROM efforts;
+
+        DROP TABLE efforts;
+        ALTER TABLE efforts_new RENAME TO efforts;
+      `)
+    }
+
+    if (runsHaveProfile) {
+      db.exec(`
+        CREATE TABLE agent_runs_new (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          short_ref TEXT UNIQUE,
+          effort_id INTEGER NOT NULL REFERENCES efforts(id) ON DELETE CASCADE,
+          task_id INTEGER REFERENCES tasks(id) ON DELETE CASCADE,
+          provider TEXT NOT NULL DEFAULT 'codex',
+          purpose TEXT NOT NULL,
+          label TEXT NOT NULL,
+          status TEXT NOT NULL,
+          environment TEXT NOT NULL,
+          wsl_distro TEXT,
+          cwd TEXT NOT NULL,
+          command TEXT NOT NULL,
+          provider_session_id TEXT,
+          terminal_tab_key TEXT,
+          exit_code INTEGER,
+          error TEXT,
+          started_at TEXT,
+          completed_at TEXT,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL
+        );
+
+        INSERT INTO agent_runs_new (
+          id, short_ref, effort_id, task_id, provider, purpose, label, status,
+          environment, wsl_distro, cwd, command, provider_session_id, terminal_tab_key,
+          exit_code, error, started_at, completed_at, created_at, updated_at
+        )
+        SELECT
+          id, short_ref, effort_id, task_id, provider, purpose, label, status,
+          environment, wsl_distro, cwd, command, provider_session_id, terminal_tab_key,
+          exit_code, error, started_at, completed_at, created_at, updated_at
+        FROM agent_runs;
+
+        DROP TABLE agent_runs;
+        ALTER TABLE agent_runs_new RENAME TO agent_runs;
+      `)
+    }
+  } finally {
+    db.exec(`PRAGMA foreign_keys = ON;`)
+  }
 }
 
 export function bumpAppState(db: AppDatabase): void {

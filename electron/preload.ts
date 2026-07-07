@@ -3,12 +3,10 @@ import type {
   AnswerInputRequestInput,
   ApplyReviewInput,
   ApproveTaskInput,
-  AgentProfile,
   AgentProvider,
   AgentRun,
   CheckpointTaskInput,
   ClaimTaskInput,
-  CreateAgentProfileInput,
   CreateEffortInput,
   DiffType,
   CreateInputRequestInput,
@@ -37,13 +35,14 @@ import type {
   PrepareResumeRunInput,
   PrepareTaskRunInput,
   SetInstructionsInput,
-  UpdateAgentProfileInput,
   UpdateRepoInput,
   UpdateTaskDetailsInput,
+  RunEnvironment,
 } from '../core/types'
 import type { AttentionSnapshot } from '../core/attention'
 import type { PendingNotification } from '../core/notifications'
 import type { NotificationSettings, ThemePreference } from '../core/db'
+import type { ProviderEnvironmentSetting } from '../core/providerSettings'
 
 contextBridge.exposeInMainWorld('effortless', {
   platform: process.platform,
@@ -93,8 +92,6 @@ contextBridge.exposeInMainWorld('effortless', {
     ipcRenderer.invoke('efforts:delete', effortId) as Promise<void>,
   updateEffortSummary: (effortId: number, summary: string) =>
     ipcRenderer.invoke('efforts:updateSummary', effortId, summary) as Promise<Effort>,
-  updateEffortDefaultProfile: (effortId: number, profileId: number | null) =>
-    ipcRenderer.invoke('efforts:updateDefaultProfile', effortId, profileId) as Promise<Effort>,
   updateEffortDefaultProvider: (effortId: number, provider: AgentProvider) =>
     ipcRenderer.invoke('efforts:updateDefaultProvider', effortId, provider) as Promise<Effort>,
   listTasks: (effortId: number) => ipcRenderer.invoke('tasks:list', effortId) as Promise<Task[]>,
@@ -137,20 +134,15 @@ contextBridge.exposeInMainWorld('effortless', {
     ipcRenderer.invoke('tasks:conflicts', taskId) as Promise<TaskConflictView>,
   updateTaskDetails: (input: UpdateTaskDetailsInput) =>
     ipcRenderer.invoke('tasks:updateDetails', input) as Promise<Task>,
-  listAgentProfiles: () =>
-    ipcRenderer.invoke('agentProfiles:list') as Promise<AgentProfile[]>,
-  createAgentProfile: (input: CreateAgentProfileInput) =>
-    ipcRenderer.invoke('agentProfiles:create', input) as Promise<AgentProfile>,
-  updateAgentProfile: (input: UpdateAgentProfileInput) =>
-    ipcRenderer.invoke('agentProfiles:update', input) as Promise<AgentProfile>,
-  deleteAgentProfile: (profileId: number) =>
-    ipcRenderer.invoke('agentProfiles:delete', profileId) as Promise<void>,
+  listProviderSettings: () =>
+    ipcRenderer.invoke('providerSettings:list') as Promise<ProviderEnvironmentSetting[]>,
+  updateProviderEnvironment: (input: { provider: AgentProvider; environment: RunEnvironment; wslDistro: string | null }) =>
+    ipcRenderer.invoke('providerSettings:update', input) as Promise<ProviderEnvironmentSetting>,
   listAgentRuns: (effortId?: number | null) =>
     ipcRenderer.invoke('agentRuns:list', effortId ?? null) as Promise<AgentRun[]>,
   prepareEffortRun: (input: PrepareEffortRunInput) =>
     ipcRenderer.invoke('agentRuns:prepareEffort', input) as Promise<{
       run: AgentRun
-      profile: AgentProfile
       provider: AgentProvider
       env: Record<string, string>
     }>,
@@ -158,21 +150,18 @@ contextBridge.exposeInMainWorld('effortless', {
     ipcRenderer.invoke('agentRuns:prepareTask', input) as Promise<{
       run: AgentRun
       task: Task
-      profile: AgentProfile
       provider: AgentProvider
       env: Record<string, string>
     }>,
   prepareResumeRun: (input: PrepareResumeRunInput) =>
     ipcRenderer.invoke('agentRuns:prepareResume', input) as Promise<{
       run: AgentRun
-      profile: AgentProfile
       provider: AgentProvider
       env: Record<string, string>
     }>,
   prepareForkRun: (input: PrepareForkRunInput) =>
     ipcRenderer.invoke('agentRuns:prepareFork', input) as Promise<{
       run: AgentRun
-      profile: AgentProfile
       provider: AgentProvider
       env: Record<string, string>
     }>,

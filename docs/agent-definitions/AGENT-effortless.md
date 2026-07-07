@@ -54,7 +54,7 @@ efl session set run-1
 
 Run env vars (`EFFORTLESS_RUN_ID`, `EFFORTLESS_TASK`, etc.) are set in the PTY so many `efl` commands can omit `--run` / `--task`.
 
-Profile setup (Windows, WSL, templates, env): `docs/run-profiles.md`.
+Provider environment setup lives under manage -> agents.
 
 Native module notes (`node-pty`, packaging): `docs/native-deps.md`.
 

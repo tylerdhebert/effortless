@@ -1,5 +1,5 @@
 import type { AgentProviderConfig } from '../../core/agentProviders'
-import type { AgentProfile, AgentRun, InputRequest, Plan, Repo, Review, Task } from '../../core/types'
+import type { AgentRun, InputRequest, Plan, Repo, Review, Task } from '../../core/types'
 import type { runTaskBuild } from '../../core/builds'
 
 export function printTask(task: Task): void {
@@ -47,20 +47,6 @@ export function printInputRequest(inputRequest: InputRequest): void {
   }
 }
 
-export function printAgentProfile(profile: AgentProfile): void {
-  console.log(`${profile.shortRef}  ${profile.name}`)
-  console.log('')
-  console.log(`  environment  ${profile.environment}${profile.wslDistro ? `/${profile.wslDistro}` : ''}`)
-  console.log(`  cwd          ${profile.defaultCwdKind}${profile.customCwd ? ` ${profile.customCwd}` : ''}`)
-  if (Object.keys(profile.env).length > 0) {
-    console.log('  env')
-    for (const [name, value] of Object.entries(profile.env)) {
-      console.log(`    ${name}=${value}`)
-    }
-  }
-  console.log('')
-}
-
 export function printAgentProvider(provider: AgentProviderConfig): void {
   console.log(`${provider.key}  ${provider.name}`)
   console.log(`  command  ${provider.commandTemplate}`)
@@ -99,9 +85,11 @@ export function printAgentRunDetail(run: AgentRun, options: { brief?: boolean } 
   }
 
   printAgentRun(run, { verbose: true })
-  console.log(`profile ${run.profileId}`)
   console.log(`effort ${run.effortId}`)
   console.log(`environment ${run.environment}`)
+  if (run.wslDistro) {
+    console.log(`wsl distro ${run.wslDistro}`)
+  }
   if (run.providerSessionId) {
     console.log(`provider session ${run.providerSessionId}`)
   }

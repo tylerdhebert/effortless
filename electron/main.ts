@@ -3,19 +3,13 @@ import { fileURLToPath } from 'node:url'
 import { createHash } from 'node:crypto'
 import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
-import {
-  createAgentProfile,
-  deleteAgentProfile,
-  listAgentProfiles,
-  updateAgentProfile,
-} from '../core/agentProfiles'
 import { listAgentRuns, markAgentRunExited, markAgentRunFailed, markAgentRunStarted, prepareEffortRun, prepareForkRun, prepareResumeRun, prepareTaskRun } from '../core/agentRuns'
 import { getLatestTaskBuild, runTaskBuild } from '../core/builds'
 import { getPtyRuntimeStatus, RunManager } from './runManager'
 import { startCliCommandServer, type CliCommandServer } from './cliCommandServer'
 import { getAppState, openDatabase, updateNotificationSettings } from '../core/db'
 import type { NotificationSettings } from '../core/db'
-import { listEfforts, createEffort, deleteEffort, updateEffortDefaultProfile, updateEffortDefaultProvider, updateEffortSummary } from '../core/efforts'
+import { listEfforts, createEffort, deleteEffort, updateEffortDefaultProvider, updateEffortSummary } from '../core/efforts'
 import { browsePath } from '../core/filesystem'
 import { listAttention } from '../core/attention'
 import {
@@ -35,6 +29,7 @@ import {
   setInstructions,
 } from '../core/instructions'
 import { acceptPlan, createPlan, getPlanByRef, listPlanComments, listPlans, requestPlanChanges } from '../core/plans'
+import { listProviderSettings, setProviderEnvironment } from '../core/providerSettings'
 import { createRepo, deleteRepo, listRepos, updateRepo } from '../core/repos'
 import { applyReview, getReviewByRef, listReviews, requestReviewChanges, submitReview } from '../core/reviews'
 import {
@@ -63,7 +58,6 @@ import type {
   CreateEffortInput,
   CreateTaskInput,
   CreateInputRequestInput,
-  CreateAgentProfileInput,
   SetInstructionsInput,
   CreatePlanInput,
   CreateRepoInput,
@@ -75,11 +69,11 @@ import type {
   PrepareResumeRunInput,
   PrepareTaskRunInput,
   SubmitReviewInput,
-  UpdateAgentProfileInput,
   UpdateRepoInput,
   UpdateTaskDetailsInput,
   DiffType,
   AgentProvider,
+  RunEnvironment,
 } from '../core/types'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -164,9 +158,6 @@ ipcMain.handle('efforts:delete', (_event, effortId: number) =>
 ipcMain.handle('efforts:updateSummary', (_event, effortId: number, summary: string) =>
   updateEffortSummary(db, effortId, summary),
 )
-ipcMain.handle('efforts:updateDefaultProfile', (_event, effortId: number, profileId: number | null) =>
-  updateEffortDefaultProfile(db, effortId, profileId),
-)
 ipcMain.handle('efforts:updateDefaultProvider', (_event, effortId: number, provider: AgentProvider) =>
   updateEffortDefaultProvider(db, effortId, provider),
 )
@@ -207,12 +198,12 @@ ipcMain.handle('tasks:conflicts', (_event, taskId: number) => getTaskConflictVie
 ipcMain.handle('tasks:updateDetails', (_event, input: UpdateTaskDetailsInput) =>
   updateTaskDetails(db, input),
 )
-ipcMain.handle('agentProfiles:list', () => listAgentProfiles(db))
-ipcMain.handle('agentProfiles:create', (_event, input: CreateAgentProfileInput) => createAgentProfile(db, input))
-ipcMain.handle('agentProfiles:update', (_event, input: UpdateAgentProfileInput) => updateAgentProfile(db, input))
-ipcMain.handle('agentProfiles:delete', (_event, profileId: number) => {
-  deleteAgentProfile(db, profileId)
-})
+ipcMain.handle('providerSettings:list', () => listProviderSettings(db))
+ipcMain.handle('providerSettings:update', (_event, input: {
+  provider: AgentProvider
+  environment: RunEnvironment
+  wslDistro: string | null
+}) => setProviderEnvironment(db, input.provider, input.environment, input.wslDistro))
 ipcMain.handle('agentRuns:list', (_event, effortId?: number | null) => listAgentRuns(db, effortId ?? null))
 ipcMain.handle('agentRuns:prepareEffort', (_event, input: PrepareEffortRunInput) =>
   prepareEffortRun(db, input),

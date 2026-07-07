@@ -8,7 +8,6 @@ import { refractor as rawRefractor } from 'refractor'
 import { ChevronDown, ChevronsLeft, ChevronsRight, Play, RotateCcw, Send } from 'lucide-react'
 import type {
   ActivityEvent,
-  AgentProfile,
   AgentProvider,
   AgentRun,
   Repo,
@@ -29,9 +28,7 @@ import styles from './TaskPage.module.css'
 type TaskPageProps = {
   task: Task
   repos: Repo[]
-  profiles: AgentProfile[]
   defaultProvider: AgentProvider
-  defaultProfileId: number | null
   mainRunLive: boolean
   taskRuns?: AgentRun[]
   reviews: Review[]
@@ -40,9 +37,9 @@ type TaskPageProps = {
   commitView: TaskCommitView | null
   conflictView: TaskConflictView | null
   onRunBuild: (taskId: number) => void
-  onWorkOnTask: (input: { task: Task; provider: AgentProvider; profileId: number | null }) => void
-  onStartTaskRun: (input: { task: Task; provider: AgentProvider; profileId: number | null }) => void
-  onRerunTaskRun: (input: { task: Task; provider: AgentProvider; profileId: number | null }) => void
+  onWorkOnTask: (input: { task: Task; provider: AgentProvider }) => void
+  onStartTaskRun: (input: { task: Task; provider: AgentProvider }) => void
+  onRerunTaskRun: (input: { task: Task; provider: AgentProvider }) => void
   onMergeTask: (taskId: number) => void
   onApplyReview: (reviewId: number) => void
   onRequestReviewChanges: (input: { reviewId: number; body: string }) => void
@@ -57,9 +54,7 @@ type TaskPageProps = {
 export function TaskPage({
   task,
   repos,
-  profiles,
   defaultProvider,
-  defaultProfileId,
   mainRunLive,
   taskRuns = [],
   reviews,
@@ -87,7 +82,6 @@ export function TaskPage({
   const [reviewFeedback, setReviewFeedback] = useState('')
   const [showChangeRequest, setShowChangeRequest] = useState(false)
   const [launchProvider, setLaunchProvider] = useState<AgentProvider>(defaultProvider)
-  const [launchProfileId, setLaunchProfileId] = useState<number | null>(defaultProfileId)
   const [launchMenuOpen, setLaunchMenuOpen] = useState(false)
   const [launchMenuPosition, setLaunchMenuPosition] = useState<{ top: number; left: number } | null>(null)
   const [activityCollapsed, setActivityCollapsed] = useState(false)
@@ -102,14 +96,9 @@ export function TaskPage({
   const providers = useMemo(() => listAgentProviders(), [])
   const taskRepo = repos.find((repo) => repo.id === task.repoId) ?? null
   const latestReview = reviews[0] ?? null
-  const selectedProfile = useMemo(
-    () => profiles.find((profile) => profile.id === launchProfileId) ?? null,
-    [profiles, launchProfileId],
-  )
   const canRerun = taskRuns.length > 0
   const launchBusy = isLaunchingTask || isRerunningTask
   const showGateStrip = task.status === 'reviewing'
-  const profileId = selectedProfile?.id ?? defaultProfileId ?? null
   const mergePrimary = Boolean(task.status === 'accepted' && taskRepo && task.branchName)
   const commitLines = useMemo(
     () => commitView?.output.split('\n').map((line) => line.trim()).filter(Boolean) ?? [],
@@ -155,12 +144,11 @@ export function TaskPage({
 
   useEffect(() => {
     setLaunchProvider(defaultProvider)
-    setLaunchProfileId(defaultProfileId ?? profiles[0]?.id ?? null)
     setLaunchMenuOpen(false)
     setReviewFeedback('')
     setShowChangeRequest(false)
     setWorkbenchPopover(null)
-  }, [task.id, defaultProvider, defaultProfileId, profiles])
+  }, [task.id, defaultProvider])
 
   useEffect(() => {
     if (!launchMenuOpen) return
@@ -356,7 +344,7 @@ export function TaskPage({
                 type="button"
                 className={styles['task-split-primary']}
                 title="send task context to the main effort terminal"
-                onClick={() => onWorkOnTask({ task, provider: launchProvider, profileId })}
+                onClick={() => onWorkOnTask({ task, provider: launchProvider })}
                 disabled={launchBusy}
               >
                 <Send size={14} aria-hidden="true" />
@@ -395,19 +383,6 @@ export function TaskPage({
                         ))}
                       </select>
                     </label>
-                    <label className={styles['task-action-menu-field']}>
-                      <span>profile</span>
-                      <select
-                        aria-label="task launch profile"
-                        value={launchProfileId == null ? '' : String(launchProfileId)}
-                        onChange={(event) => setLaunchProfileId(event.target.value ? Number(event.target.value) : null)}
-                        disabled={profiles.length === 0}
-                      >
-                        {profiles.map((profile) => (
-                          <option key={profile.id} value={profile.id}>{profile.name}</option>
-                        ))}
-                      </select>
-                    </label>
                   </div>
                   {mainRunLive ? (
                     <p className={styles['task-action-menu-hint']}>
@@ -422,7 +397,7 @@ export function TaskPage({
                         className={styles['task-action-menu-item']}
                         role="menuitem"
                         onClick={() => {
-                          onWorkOnTask({ task, provider: launchProvider, profileId })
+                          onWorkOnTask({ task, provider: launchProvider })
                           closeLaunchMenu()
                         }}
                         disabled={launchBusy}
@@ -436,10 +411,10 @@ export function TaskPage({
                       className={styles['task-action-menu-item']}
                       role="menuitem"
                       onClick={() => {
-                        onStartTaskRun({ task, provider: launchProvider, profileId })
+                        onStartTaskRun({ task, provider: launchProvider })
                         closeLaunchMenu()
                       }}
-                      disabled={launchBusy || profiles.length === 0}
+                      disabled={launchBusy}
                     >
                       <Play size={13} aria-hidden="true" />
                       <span>start task run</span>
@@ -450,10 +425,10 @@ export function TaskPage({
                         className={styles['task-action-menu-item']}
                         role="menuitem"
                         onClick={() => {
-                          onRerunTaskRun({ task, provider: launchProvider, profileId })
+                          onRerunTaskRun({ task, provider: launchProvider })
                           closeLaunchMenu()
                         }}
-                        disabled={launchBusy || profiles.length === 0}
+                        disabled={launchBusy}
                       >
                         <RotateCcw size={13} aria-hidden="true" />
                         <span>{isRerunningTask ? 'rerunning' : 'rerun'}</span>

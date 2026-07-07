@@ -100,7 +100,7 @@ function printRootHelp(): void {
     { name: 'efl task', description: 'implementation work in a worktree' },
     { name: 'efl plan', description: 'plan submit/list/context' },
     { name: 'efl review', description: 'review submit/list/context' },
-    { name: 'efl run', description: 'profiles, prepare, start, list, recovery' },
+    { name: 'efl run', description: 'prepare, start, list, recovery' },
     { name: 'efl session', description: 'bind provider session id on a run' },
     { name: 'efl resume', description: 'print provider resume command' },
     { name: 'efl build', description: 'run repo build for a task' },
@@ -212,12 +212,11 @@ function printReviewHelp(): void {
 }
 
 function printRunHelp(): void {
-  printHeader('efl run', 'agent profiles and terminal runs')
+  printHeader('efl run', 'agent terminal runs')
 
   printBlock('Commands', [
     { name: 'efl run providers', description: 'built-in provider templates' },
-    { name: 'efl run profiles', description: 'saved agent profiles' },
-    { name: 'efl run prepare', description: 'task-1 | eff-1 [--provider] [--profile] [--label]' },
+    { name: 'efl run prepare', description: 'task-1 | eff-1 [--provider] [--label]' },
     { name: 'efl run start', description: 'run-1  (PTY in app; infers --run)' },
     { name: 'efl run list', description: '[task-1]  (compact; --full for cwd/command)' },
     { name: 'efl run show', description: 'run-1 [--brief]' },
@@ -230,7 +229,6 @@ function printRunHelp(): void {
     { name: '--run <run-ref>', description: 'run short ref (or $EFFORTLESS_RUN_ID)' },
     { name: 'purpose', description: 'main | fork | extra (set at prepare time)' },
     { name: '--provider <key>', description: 'codex | cursor | opencode | claude' },
-    { name: '--profile <id>', description: 'agent_profiles numeric id' },
     { name: '--label <name>', description: 'run label (checkpoint author)' },
     { name: '--full, --verbose', description: 'verbose run list' },
     { name: '-h, --help', description: 'this help' },

@@ -14,8 +14,8 @@ import {
   markAgentRunStarted,
   markAgentRunCancelled,
 } from '../core/agentRuns'
-import { getAgentProfile } from '../core/agentProfiles'
-import type { LiveAgentRunSession } from '../core/types'
+import { getAgentProviderConfig } from '../core/agentProviders'
+import type { AgentProvider, LiveAgentRunSession } from '../core/types'
 
 type RunSession = {
   attachmentId: string
@@ -59,15 +59,13 @@ export class RunManager {
     if (this.providerRunIds.has(runId)) {
       throw new Error(`Run ${run.shortRef} is already running`)
     }
-    const profile = getAgentProfile(this.db, run.profileId)
-
     try {
-      await assertRunCwdAccessible(run, profile.wslDistro)
+      await assertRunCwdAccessible(run, run.wslDistro)
       const env = {
         ...process.env,
         ...buildAgentRunEnvironment(this.db, runId),
       } as NodeJS.ProcessEnv
-      const launch = resolveShellLaunch(run, profile.wslDistro, env)
+      const launch = resolveShellLaunch(run, run.wslDistro, env)
       const terminal = pty.spawn(launch.file, launch.args, {
         name: 'xterm-256color',
         cols: size.cols,
@@ -124,7 +122,7 @@ export class RunManager {
         }
       })
     } catch (error) {
-      const message = formatAgentRunStartError(error, profile, run)
+      const message = formatAgentRunStartError(error, run)
       markAgentRunFailed(this.db, runId, message)
       this.emit({ kind: 'error', runId, body: message })
       const startError = new Error(message)
@@ -164,7 +162,6 @@ export class RunManager {
         runId: run.id,
         effortId: run.effortId,
         taskId: run.taskId,
-        profileId: run.profileId,
         provider: run.provider,
         purpose: run.purpose,
         terminalTabKey: run.terminalTabKey,
@@ -211,14 +208,14 @@ let nextAttachmentId = 1
 
 function formatAgentRunStartError(
   error: unknown,
-  profile: { name: string },
-  run: { shortRef: string; command: string },
+  run: { shortRef: string; command: string; provider: AgentProvider },
 ): string {
   const message = error instanceof Error ? error.message : String(error)
   const executable = run.command.trim().match(/^(\S+)/)?.[1] ?? 'agent'
 
   if (/not recognized|enoent|cannot find|command not found|no such file or directory/i.test(message)) {
-    return `Run ${run.shortRef} could not start: profile "${profile.name}" command "${executable}" was not found on PATH. Install it or update the profile command template.`
+    const providerName = getAgentProviderConfig(run.provider).name
+    return `Run ${run.shortRef} could not start: command "${executable}" was not found on PATH. Install it or adjust the ${providerName} command.`
   }
 
   return message
@@ -244,12 +241,16 @@ function resolveShellLaunch(
       `exec bash -i`,
     ].join('\n')
 
+    // --exec keeps wsl.exe from routing the script through the distro's default
+    // shell (which expands $PATH and chokes on entries like "Program Files (x86)");
+    // -i makes bash load ~/.bashrc so user PATH entries (e.g. ~/.opencode/bin) apply.
     return {
       file: 'wsl.exe',
       args: [
         ...(wslDistro ? ['-d', wslDistro] : []),
+        '--exec',
         'bash',
-        '-lc',
+        '-lic',
         bashScript,
       ],
     }
@@ -322,6 +323,7 @@ function assertWslDirectoryAccessible(
       'wsl.exe',
       [
         ...(wslDistro ? ['-d', wslDistro] : []),
+        '--exec',
         'bash',
         '-lc',
         `test -d ${posixShellQuote(cwd)}`,

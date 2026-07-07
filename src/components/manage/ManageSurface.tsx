@@ -1,42 +1,32 @@
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
 import { Plus, Trash2 } from 'lucide-react'
 import type {
-  AgentProfile,
-  CreateAgentProfileInput,
   Instructions,
   Repo,
-  UpdateAgentProfileInput,
   SetInstructionsInput,
 } from '../../../core/types'
 import type { ThemePreference } from '../../../core/db'
 import { PathPicker } from '../ui/PathPicker'
 import { NotificationSettingsPanel } from '../notifications/NotificationSettingsPanel'
 import { AppearanceSettingsPanel } from './AppearanceSettingsPanel'
-import { AgentProfileTab } from './AgentProfileTab'
+import { AgentsTab } from './AgentsTab'
 import { InstructionsTab } from './InstructionsTab'
 import styles from './ManageSurface.module.css'
 
 type ManageSurfaceProps = {
   repos: Repo[]
-  agentProfiles: AgentProfile[]
   instructions: Instructions[]
   createRepo: (input: { name: string; path: string; baseBranch: string; buildCommand: string | null }) => Promise<Repo>
   updateRepo: (input: { repoId: number; name: string; path: string; baseBranch: string; buildCommand: string | null }) => Promise<Repo>
   deleteRepo: (repoId: number) => Promise<void>
-  createAgentProfile: (input: CreateAgentProfileInput) => Promise<AgentProfile>
-  updateAgentProfile: (input: UpdateAgentProfileInput) => Promise<AgentProfile>
-  deleteAgentProfile: (profileId: number) => Promise<void>
   setInstructions: (input: SetInstructionsInput) => Promise<Instructions>
   deleteInstructions: (id: number) => Promise<void>
   isCreatingRepo: boolean
   isUpdatingRepo: boolean
   isDeletingRepo: boolean
-  isCreatingAgentProfile: boolean
-  isUpdatingAgentProfile: boolean
-  isDeletingAgentProfile: boolean
   isSavingInstructions: boolean
   isClearingInstructions: boolean
-  section: 'repos' | 'profiles' | 'instructions' | 'notifications' | 'appearance'
+  section: 'repos' | 'agents' | 'instructions' | 'notifications' | 'appearance'
   notificationSettings?: {
     osNotificationsEnabled: boolean
     bannerNotificationsEnabled: boolean
@@ -58,22 +48,15 @@ type ManageSurfaceProps = {
 
 export function ManageSurface({
   repos,
-  agentProfiles,
   instructions,
   createRepo,
   updateRepo,
   deleteRepo,
-  createAgentProfile,
-  updateAgentProfile,
-  deleteAgentProfile,
   setInstructions,
   deleteInstructions,
   isCreatingRepo,
   isUpdatingRepo,
   isDeletingRepo,
-  isCreatingAgentProfile,
-  isUpdatingAgentProfile,
-  isDeletingAgentProfile,
   isSavingInstructions,
   isClearingInstructions,
   section,
@@ -288,23 +271,15 @@ export function ManageSurface({
               </div>
             </section>
           </section>
-        ) : section === 'profiles' ? (
-          <section className={`${styles['manage-surface']} ${styles['manage-surface-profiles']}`}>
+        ) : section === 'agents' ? (
+          <section className={`${styles['manage-surface']} ${styles['manage-surface-agents']}`}>
             <section className={`${styles['manage-panel']} ${styles['manage-panel-wide']}`}>
               <div className={styles['manage-panel-header']}>
                 <div>
-                  <h3>environment profiles</h3>
+                  <h3>agents</h3>
                 </div>
               </div>
-              <AgentProfileTab
-                profiles={agentProfiles}
-                createProfile={createAgentProfile}
-                updateProfile={updateAgentProfile}
-                deleteProfile={deleteAgentProfile}
-                isCreating={isCreatingAgentProfile}
-                isUpdating={isUpdatingAgentProfile}
-                isDeleting={isDeletingAgentProfile}
-              />
+              <AgentsTab />
             </section>
           </section>
         ) : section === 'instructions' ? (

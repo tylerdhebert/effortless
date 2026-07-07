@@ -65,7 +65,7 @@ type TerminalTab = {
   run: AgentRun | null
   hasLiveSession?: boolean
   providerLive?: boolean
-  profileLabel?: string | null
+  providerLabel?: string | null
   branchLabel?: string | null
   taskId?: number | null
   purpose?: AgentRun['purpose'] | null
@@ -87,7 +87,7 @@ type TaskSessionRun = {
   run: AgentRun
   hasLiveSession: boolean
   providerLive: boolean
-  profileLabel: string | null
+  providerLabel: string | null
 }
 
 type TaskSessionTab = {
@@ -98,7 +98,7 @@ type TaskSessionTab = {
   run: AgentRun | null
   hasLiveSession: boolean
   providerLive: boolean
-  profileLabel: string | null
+  providerLabel: string | null
   runs: TaskSessionRun[]
 }
 
@@ -974,7 +974,7 @@ export function AgentRunTerminal({
                                     >
                                       <Ref value={entry.run.shortRef} />
                                       <Stamp label={status} tone={statusTone(status)} compact />
-                                      <span>{entry.profileLabel ?? 'no profile'}</span>
+                                      <span>{entry.providerLabel ?? 'provider'}</span>
                                     </button>
                                     <div className={styles['run-switcher-actions']}>
                                       {entry.hasLiveSession ? (

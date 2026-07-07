@@ -9,7 +9,7 @@ import { listInputRequests } from './inputs'
 import { listPlans } from './plans'
 import { getRepo } from './repos'
 import { listTaskComments, listTasks } from './tasks'
-import type { AgentProfile, AgentRun, Task } from './types'
+import type { AgentRun, Task } from './types'
 
 export type PreparedTaskRunContext = {
   runDir: string
@@ -22,20 +22,18 @@ export async function writeTaskRunContext(
   db: AppDatabase,
   run: AgentRun,
   task: Task,
-  profile: AgentProfile,
 ): Promise<PreparedTaskRunContext> {
   const paths = await ensureRunDirectory(run.shortRef)
-  const prompt = renderTaskBootstrap(db, run, task, profile)
+  const prompt = renderTaskBootstrap(db, run, task)
   return { ...paths, prompt }
 }
 
 export async function writeEffortRunContext(
   db: AppDatabase,
   run: AgentRun,
-  profile: AgentProfile,
 ): Promise<PreparedTaskRunContext> {
   const paths = await ensureRunDirectory(run.shortRef)
-  const prompt = renderEffortBootstrap(db, run, profile)
+  const prompt = renderEffortBootstrap(db, run)
   return { ...paths, prompt }
 }
 
@@ -142,10 +140,9 @@ function renderTaskBootstrap(
   db: AppDatabase,
   run: AgentRun,
   task: Task,
-  profile: AgentProfile,
 ): string {
   const effort = getEffort(db, task.effortId)
-  const cwd = commandPath(profile, run.cwd)
+  const cwd = commandPath(run, run.cwd)
   const context = renderTaskContext(db, task)
   const sessionHint = renderSessionHint(run)
   return `# Effortless Run Bootstrap
@@ -158,7 +155,6 @@ Current run:
 - label: ${run.label}
 - purpose: ${run.purpose}
 - provider: ${getAgentProviderConfig(run.provider).name}
-- profile: ${profile.shortRef} ${profile.name}
 - effort: ${effort.shortRef}
 - task: ${task.shortRef}
 - cwd: ${cwd}
@@ -185,10 +181,9 @@ ${context}
 function renderEffortBootstrap(
   db: AppDatabase,
   run: AgentRun,
-  profile: AgentProfile,
 ): string {
   const effort = getEffort(db, run.effortId)
-  const cwd = commandPath(profile, run.cwd)
+  const cwd = commandPath(run, run.cwd)
   const context = renderEffortContext(db, run.effortId)
   const sessionHint = renderSessionHint(run)
   return `# Effortless Main Run Bootstrap
@@ -201,7 +196,6 @@ Current run:
 - label: ${run.label}
 - purpose: ${run.purpose}
 - provider: ${getAgentProviderConfig(run.provider).name}
-- profile: ${profile.shortRef} ${profile.name}
 - effort: ${effort.shortRef}
 - cwd: ${cwd}
 - created_at: ${run.createdAt}
@@ -225,8 +219,8 @@ ${context}
 `
 }
 
-function commandPath(profile: AgentProfile, filePath: string): string {
-  if (profile.environment !== 'wsl') return filePath
+function commandPath(run: AgentRun, filePath: string): string {
+  if (run.environment !== 'wsl') return filePath
   return toWslPath(filePath)
 }
 

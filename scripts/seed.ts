@@ -96,7 +96,7 @@ function seedInvestigationEffort(db: AppDatabase): Effort {
   const effort = createEffort(db, {
     title: 'investigate CLI packaging overhead',
     description:
-      'Profile why the CLI bundle grew after adding instructions commands. Identify low-hanging reductions.',
+      'Investigate why the CLI bundle grew after adding instructions commands. Identify low-hanging reductions.',
     template: 'investigation',
   })
   updateEffortSummary(

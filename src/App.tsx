@@ -128,11 +128,6 @@ function App() {
     queryFn: () => window.effortless.listRepos(),
   })
 
-  const agentProfilesQuery = useQuery({
-    queryKey: ['agent-profiles'],
-    queryFn: () => window.effortless.listAgentProfiles(),
-  })
-
   const instructionsQuery = useQuery({
     queryKey: ['instructions'],
     queryFn: () => window.effortless.listInstructions(),
@@ -406,7 +401,6 @@ function App() {
 
   const terminalTabs = useMemo(() => {
     const runs = effortRunsQuery.data ?? []
-    const profiles = agentProfilesQuery.data ?? []
     const tasks = tasksQuery.data ?? []
     const tabKeys = new Set<string>(['main'])
     if (!activeTerminalTabKey.startsWith('work-task-') && !activeTerminalTabKey.startsWith('task-')) {
@@ -430,11 +424,7 @@ function App() {
         run,
         hasLiveSession: run ? liveSessionIds.has(run.id) : false,
         providerLive: run ? providerLiveRunIds.has(run.id) : false,
-        profileLabel: run
-          ? `${getAgentProviderConfig(run.provider).name} / ${
-              profiles.find((profile) => profile.id === run.profileId)?.name ?? `profile-${run.profileId}`
-            }`
-          : null,
+        providerLabel: run ? getAgentProviderConfig(run.provider).name : null,
         taskId: run?.taskId ?? null,
         purpose: run?.purpose ?? null,
         branchLabel: run?.taskId
@@ -455,7 +445,7 @@ function App() {
           run: null,
           hasLiveSession: false,
           providerLive: false,
-          profileLabel: null,
+          providerLabel: null,
           taskId,
           purpose: null,
           branchLabel: task.branchName ?? 'no branch',
@@ -469,7 +459,6 @@ function App() {
   }, [
     activeTerminalTabKey,
     effortRunsQuery.data,
-    agentProfilesQuery.data,
     liveSessionIds,
     providerLiveRunIds,
     tasksQuery.data,
@@ -477,7 +466,6 @@ function App() {
   ])
 
   const taskSessionTabs = useMemo(() => {
-    const profiles = agentProfilesQuery.data ?? []
     return (tasksQuery.data ?? [])
       .map((task) => {
         const runs = taskRunsByTaskId.get(task.id) ?? []
@@ -491,26 +479,19 @@ function App() {
           run: selectedRun,
           hasLiveSession: selectedRun ? liveSessionIds.has(selectedRun.id) : false,
           providerLive: selectedRun ? providerLiveRunIds.has(selectedRun.id) : false,
-          profileLabel: selectedRun
-            ? `${getAgentProviderConfig(selectedRun.provider).name} / ${
-                profiles.find((profile) => profile.id === selectedRun.profileId)?.name ?? `profile-${selectedRun.profileId}`
-              }`
-            : null,
+          providerLabel: selectedRun ? getAgentProviderConfig(selectedRun.provider).name : null,
           runs: [...runs]
             .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())
             .map((run) => ({
               run,
               hasLiveSession: liveSessionIds.has(run.id),
               providerLive: providerLiveRunIds.has(run.id),
-              profileLabel: `${getAgentProviderConfig(run.provider).name} / ${
-                profiles.find((profile) => profile.id === run.profileId)?.name ?? `profile-${run.profileId}`
-              }`,
+              providerLabel: getAgentProviderConfig(run.provider).name,
             })),
         }
       })
       .filter((tab): tab is NonNullable<typeof tab> => tab !== null)
   }, [
-    agentProfilesQuery.data,
     liveSessionIds,
     providerLiveRunIds,
     selectedTaskRunByTaskId,
@@ -588,9 +569,6 @@ function App() {
     return Array.from(mounted.values())
   }, [allRunsQuery.data, liveSessionByRunId])
   const mainTerminalTab = terminalTabs.find((tab) => tab.key === 'main') ?? null
-  const effortDefaultProfile = selectedEffort?.defaultProfileId != null
-    ? agentProfilesQuery.data?.find((profile) => profile.id === selectedEffort.defaultProfileId) ?? null
-    : null
   const mainTerminalProvider = mainTerminalTab?.run ? getAgentProviderConfig(mainTerminalTab.run.provider) : null
   const forkMainDisabledReason = !mainTerminalTab?.run
     ? 'start main before forking'
@@ -783,50 +761,6 @@ function App() {
     },
   })
 
-  const createAgentProfile = useMutation({
-    mutationFn: (input: Parameters<typeof window.effortless.createAgentProfile>[0]) =>
-      window.effortless.createAgentProfile(input),
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['agent-profiles'] }),
-        queryClient.invalidateQueries({ queryKey: ['app-state'] }),
-      ])
-    },
-  })
-
-  const updateAgentProfile = useMutation({
-    mutationFn: (input: Parameters<typeof window.effortless.updateAgentProfile>[0]) =>
-      window.effortless.updateAgentProfile(input),
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['agent-profiles'] }),
-        queryClient.invalidateQueries({ queryKey: ['app-state'] }),
-      ])
-    },
-  })
-
-  const deleteAgentProfile = useMutation({
-    mutationFn: (profileId: number) => window.effortless.deleteAgentProfile(profileId),
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['agent-profiles'] }),
-        queryClient.invalidateQueries({ queryKey: ['app-state'] }),
-        queryClient.invalidateQueries({ queryKey: ['efforts'] }),
-      ])
-    },
-  })
-
-  const updateEffortDefaultProfile = useMutation({
-    mutationFn: ({ effortId, profileId }: { effortId: number; profileId: number | null }) =>
-      window.effortless.updateEffortDefaultProfile(effortId, profileId),
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['efforts'] }),
-        queryClient.invalidateQueries({ queryKey: ['app-state'] }),
-      ])
-    },
-  })
-
   const updateEffortDefaultProvider = useMutation({
     mutationFn: ({ effortId, provider }: { effortId: number; provider: AgentProvider }) =>
       window.effortless.updateEffortDefaultProvider(effortId, provider),
@@ -839,8 +773,8 @@ function App() {
   })
 
   const startEffortRun = useMutation({
-    mutationFn: async ({ effortId, provider, profileId }: { effortId: number; provider: AgentProvider; profileId: number | null }) => {
-      const prepared = await window.effortless.prepareEffortRun({ effortId, provider, profileId, purpose: 'main' })
+    mutationFn: async ({ effortId, provider }: { effortId: number; provider: AgentProvider }) => {
+      const prepared = await window.effortless.prepareEffortRun({ effortId, provider, purpose: 'main' })
       await window.effortless.startAgentRun(prepared.run.id, terminalStartSize)
       return prepared
     },
@@ -879,11 +813,10 @@ function App() {
   })
 
   const startTaskRun = useMutation({
-    mutationFn: async ({ task, provider, profileId }: { task: Task; provider: AgentProvider; profileId: number | null }) => {
+    mutationFn: async ({ task, provider }: { task: Task; provider: AgentProvider }) => {
       const prepared = await window.effortless.prepareTaskRun({
         taskId: task.id,
         provider,
-        profileId,
         purpose: 'extra',
       })
       await window.effortless.startAgentRun(prepared.run.id, terminalStartSize)
@@ -896,11 +829,10 @@ function App() {
   })
 
   const rerunTaskRun = useMutation({
-    mutationFn: async ({ task, provider, profileId }: { task: Task; provider: AgentProvider; profileId: number | null }) => {
+    mutationFn: async ({ task, provider }: { task: Task; provider: AgentProvider }) => {
       const prepared = await window.effortless.prepareTaskRun({
         taskId: task.id,
         provider,
-        profileId,
         purpose: 'extra',
         label: 'rerun',
       })
@@ -914,7 +846,7 @@ function App() {
   })
 
   const sendTaskToEffortSession = useMutation({
-    mutationFn: async ({ task, provider, profileId }: { task: Task; provider: AgentProvider; profileId: number | null }) => {
+    mutationFn: async ({ task, provider }: { task: Task; provider: AgentProvider }) => {
       if (!selectedEffort) {
         throw new Error('Select an effort before sending task context.')
       }
@@ -926,7 +858,6 @@ function App() {
         mainRuns.find((run) => providerLiveRunIds.has(run.id)) ?? null
       const latestMainRun = mainRuns[0] ?? null
       const prompt = buildTaskWorkPrompt(task)
-      const requestedProfileId = profileId ?? selectedEffort.defaultProfileId ?? null
       const requestedProvider = provider ?? selectedEffort.defaultProvider
 
       if (liveMainRun) {
@@ -936,8 +867,7 @@ function App() {
 
       if (
         latestMainRun?.providerSessionId &&
-        latestMainRun.provider === requestedProvider &&
-        (requestedProfileId == null || latestMainRun.profileId === requestedProfileId)
+        latestMainRun.provider === requestedProvider
       ) {
         const prepared = await window.effortless.prepareResumeRun({ runId: latestMainRun.id })
         await window.effortless.startAgentRun(prepared.run.id, terminalStartSize)
@@ -949,7 +879,6 @@ function App() {
       const prepared = await window.effortless.prepareEffortRun({
         effortId: selectedEffort.id,
         provider: requestedProvider,
-        profileId: requestedProfileId,
         purpose: 'main',
       })
       await window.effortless.startAgentRun(prepared.run.id, terminalStartSize)
@@ -1230,22 +1159,15 @@ function App() {
         <div className={`surface-panel ${surfaceMode === 'manage' ? 'active' : 'hidden'}`}>
           <ManageSurface
             repos={reposQuery.data ?? []}
-            agentProfiles={agentProfilesQuery.data ?? []}
             instructions={instructionsQuery.data ?? []}
             createRepo={repoMutations.createRepo.mutateAsync}
             updateRepo={repoMutations.updateRepo.mutateAsync}
             deleteRepo={repoMutations.deleteRepo.mutateAsync}
-            createAgentProfile={createAgentProfile.mutateAsync}
-            updateAgentProfile={updateAgentProfile.mutateAsync}
-            deleteAgentProfile={deleteAgentProfile.mutateAsync}
             setInstructions={instructionsMutations.setInstructions.mutateAsync}
             deleteInstructions={instructionsMutations.deleteInstructions.mutateAsync}
             isCreatingRepo={repoMutations.createRepo.isPending}
             isUpdatingRepo={repoMutations.updateRepo.isPending}
             isDeletingRepo={repoMutations.deleteRepo.isPending}
-            isCreatingAgentProfile={createAgentProfile.isPending}
-            isUpdatingAgentProfile={updateAgentProfile.isPending}
-            isDeletingAgentProfile={deleteAgentProfile.isPending}
             isSavingInstructions={instructionsMutations.setInstructions.isPending}
             isClearingInstructions={instructionsMutations.deleteInstructions.isPending}
             section={manageSection}
@@ -1351,25 +1273,6 @@ function App() {
                     ))}
                   </select>
                 </label>
-                <label className="effort-profile-chip">
-                  <small>profile</small>
-                  <select
-                    aria-label="effort default profile"
-                    value={selectedEffort.defaultProfileId == null ? '' : String(selectedEffort.defaultProfileId)}
-                    onChange={(event) => {
-                      updateEffortDefaultProfile.mutate({
-                        effortId: selectedEffort.id,
-                        profileId: event.target.value ? Number(event.target.value) : null,
-                      })
-                    }}
-                    disabled={updateEffortDefaultProfile.isPending || (agentProfilesQuery.data?.length ?? 0) === 0}
-                  >
-                    <option value="">app default</option>
-                    {(agentProfilesQuery.data ?? []).map((profile) => (
-                      <option key={profile.id} value={profile.id}>{profile.name}</option>
-                    ))}
-                  </select>
-                </label>
                 <div ref={effortMenuRef} className="effort-menu-shell">
                   <button
                     className="effort-menu-trigger"
@@ -1427,9 +1330,7 @@ function App() {
                     <TaskPage
                       task={activePageTask}
                       repos={reposQuery.data ?? []}
-                      profiles={agentProfilesQuery.data ?? []}
                       defaultProvider={selectedEffort.defaultProvider}
-                      defaultProfileId={selectedEffort.defaultProfileId ?? effortDefaultProfile?.id ?? null}
                       mainRunLive={Boolean(mainTerminalTab?.run && providerLiveRunIds.has(mainTerminalTab.run.id))}
                       taskRuns={activePageTaskRuns}
                       reviews={reviewsQuery.data ?? []}
@@ -1457,7 +1358,6 @@ function App() {
                     startEffortRun.mutate({
                       effortId: selectedEffort.id,
                       provider: selectedEffort.defaultProvider,
-                      profileId: selectedEffort.defaultProfileId ?? effortDefaultProfile?.id ?? null,
                     })
                   }}
                   onForkMain={() => forkMainRun.mutate()}
@@ -1478,7 +1378,6 @@ function App() {
                     startTaskRun.mutate({
                       task,
                       provider: selectedEffort.defaultProvider,
-                      profileId: selectedEffort.defaultProfileId ?? effortDefaultProfile?.id ?? null,
                     })
                   }}
                   onOpenTaskPage={openTaskPage}

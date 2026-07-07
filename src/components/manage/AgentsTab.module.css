@@ -1,0 +1,74 @@
+.agents-list {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.agent-row {
+  display: grid;
+  grid-template-columns: minmax(150px, 1fr) minmax(0, 2fr);
+  align-items: center;
+  gap: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--panel);
+  padding: 12px;
+  min-width: 0;
+}
+
+.agent-identity {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.agent-identity strong {
+  color: var(--text-strong);
+  font-size: var(--text-base);
+  font-weight: 700;
+}
+
+.agent-identity small,
+.agent-field span,
+.native-note {
+  color: var(--muted);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  letter-spacing: var(--track-label);
+  text-transform: lowercase;
+}
+
+.agent-controls {
+  display: grid;
+  grid-template-columns: minmax(120px, 180px) minmax(160px, 1fr);
+  gap: 10px;
+  align-items: end;
+  min-width: 0;
+}
+
+.agent-field {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
+.agent-field select,
+.agent-field input {
+  width: 100%;
+  min-width: 0;
+}
+
+.native-note {
+  justify-self: end;
+}
+
+@media (max-width: 720px) {
+  .agent-row,
+  .agent-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .native-note {
+    justify-self: start;
+  }
+}

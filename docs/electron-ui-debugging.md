@@ -59,7 +59,7 @@ Useful inspection calls:
 await window.effortless.getAppState()
 const efforts = await window.effortless.listEfforts()
 if (efforts[0]) await window.effortless.listTasks(efforts[0].id)
-await window.effortless.listAgentProfiles()
+await window.effortless.listProviderSettings()
 await window.effortless.listLiveAgentRunSessions()
 ```
 
