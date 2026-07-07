@@ -48,11 +48,13 @@ async function main() {
     const investigationEffort = seedInvestigationEffort(db)
     const bugfixEffort = await seedBugfixEffort(db, repos)
     const deliveryEffort = await seedDeliveryEffort(db, repos)
+    const diffShowcaseEffort = seedDiffShowcaseEffort(db, repos)
 
     touchEffort(db, deliveryEffort.id)
 
     console.log('seed complete')
     console.log(`db ${paths.databasePath}`)
+    console.log(`effort ${diffShowcaseEffort.shortRef} diff viewer showcase`)
     console.log(`effort ${deliveryEffort.shortRef} delivery demo`)
     console.log(`effort ${bugfixEffort.shortRef} bugfix demo`)
     console.log(`effort ${investigationEffort.shortRef} investigation demo`)
@@ -377,6 +379,53 @@ async function seedDeliveryEffort(
     ],
   })
   insertBuildResult(db, waitingTask.id, 'running', ['$ bun run seed -- --replace', 'writing demo fixtures...'])
+
+  return effort
+}
+
+function seedDiffShowcaseEffort(
+  db: AppDatabase,
+  repos: { effortlessRepo: Repo; agentsyncboardRepo: Repo | null },
+): Effort {
+  const effort = createEffort(db, {
+    title: 'diff viewer showcase',
+    description:
+      'Permanent showcase effort - its task tracks the real demo/diff-showcase branch so diff, commit, and conflict views always render real content.',
+    template: 'delivery',
+  })
+  updateEffortSummary(
+    db,
+    effort.id,
+    'Real branch-backed fixture for exercising branch, combined, uncommitted, commit, and conflict views.',
+  )
+
+  const task = createTask(db, {
+    effortId: effort.id,
+    title: 'session activity timeline',
+    description: 'Show the task history as a compact timeline that stays readable during long sessions.',
+    repoId: repos.effortlessRepo.id,
+    branchName: 'demo/diff-showcase',
+    baseBranch: 'main',
+  })
+  updateTaskDetails(db, {
+    taskId: task.id,
+    repoId: repos.effortlessRepo.id,
+    branchName: 'demo/diff-showcase',
+    baseBranch: 'main',
+    artifact:
+      'Permanent demo branch fixture for validating the task diff surfaces.\n\nviews covered\n- branch diff\n- combined diff\n- uncommitted diff',
+  })
+  attachTaskWorkspace(db, task, repos.effortlessRepo, 'impl-diff-demo', 'in-flight')
+  checkpointTask(db, {
+    taskId: task.id,
+    agentId: 'impl-diff-demo',
+    body: 'Pinned this fixture to the long-lived demo/diff-showcase branch.',
+  })
+  checkpointTask(db, {
+    taskId: task.id,
+    agentId: 'impl-diff-demo',
+    body: 'Use this task when verifying that permanent demo branch diffs render real content.',
+  })
 
   return effort
 }
