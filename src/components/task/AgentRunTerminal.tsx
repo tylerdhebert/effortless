@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { FitAddon } from '@xterm/addon-fit'
 import { Terminal } from '@xterm/xterm'
 import '@xterm/xterm/css/xterm.css'
-import { ChevronDown, ExternalLink, Play, Plus, RotateCcw, Square, X } from 'lucide-react'
+import { ChevronDown, Play, Plus, RotateCcw, Square, X } from 'lucide-react'
 import type { AgentRun, InputRequest, LiveAgentRunSession } from '../../../core/types'
 import { InputDock } from './InputDock'
 import { Ref } from '../ui/Ref'
@@ -123,19 +123,15 @@ type AgentRunTerminalProps = {
   startDisabled?: boolean
   emptyLabel?: string
   ptyAvailable?: boolean
-  menuOpen?: boolean
   onStart?: () => void
   onForkMain?: () => void
   onResume?: (runId: number) => void
   onSelectTab?: (tabKey: string) => void
   onSetTaskFace?: (taskId: number, face: TaskTabFace) => void
-  onSelectTaskSession?: (taskId: number) => void
   onSelectTaskRun?: (taskId: number, runId: number) => void
   onStartTaskSession?: (taskId: number) => void
-  onOpenTask?: (taskId: number) => void
   onOpenTaskPage?: (taskId: number) => void
   onStop: (runId: number) => void
-  onToggleMenu?: (open: boolean) => void
   onTerminalSizeChange?: (size: { cols: number; rows: number }) => void
   drawerClosedAt?: number
   forkMainDisabledReason?: string | null
@@ -163,19 +159,15 @@ export function AgentRunTerminal({
   startDisabled = false,
   emptyLabel = 'ready',
   ptyAvailable = true,
-  menuOpen: menuOpenProp,
   onStart,
   onForkMain,
   onResume,
   onSelectTab,
   onSetTaskFace,
-  onSelectTaskSession,
   onSelectTaskRun,
   onStartTaskSession,
-  onOpenTask,
   onOpenTaskPage,
   onStop,
-  onToggleMenu,
   onTerminalSizeChange,
   drawerClosedAt,
   forkMainDisabledReason,
@@ -197,34 +189,19 @@ export function AgentRunTerminal({
     providerLive: boolean
     liveSession: LiveAgentRunSession | null
   }>())
-  const menuRef = useRef<HTMLDivElement | null>(null)
   const createMenuRef = useRef<HTMLDivElement | null>(null)
   const createButtonRef = useRef<HTMLButtonElement | null>(null)
   const createMenuElRef = useRef<HTMLDivElement | null>(null)
   const runSwitcherButtonRef = useRef<HTMLButtonElement | null>(null)
   const runSwitcherMenuRef = useRef<HTMLDivElement | null>(null)
-  const menuRowRefs = useRef<Array<HTMLButtonElement | null>>([])
   const fitFrameRef = useRef<number | null>(null)
   const layoutSettleTimerRef = useRef<number | null>(null)
   const lastPublishedTerminalSizeRef = useRef<TerminalSize | null>(null)
   const scheduleFitAndRefreshRef = useRef<(runId?: number, mode?: FitScheduleMode, reason?: string) => void>(() => {})
-  const [menuOpenInternal, setMenuOpenInternal] = useState(false)
   const [createMenuOpen, setCreateMenuOpen] = useState(false)
   const [createMenuPosition, setCreateMenuPosition] = useState<{ top: number; left: number } | null>(null)
   const [runSwitcherOpen, setRunSwitcherOpen] = useState(false)
   const [runSwitcherPosition, setRunSwitcherPosition] = useState<{ top: number; left: number } | null>(null)
-  const [focusedMenuIndex, setFocusedMenuIndex] = useState(-1)
-
-  const menuOpen = menuOpenProp ?? menuOpenInternal
-
-  const closeMenu = useCallback(() => {
-    if (menuOpenProp !== undefined) {
-      onToggleMenu?.(false)
-    } else {
-      setMenuOpenInternal(false)
-    }
-    setFocusedMenuIndex(-1)
-  }, [menuOpenProp, onToggleMenu])
 
   const closeCreateMenu = useCallback(() => {
     setCreateMenuOpen(false)
@@ -234,24 +211,12 @@ export function AgentRunTerminal({
     setRunSwitcherOpen(false)
   }, [])
 
-  function openMenu() {
-    closeCreateMenu()
-    closeRunSwitcher()
-    if (menuOpenProp !== undefined) {
-      onToggleMenu?.(true)
-    } else {
-      setMenuOpenInternal(true)
-    }
-  }
-
   function toggleCreateMenu() {
-    closeMenu()
     closeRunSwitcher()
     setCreateMenuOpen((open) => !open)
   }
 
   function toggleRunSwitcher() {
-    closeMenu()
     closeCreateMenu()
     setRunSwitcherOpen((open) => !open)
   }
@@ -571,19 +536,6 @@ export function AgentRunTerminal({
   }, [])
 
   useEffect(() => {
-    if (!menuOpen) return
-
-    function handlePointerDown(event: MouseEvent) {
-      if (!menuRef.current?.contains(event.target as Node)) {
-        closeMenu()
-      }
-    }
-
-    window.addEventListener('mousedown', handlePointerDown)
-    return () => window.removeEventListener('mousedown', handlePointerDown)
-  }, [closeMenu, menuOpen])
-
-  useEffect(() => {
     if (!createMenuOpen) return
 
     function handlePointerDown(event: MouseEvent) {
@@ -649,7 +601,7 @@ export function AgentRunTerminal({
     }
   }, [runSwitcherOpen, updateRunSwitcherPosition])
 
-  const { mainTab, forkTabs, workTabs, otherTabs, stripTerminalTabs, orderedMenuTabs } = useMemo(() => {
+  const { mainTab, workTabs, stripTerminalTabs } = useMemo(() => {
     const mainTab = tabs.find((tab) => tab.key === 'main') ?? null
     const forkTabs = tabs.filter((tab) => tab.key !== 'main' && tab.purpose === 'fork' && tab.kind !== 'work')
     const workTabs = tabs.filter((tab) => tab.kind === 'work')
@@ -661,54 +613,10 @@ export function AgentRunTerminal({
     ]
     return {
       mainTab,
-      forkTabs,
       workTabs,
-      otherTabs,
       stripTerminalTabs,
-      orderedMenuTabs: stripTerminalTabs,
     }
   }, [tabs])
-
-  useEffect(() => {
-    if (!menuOpen) return
-
-    function handleMenuKeydown(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
-        event.preventDefault()
-        event.stopPropagation()
-        closeMenu()
-        if (activeRun) {
-          terminalEntriesRef.current.get(activeRun.id)?.terminal.focus()
-        }
-        return
-      }
-
-      if (event.key === 'ArrowDown') {
-        event.preventDefault()
-        setFocusedMenuIndex((i) => Math.min(i + 1, orderedMenuTabs.length - 1))
-        return
-      }
-
-      if (event.key === 'ArrowUp') {
-        event.preventDefault()
-        setFocusedMenuIndex((i) => Math.max(i - 1, 0))
-        return
-      }
-
-      if (event.key === 'Enter' && focusedMenuIndex >= 0) {
-        event.preventDefault()
-        const tab = orderedMenuTabs[focusedMenuIndex]
-        if (tab) {
-          onSelectTab?.(tab.key)
-          closeMenu()
-        }
-        return
-      }
-    }
-
-    window.addEventListener('keydown', handleMenuKeydown, true)
-    return () => window.removeEventListener('keydown', handleMenuKeydown, true)
-  }, [activeRun, closeMenu, focusedMenuIndex, menuOpen, orderedMenuTabs, onSelectTab])
 
   useEffect(() => {
     if (!createMenuOpen) return
@@ -745,12 +653,6 @@ export function AgentRunTerminal({
   }, [activeRun, closeRunSwitcher, runSwitcherOpen])
 
   useEffect(() => {
-    if (focusedMenuIndex >= 0) {
-      menuRowRefs.current[focusedMenuIndex]?.focus()
-    }
-  }, [focusedMenuIndex])
-
-  useEffect(() => {
     if (drawerClosedAt) {
       scheduleFitAndRefresh(undefined, 'settled', 'drawer-closed')
       if (activeRun && activeRunHasLiveSession) {
@@ -759,12 +661,10 @@ export function AgentRunTerminal({
     }
   }, [drawerClosedAt, scheduleFitAndRefresh, activeRun, activeRunHasLiveSession])
 
-  useEffect(() => {
-    scheduleFitAndRefresh(undefined, 'settled', 'menu-open-change')
-  }, [menuOpen, scheduleFitAndRefresh])
-
   const activeRunId = activeRun?.id ?? null
   const displayStatus = resolveRunStatus(activeRun, activeRunHasLiveSession, activeRunProviderLive)
+  const canResumeActiveRun = Boolean(activeRun?.providerSessionId) && !activeRunProviderLive && !activeRunHasLiveSession
+  const activeRunResumeTitle = resumeDisabledTitle(activeRun, Boolean(activeRunProviderLive || activeRunHasLiveSession), isStarting)
 
   useEffect(() => {
     return window.effortless.onAgentRunTerminalEvent((event) => {
@@ -991,6 +891,29 @@ export function AgentRunTerminal({
                 <>
                   <Ref value={activeRun.shortRef} />
                   <Stamp label={displayStatus} tone={statusTone(displayStatus)} compact />
+                  {activeRunHasLiveSession ? (
+                    <button
+                      type="button"
+                      className={styles['run-action-button']}
+                      aria-label={`stop ${activeRun.shortRef}`}
+                      title="stop"
+                      disabled={isStarting}
+                      onClick={() => onStop(activeRun.id)}
+                    >
+                      <Square size={12} aria-hidden="true" />
+                    </button>
+                  ) : canResumeActiveRun ? (
+                    <button
+                      type="button"
+                      className={styles['run-action-button']}
+                      aria-label={`resume ${activeRun.shortRef}`}
+                      title={activeRunResumeTitle}
+                      disabled={isStarting}
+                      onClick={() => onResume?.(activeRun.id)}
+                    >
+                      <RotateCcw size={13} aria-hidden="true" />
+                    </button>
+                  ) : null}
                   {isTaskSessionFaceActive && activeTaskSessionTab && activeTaskSessionTab.runs.length >= 2 ? (
                     <>
                       <button
@@ -1013,21 +936,62 @@ export function AgentRunTerminal({
                             >
                               {activeTaskSessionTab.runs.map((entry) => {
                                 const status = resolveRunStatus(entry.run, entry.hasLiveSession, entry.providerLive)
+                                const canResumeEntry = Boolean(entry.run.providerSessionId) && !entry.providerLive
+                                const entryResumeTitle = resumeDisabledTitle(entry.run, Boolean(entry.providerLive || entry.hasLiveSession), isStarting)
                                 return (
-                                  <button
+                                  <div
                                     key={entry.run.id}
-                                    type="button"
                                     className={`${styles['run-switcher-item']} ${entry.run.id === activeRun.id ? styles.active : ''}`}
                                     role="menuitem"
-                                    onClick={() => {
-                                      onSelectTaskRun?.(activeTaskSessionTab.taskId, entry.run.id)
-                                      closeRunSwitcher()
-                                    }}
                                   >
-                                    <Ref value={entry.run.shortRef} />
-                                    <Stamp label={status} tone={statusTone(status)} compact />
-                                    <span>{entry.profileLabel ?? 'no profile'}</span>
-                                  </button>
+                                    <button
+                                      type="button"
+                                      className={styles['run-switcher-select']}
+                                      onClick={() => {
+                                        onSelectTaskRun?.(activeTaskSessionTab.taskId, entry.run.id)
+                                        closeRunSwitcher()
+                                      }}
+                                    >
+                                      <Ref value={entry.run.shortRef} />
+                                      <Stamp label={status} tone={statusTone(status)} compact />
+                                      <span>{entry.profileLabel ?? 'no profile'}</span>
+                                    </button>
+                                    <div className={styles['run-switcher-actions']}>
+                                      {entry.hasLiveSession ? (
+                                        <button
+                                          type="button"
+                                          className={styles['run-switcher-action']}
+                                          aria-label={`stop ${entry.run.shortRef}`}
+                                          title="stop"
+                                          disabled={isStarting}
+                                          onClick={(event) => {
+                                            event.stopPropagation()
+                                            onStop(entry.run.id)
+                                            closeRunSwitcher()
+                                          }}
+                                        >
+                                          <Square size={12} aria-hidden="true" />
+                                        </button>
+                                      ) : canResumeEntry ? (
+                                        <button
+                                          type="button"
+                                          className={styles['run-switcher-action']}
+                                          aria-label={`resume ${entry.run.shortRef}`}
+                                          title={entryResumeTitle}
+                                          disabled={isStarting}
+                                          onClick={(event) => {
+                                            event.stopPropagation()
+                                            onResume?.(entry.run.id)
+                                            closeRunSwitcher()
+                                          }}
+                                        >
+                                          <RotateCcw size={13} aria-hidden="true" />
+                                        </button>
+                                      ) : (
+                                        <span className={styles['run-switcher-action-spacer']} aria-hidden="true" />
+                                      )}
+                                    </div>
+                                  </div>
                                 )
                               })}
                             </div>,
@@ -1040,55 +1004,6 @@ export function AgentRunTerminal({
               ) : (
                 <span className={styles['stage-tab-status-idle']}>{emptyLabel}</span>
               )
-            ) : null}
-          </div>
-          <div ref={menuRef} className={styles['terminal-menu-shell']}>
-            <button
-              type="button"
-              className={styles['stage-tab-menu-trigger']}
-              aria-label="terminal overflow menu"
-              aria-expanded={menuOpen}
-              onClick={() => {
-                if (menuOpen) {
-                  closeMenu()
-                } else {
-                  openMenu()
-                }
-              }}
-            >
-              <ChevronDown size={14} aria-hidden="true" />
-            </button>
-            {menuOpen ? (
-              <div className={styles['terminal-menu']} role="menu">
-                {mainTab ? renderTerminalMenuRow(mainTab, 0) : null}
-
-                <TerminalMenuSeparator label="forks" />
-                <div className={styles['terminal-menu-section']}>
-                  {forkTabs.length > 0 ? (
-                    forkTabs.map((tab, tabIndex) => renderTerminalMenuRow(tab, tabIndex + 1))
-                  ) : (
-                    <p className={styles['terminal-menu-empty']}>no forks yet</p>
-                  )}
-                </div>
-
-                <TerminalMenuSeparator label="tasks" />
-                <div className={styles['terminal-menu-section']}>
-                  {taskSessionTabs.length > 0 ? (
-                    taskSessionTabs.map((tab, tabIndex) => renderTaskSessionMenuRow(tab, orderedMenuTabs.length + tabIndex))
-                  ) : (
-                    <p className={styles['terminal-menu-empty']}>no task sessions yet</p>
-                  )}
-                </div>
-
-                {otherTabs.length > 0 ? (
-                  <>
-                    <TerminalMenuSeparator label="others" />
-                    <div className={styles['terminal-menu-section']}>
-                      {otherTabs.map((tab, tabIndex) => renderTerminalMenuRow(tab, tabIndex + 1 + forkTabs.length))}
-                    </div>
-                  </>
-                ) : null}
-              </div>
             ) : null}
           </div>
         </div>
@@ -1157,206 +1072,6 @@ export function AgentRunTerminal({
     </section>
   )
 
-  function renderTerminalMenuRow(tab: TerminalTab, tabIndex: number) {
-    const status = resolveRunStatus(tab.run, Boolean(tab.hasLiveSession), Boolean(tab.providerLive))
-    const canResume = Boolean(tab.run?.providerSessionId) && !tab.providerLive && !tab.hasLiveSession && !isStarting
-    const canStop = Boolean(tab.run && tab.hasLiveSession && !isStarting)
-    const canStartMain = tab.key === 'main' && Boolean(onStart) && !isStarting && !startDisabled
-    const canOpenTask = tab.key !== 'main' && tab.taskId != null && Boolean(onOpenTask)
-    const resumeTitle = resumeDisabledTitle(tab.run, Boolean(tab.providerLive || tab.hasLiveSession), isStarting)
-    const stopTitle = tab.run
-      ? !canStop
-        ? 'terminal session is not currently attached'
-        : 'stop'
-      : ''
-    return (
-                  <div
-                    key={tab.key}
-                    className={`${styles['terminal-menu-row']} ${tab.key === activeTabKey ? styles.active : ''}`}
-                    role="menuitem"
-                  >
-                    <button
-                      type="button"
-                      className={styles['terminal-menu-select']}
-                      tabIndex={-1}
-                      ref={(el) => {
-                        menuRowRefs.current[tabIndex] = el
-                      }}
-                      onClick={() => {
-                        onSelectTab?.(tab.key)
-                        closeMenu()
-                      }}
-                    >
-                      <strong>{tab.label}</strong>
-                      {tab.run?.shortRef ? <Ref value={tab.run.shortRef} /> : <span>no run</span>}
-                      {renderMenuStatus(status)}
-                      <span>{tab.profileLabel ?? 'no profile'}</span>
-                      <span>{tab.branchLabel ?? (tab.key === 'main' ? 'effort' : 'no branch')}</span>
-                    </button>
-                    <div className={styles['terminal-menu-actions']}>
-                      {canOpenTask ? (
-                        <button
-                          type="button"
-                          className={styles['terminal-menu-icon-action']}
-                          aria-label={`open ${tab.label} task`}
-                          title="open task"
-                          onClick={() => {
-                            onOpenTask?.(tab.taskId!)
-                            closeMenu()
-                          }}
-                        >
-                          <ExternalLink size={13} aria-hidden="true" />
-                        </button>
-                      ) : (
-                        <span className={styles['terminal-menu-icon-spacer']} aria-hidden="true" />
-                      )}
-                      {canStartMain ? (
-                        <button
-                          type="button"
-                          className={styles['terminal-menu-icon-action']}
-                          aria-label="start main run"
-                          title="start"
-                          onClick={() => {
-                            onStart?.()
-                            closeMenu()
-                          }}
-                        >
-                          <Play size={13} aria-hidden="true" />
-                        </button>
-                      ) : (
-                        <span className={styles['terminal-menu-icon-spacer']} aria-hidden="true" />
-                      )}
-                      {tab.run && onResume ? (
-                        <button
-                          type="button"
-                          className={styles['terminal-menu-icon-action']}
-                          aria-label={`resume ${tab.label}`}
-                          title={resumeTitle}
-                          disabled={!canResume}
-                          onClick={() => {
-                            onResume(tab.run!.id)
-                            closeMenu()
-                          }}
-                        >
-                          <RotateCcw size={13} aria-hidden="true" />
-                        </button>
-                      ) : (
-                        <span className={styles['terminal-menu-icon-spacer']} aria-hidden="true" />
-                      )}
-                      {tab.run ? (
-                        <button
-                          type="button"
-                          className={styles['terminal-menu-icon-action']}
-                          aria-label={`stop ${tab.label}`}
-                          title={stopTitle}
-                          disabled={!canStop}
-                          onClick={() => {
-                            onStop(tab.run!.id)
-                            closeMenu()
-                          }}
-                        >
-                          <Square size={12} aria-hidden="true" />
-                        </button>
-                      ) : (
-                        <span className={styles['terminal-menu-icon-spacer']} aria-hidden="true" />
-                      )}
-                    </div>
-                  </div>
-    )
-  }
-
-  function renderTaskSessionMenuRow(tab: TaskSessionTab, tabIndex: number) {
-    const status = resolveRunStatus(tab.run, tab.hasLiveSession, tab.providerLive)
-    const canResume = Boolean(tab.run?.providerSessionId) && !tab.providerLive && !tab.hasLiveSession && !isStarting
-    const canStop = Boolean(tab.run && tab.hasLiveSession && !isStarting)
-    const resumeTitle = resumeDisabledTitle(tab.run, Boolean(tab.providerLive || tab.hasLiveSession), isStarting)
-    const stopTitle = tab.run
-      ? !canStop
-        ? 'terminal session is not currently attached'
-        : 'stop'
-      : ''
-    const active = activeTaskId === tab.taskId
-    return (
-                  <div
-                    key={`task-session-${tab.taskId}`}
-                    className={`${styles['terminal-menu-row']} ${active ? styles.active : ''}`}
-                    role="menuitem"
-                  >
-                    <button
-                      type="button"
-                      className={styles['terminal-menu-select']}
-                      tabIndex={-1}
-                      ref={(el) => {
-                        menuRowRefs.current[tabIndex] = el
-                      }}
-                      onClick={() => {
-                        onSelectTaskSession?.(tab.taskId)
-                        closeMenu()
-                      }}
-                    >
-                      <strong>{tab.shortRef}</strong>
-                      {tab.run?.shortRef ? <Ref value={tab.run.shortRef} /> : <span>no run</span>}
-                      {renderMenuStatus(status)}
-                      <span>{tab.profileLabel ?? 'no profile'}</span>
-                      <span>{tab.branchLabel ?? 'no branch'}</span>
-                    </button>
-                    <div className={styles['terminal-menu-actions']}>
-                      {onOpenTask ? (
-                        <button
-                          type="button"
-                          className={styles['terminal-menu-icon-action']}
-                          aria-label={`open ${tab.shortRef} task`}
-                          title="open task"
-                          onClick={() => {
-                            onOpenTask(tab.taskId)
-                            closeMenu()
-                          }}
-                        >
-                          <ExternalLink size={13} aria-hidden="true" />
-                        </button>
-                      ) : (
-                        <span className={styles['terminal-menu-icon-spacer']} aria-hidden="true" />
-                      )}
-                      <span className={styles['terminal-menu-icon-spacer']} aria-hidden="true" />
-                      {tab.run && onResume ? (
-                        <button
-                          type="button"
-                          className={styles['terminal-menu-icon-action']}
-                          aria-label={`resume ${tab.shortRef}`}
-                          title={resumeTitle}
-                          disabled={!canResume}
-                          onClick={() => {
-                            onResume(tab.run!.id)
-                            closeMenu()
-                          }}
-                        >
-                          <RotateCcw size={13} aria-hidden="true" />
-                        </button>
-                      ) : (
-                        <span className={styles['terminal-menu-icon-spacer']} aria-hidden="true" />
-                      )}
-                      {tab.run ? (
-                        <button
-                          type="button"
-                          className={styles['terminal-menu-icon-action']}
-                          aria-label={`stop ${tab.shortRef}`}
-                          title={stopTitle}
-                          disabled={!canStop}
-                          onClick={() => {
-                            onStop(tab.run!.id)
-                            closeMenu()
-                          }}
-                        >
-                          <Square size={12} aria-hidden="true" />
-                        </button>
-                      ) : (
-                        <span className={styles['terminal-menu-icon-spacer']} aria-hidden="true" />
-                      )}
-                    </div>
-                  </div>
-    )
-  }
-
 }
 
 function workTabShortRef(tab: TerminalTab): string {
@@ -1382,10 +1097,6 @@ function resolveRunStatus(
   if (providerLive) return 'running'
   if (hasLiveSession) return 'stale'
   return run.status
-}
-
-function renderMenuStatus(status: string) {
-  return <Stamp label={status} tone={statusTone(status)} compact />
 }
 
 function resumeDisabledTitle(run: AgentRun | null, runLive: boolean | undefined, isStarting: boolean): string {

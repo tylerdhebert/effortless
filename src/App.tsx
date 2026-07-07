@@ -103,7 +103,6 @@ function App() {
   }, [drawerWidth, activeEffortDrawer])
   const [taskCreateOpen, setTaskCreateOpen] = useState(false)
   const [focusedInputId, setFocusedInputId] = useState<number | null>(null)
-  const [terminalMenuOpen, setTerminalMenuOpen] = useState(false)
   const [drawerClosedAt, setDrawerClosedAt] = useState(0)
   const [observedAppVersion, setObservedAppVersion] = useState<number | null>(null)
   const [customThemePalette, setCustomThemePalette] = useState<ThemePalette | null>(null)
@@ -1087,7 +1086,6 @@ function App() {
   function openEffortDrawer(drawer: EffortRailDrawer) {
     if (drawer === 'plan' && !supportsPlans) return
     if (drawer === 'tasks' && !supportsTasks) return
-    setTerminalMenuOpen(false)
     setDrawerWidth(null)
     setActiveEffortDrawer((current) => {
       if (current === drawer) {
@@ -1155,7 +1153,6 @@ function App() {
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key !== 'Escape') return
       setActiveEffortDrawer(null)
-      setTerminalMenuOpen(false)
       setDrawerClosedAt((n) => n + 1)
     }
 
@@ -1469,7 +1466,6 @@ function App() {
                   startDisabled={!ptyAvailable}
                   ptyAvailable={ptyAvailable}
                   emptyLabel="ready for effort"
-                  menuOpen={terminalMenuOpen}
                   workPane={activePageTask ? (
                     <TaskPage
                       task={activePageTask}
@@ -1513,16 +1509,9 @@ function App() {
                   onResume={(runId) => resumeAgentRun.mutate(runId)}
                   onSelectTab={(key) => {
                     navigateToRunTab(key)
-                    setTerminalMenuOpen(false)
                   }}
                   onSetTaskFace={(taskId, face) => {
                     setTaskTabFaceByTaskId((current) => ({ ...current, [taskId]: face }))
-                  }}
-                  onSelectTaskSession={(taskId) => {
-                    setSelectedTaskId(taskId)
-                    setSelectedPlanId(null)
-                    selectTaskTab(taskId, 'session')
-                    setTerminalMenuOpen(false)
                   }}
                   onSelectTaskRun={(taskId, runId) => {
                     setSelectedTaskRunIdByTaskId((current) => ({ ...current, [taskId]: runId }))
@@ -1537,12 +1526,8 @@ function App() {
                       profileId: selectedEffort.defaultProfileId ?? effortDefaultProfile?.id ?? null,
                     })
                   }}
-                  onOpenTask={(taskId) => {
-                    openTaskPage(taskId)
-                  }}
                   onOpenTaskPage={openTaskPage}
                   onStop={(runId) => taskMutations.stopAgentRun.mutate(runId)}
-                  onToggleMenu={setTerminalMenuOpen}
                   onTerminalSizeChange={setTerminalStartSize}
                   drawerClosedAt={drawerClosedAt}
                   forkMainDisabledReason={forkMainRun.isPending ? 'fork is starting' : forkMainDisabledReason}
