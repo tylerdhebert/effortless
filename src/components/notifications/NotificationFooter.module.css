@@ -58,9 +58,9 @@
   overflow-y: auto;
   border-radius: var(--radius-card);
   border: 1px solid color-mix(in srgb, var(--line) 75%, transparent);
-  background: rgba(18, 18, 18, 0.98);
+  background: color-mix(in srgb, var(--panel) 98%, transparent);
   backdrop-filter: blur(16px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.28);
 }
 
 :global(.collapsed-sidebar) .footer {

@@ -266,63 +266,63 @@ select:focus {
   background-color: var(--diff-gutter-delete-bg) !important;
 }
 
-/* Prism token colors (github-dark-dimmed palette) */
+/* Prism token colors come from the active theme's --syn-* palette */
 .token.comment,
 .token.prolog,
 .token.doctype,
 .token.cdata {
-  color: #768390;
+  color: var(--syn-comment);
   font-style: italic;
 }
 
 .token.string,
 .token.attr-value,
 .token.template-string {
-  color: #96d0ff;
+  color: var(--syn-string);
 }
 
 .token.keyword,
 .token.atrule {
-  color: #f47067;
+  color: var(--syn-keyword);
 }
 
 .token.function,
 .token.function-variable {
-  color: #dcbdfb;
+  color: var(--syn-function);
 }
 
 .token.class-name,
 .token.maybe-class-name {
-  color: #f69d50;
+  color: var(--syn-class);
 }
 
 .token.number,
 .token.boolean,
 .token.constant {
-  color: #6cb6ff;
+  color: var(--syn-number);
 }
 
 .token.property,
 .token.variable {
-  color: #e2e8f0;
+  color: var(--syn-property);
 }
 
 .token.operator,
 .token.punctuation {
-  color: #8b949e;
+  color: var(--syn-punct);
 }
 
 .token.tag {
-  color: #8ddb8c;
+  color: var(--syn-tag);
 }
 
 .token.attr-name {
-  color: #6cb6ff;
+  color: var(--syn-attr);
 }
 
 .token.regex,
 .token.important {
-  color: #f69d50;
+  color: var(--syn-regex);
 }
 
 .token.important,

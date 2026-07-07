@@ -76,7 +76,7 @@
   overflow-x: auto;
   border: 1px solid color-mix(in srgb, var(--line) 75%, transparent);
   border-radius: var(--radius-card);
-  background: rgba(9, 11, 8, 0.92);
+  background: color-mix(in srgb, var(--text) 5%, transparent);
   padding: 14px;
 }
 

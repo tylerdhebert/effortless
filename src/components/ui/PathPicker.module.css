@@ -41,8 +41,8 @@
   overflow: hidden;
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-card);
-  background: rgba(12, 14, 11, 0.98);
-  box-shadow: 0 24px 52px rgba(0, 0, 0, 0.5);
+  background: color-mix(in srgb, var(--panel) 98%, transparent);
+  box-shadow: 0 24px 52px rgba(0, 0, 0, 0.35);
 }
 
 .popover-header,
