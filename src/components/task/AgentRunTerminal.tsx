@@ -285,6 +285,26 @@ export function AgentRunTerminal({
     onTerminalSizeChange?.(size)
   }, [onTerminalSizeChange])
 
+  const idleTerminalCopy = useMemo(() => {
+    if (!activeRun) {
+      return {
+        label: 'no live run',
+        helper: 'hit + to start a session or open a task',
+      }
+    }
+    const label = `${activeRun.shortRef} ended`
+    if (activeRun.providerSessionId && !activeRunProviderLive && !activeRunHasLiveSession) {
+      return {
+        label,
+        helper: 'resume it from the controls above, or start fresh from +',
+      }
+    }
+    return {
+      label,
+      helper: 'start a fresh session from +',
+    }
+  }, [activeRun, activeRunHasLiveSession, activeRunProviderLive])
+
   const renderIdleTerminal = useCallback(() => {
     const entry = idleEntryRef.current
     if (!entry) return
@@ -294,8 +314,8 @@ export function AgentRunTerminal({
       cols: entry.terminal.cols,
       rows: entry.terminal.rows,
     })
-    drawIdleWordmark(entry.terminal, palette.idleArt)
-  }, [applyTerminalPalette, publishTerminalSize])
+    drawIdleWordmark(entry.terminal, palette.idleArt, idleTerminalCopy.label, idleTerminalCopy.helper)
+  }, [applyTerminalPalette, idleTerminalCopy, publishTerminalSize])
 
   const fitAndRefreshTerminal = useCallback((runId?: number) => {
     const targetRunId = runId ?? (activeRunHasLiveSession ? activeRun?.id : undefined)
@@ -1115,7 +1135,12 @@ function isMinorTerminalSizeDrift(left: TerminalSize, right: TerminalSize): bool
   return Math.abs(left.cols - right.cols) <= 1 && Math.abs(left.rows - right.rows) <= 1
 }
 
-function drawIdleWordmark(terminal: Terminal, palette: TerminalPalette['idleArt']): void {
+function drawIdleWordmark(
+  terminal: Terminal,
+  palette: TerminalPalette['idleArt'],
+  label: string,
+  helper: string,
+): void {
   const art = terminal.cols >= 56
     ? [
         ['e', 'f', 'f', 'o', 'r', 't', 'l', 'e', 's', 's'].join(' '),
@@ -1146,8 +1171,8 @@ function drawIdleWordmark(terminal: Terminal, palette: TerminalPalette['idleArt'
       ? [ansiText(palette.base, centerLine(terminal.cols, art[3]), true)]
       : []),
     '',
-    ansiText(palette.label, centerLine(terminal.cols, 'no live run')),
-    ansiText(palette.helper, centerLine(terminal.cols, 'hit + to start a session or open a task')),
+    ansiText(palette.label, centerLine(terminal.cols, label)),
+    ansiText(palette.helper, centerLine(terminal.cols, helper)),
   ]
 
   const topPad = Math.max(0, Math.floor((terminal.rows - body.length) / 2))

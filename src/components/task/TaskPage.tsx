@@ -20,7 +20,6 @@ import type {
   TaskDiffView,
 } from '../../../core/types'
 import { listAgentProviders } from '../../../core/agentProviders'
-import { resolveRunBadgeLabel } from '../../lib/runStatus'
 import { Ref } from '../ui/Ref'
 import { Stamp, statusTone } from '../ui/Stamp'
 import { PillSwitcher } from '../ui/PillSwitcher'
@@ -35,8 +34,6 @@ type TaskPageProps = {
   defaultProfileId: number | null
   mainRunLive: boolean
   taskRuns?: AgentRun[]
-  liveSessionIds?: Set<number>
-  providerLiveRunIds?: Set<number>
   reviews: Review[]
   comments: ActivityEvent[]
   latestBuild: TaskBuildResult | null
@@ -65,8 +62,6 @@ export function TaskPage({
   defaultProfileId,
   mainRunLive,
   taskRuns = [],
-  liveSessionIds = new Set<number>(),
-  providerLiveRunIds = new Set<number>(),
   reviews,
   comments,
   latestBuild,
@@ -337,15 +332,6 @@ export function TaskPage({
             <span title={task.worktreePath ?? 'no worktree yet'}>
               {task.worktreePath ? task.worktreePath.split(/[\\/]/).pop() : 'no worktree yet'}
             </span>
-            {taskRuns.slice(0, 4).map((run) => {
-              const badge = resolveRunBadgeLabel(run, liveSessionIds, providerLiveRunIds) ?? run.status
-              return (
-                <span key={run.id}>
-                  {' · '}
-                  <Ref value={run.shortRef} /> <Stamp label={badge} tone={statusTone(badge)} compact />
-                </span>
-              )
-            })}
           </span>
         </div>
 

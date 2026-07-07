@@ -226,7 +226,6 @@ function App() {
     enabled: Boolean(selectedEffort),
   })
 
-  const pendingInputCount = inputsQuery.data?.filter((input) => input.status === 'pending').length ?? 0
   const template = selectedEffort?.template ?? null
   const supportsPlans = template ? effortSupportsPlans(template) : false
   const supportsTasks = template ? effortSupportsTasks(template) : false
@@ -1495,8 +1494,6 @@ function App() {
                       defaultProfileId={selectedEffort.defaultProfileId ?? effortDefaultProfile?.id ?? null}
                       mainRunLive={Boolean(mainTerminalTab?.run && providerLiveRunIds.has(mainTerminalTab.run.id))}
                       taskRuns={activePageTaskRuns}
-                      liveSessionIds={liveSessionIds}
-                      providerLiveRunIds={providerLiveRunIds}
                       reviews={reviewsQuery.data ?? []}
                       comments={commentsQuery.data ?? []}
                       latestBuild={buildQuery.data ?? null}
@@ -1562,7 +1559,7 @@ function App() {
               </div>
               <aside className="effort-rail" aria-label="effort views">
                 {[
-                  { id: 'inputs' as const, label: 'inputs', Icon: CircleHelp, badge: pendingInputCount > 0 ? String(pendingInputCount) : String(inputsQuery.data?.length ?? 0) },
+                  { id: 'inputs' as const, label: 'inputs', Icon: CircleHelp, badge: String(inputsQuery.data?.length ?? 0) },
                   { id: 'tasks' as const, label: 'tasks', Icon: Hammer, badge: supportsTasks ? String(filteredTasks.length) : '', disabled: !supportsTasks },
                   { id: 'plan' as const, label: 'plan', Icon: ListOrdered, badge: supportsPlans ? String(plansQuery.data?.length ?? 0) : '', disabled: !supportsPlans },
                 ].map(({ id, label, Icon, badge, disabled }) => (
