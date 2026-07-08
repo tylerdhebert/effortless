@@ -15,7 +15,7 @@ Bun installs prebuilds when available for your platform. If the embedded termina
 
 `electron-builder.json5` sets:
 
-- `npmRebuild: false` — rely on prebuilds, not a local compile during packaging
+- `npmRebuild: false` - rely on prebuilds, not a local compile during packaging
 - `asarUnpack` for `better-sqlite3` and `node-pty` prebuild paths so native modules load from unpacked ASAR
 
 After `bun run build`, confirm `release/*/win-unpacked` contains unpacked `node-pty` prebuilds under `resources/app.asar.unpacked`.
