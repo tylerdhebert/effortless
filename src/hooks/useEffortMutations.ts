@@ -20,7 +20,6 @@ export function useEffortMutations(selectedEffortId: number | null) {
         queryClient.invalidateQueries({ queryKey: ['efforts'] }),
         queryClient.invalidateQueries({ queryKey: ['all-tasks'] }),
         queryClient.invalidateQueries({ queryKey: ['notifications'] }),
-        queryClient.invalidateQueries({ queryKey: ['notification-count'] }),
       ])
 
       if (selectedEffortId) {

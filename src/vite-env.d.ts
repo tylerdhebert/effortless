@@ -159,7 +159,6 @@ interface Window {
       deleteInstructions: (id: number) => Promise<void>
       captureDebugScreenshot: (relativePath?: string) => Promise<{ path: string; sha256: string }>
       listPendingNotifications: () => Promise<PendingNotification[]>
-      countPendingNotifications: () => Promise<number>
       showOSNotification: (title: string, body: string) => Promise<void>
       updateNotificationSettings: (settings: {
         osNotificationsEnabled?: boolean

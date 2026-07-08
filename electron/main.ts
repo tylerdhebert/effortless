@@ -21,7 +21,6 @@ import {
 } from '../core/inputs'
 import {
   listPendingNotifications,
-  countPendingNotifications,
 } from '../core/notifications'
 import {
   deleteInstructions,
@@ -139,7 +138,6 @@ ipcMain.handle('inputs:create', (_event, input: CreateInputRequestInput) => crea
 ipcMain.handle('inputs:answer', (_event, input: AnswerInputRequestInput) => answerInputRequest(db, input))
 ipcMain.handle('inputs:show', (_event, inputRef: string) => getInputRequestByRef(db, inputRef))
 ipcMain.handle('notifications:list', () => listPendingNotifications(db))
-ipcMain.handle('notifications:count', () => countPendingNotifications(db))
 ipcMain.handle('notifications:show-os', (_event, title: string, body: string) => {
   if (!Notification.isSupported()) return
   new Notification({ title, body }).show()

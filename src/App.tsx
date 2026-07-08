@@ -18,7 +18,6 @@ import { EffortCreationForm } from './components/sidebar/EffortCreationForm'
 import { InputRequestList } from './components/effort/InputRequestList'
 import { ManageSurface } from './components/manage/ManageSurface'
 import { WarningIndicator } from './components/notifications/WarningIndicator'
-import { NotificationFooter } from './components/notifications/NotificationFooter'
 import { NotificationToast } from './components/notifications/NotificationToast'
 import { TitleBar } from './components/ui/TitleBar'
 import type { AttentionNavigateTarget } from './components/notifications/NeedsYou'
@@ -153,7 +152,7 @@ function App() {
     return () => mediaQuery.removeEventListener('change', syncTheme)
   }, [appStateQuery.data?.theme])
 
-  const { notifications, count: notificationCount, isLoading: notificationsLoading } = useNotifications()
+  const { notifications, isLoading: notificationsLoading } = useNotifications()
 
   const effortPendingMap = new Map<number, boolean>()
   for (const notification of notifications) {
@@ -954,13 +953,11 @@ function App() {
         void queryClient.invalidateQueries({ queryKey: ['agent-runs', 'live-sessions'] })
         void queryClient.invalidateQueries({ queryKey: ['app-state'] })
         void queryClient.invalidateQueries({ queryKey: ['notifications'] })
-        void queryClient.invalidateQueries({ queryKey: ['notifications-count'] })
         return
       }
       if (event.kind !== 'exit' && event.kind !== 'error') return
       void queryClient.invalidateQueries({ queryKey: ['agent-runs'] })
       void queryClient.invalidateQueries({ queryKey: ['notifications'] })
-      void queryClient.invalidateQueries({ queryKey: ['notifications-count'] })
       void queryClient.invalidateQueries({ queryKey: ['agent-runs', 'live-sessions'] })
       void queryClient.invalidateQueries({ queryKey: ['app-state'] })
       if (selectedEffort?.id) {
@@ -1071,11 +1068,6 @@ function App() {
             >
               <ChevronsRight size={16} />
             </button>
-            <NotificationFooter
-              count={notificationCount}
-              notifications={notifications}
-              onNavigate={handleNotificationNavigate}
-            />
             <button
               type="button"
               className="collapsed-sidebar-button"
@@ -1137,9 +1129,6 @@ function App() {
             onOpenCreateEffort={() => setCreateEffortOpen(true)}
             effortPendingMap={effortPendingMap}
             liveEffortIds={liveEffortIds}
-            notificationCount={notificationCount}
-            notifications={notifications}
-            onNavigateNotification={handleNotificationNavigate}
             onCollapseSidebar={() => setSidebarCollapsed(true)}
           />
         </div>

@@ -1,12 +1,10 @@
 import { useMemo, useState } from 'react'
 import type { Effort, Task } from '../../../core/types'
-import type { PendingNotification } from '../../../core/notifications'
 import { ChevronsLeft, Plus, Filter } from 'lucide-react'
 import { formatTemplate, effortStatusColor } from '../../lib/helpers'
 import { Ref } from '../ui/Ref'
 import { MANAGE_SECTIONS, type ManageSection } from '../../lib/manageSections'
 import { WarningIndicator } from '../notifications/WarningIndicator'
-import { NotificationFooter } from '../notifications/NotificationFooter'
 import styles from './Sidebar.module.css'
 
 type SidebarProps = {
@@ -22,9 +20,6 @@ type SidebarProps = {
   onOpenCreateEffort: () => void
   effortPendingMap: Map<number, boolean>
   liveEffortIds: Set<number>
-  notificationCount: number
-  notifications: PendingNotification[]
-  onNavigateNotification: (notification: PendingNotification) => void
   onCollapseSidebar: () => void
 }
 
@@ -41,9 +36,6 @@ export function Sidebar({
   onOpenCreateEffort,
   effortPendingMap,
   liveEffortIds,
-  notificationCount,
-  notifications,
-  onNavigateNotification,
   onCollapseSidebar,
 }: SidebarProps) {
   const [filtersOpen, setFiltersOpen] = useState(false)
@@ -123,11 +115,6 @@ export function Sidebar({
           >
             <ChevronsLeft size={16} />
           </button>
-          <NotificationFooter
-            count={notificationCount}
-            notifications={notifications}
-            onNavigate={onNavigateNotification}
-          />
           <button
             type="button"
             className={`icon-btn ${styles['add-effort-btn']}`}

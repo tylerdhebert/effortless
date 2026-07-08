@@ -3,7 +3,6 @@ import type { PendingNotification } from '../../core/notifications'
 
 export function useNotifications(): {
   notifications: PendingNotification[]
-  count: number
   isLoading: boolean
 } {
   const notificationsQuery = useQuery({
@@ -12,15 +11,8 @@ export function useNotifications(): {
     refetchInterval: 2000,
   })
 
-  const countQuery = useQuery({
-    queryKey: ['notifications-count'],
-    queryFn: () => window.effortless.countPendingNotifications(),
-    refetchInterval: 2000,
-  })
-
   return {
     notifications: notificationsQuery.data ?? [],
-    count: countQuery.data ?? 0,
-    isLoading: notificationsQuery.isLoading || countQuery.isLoading,
+    isLoading: notificationsQuery.isLoading,
   }
 }

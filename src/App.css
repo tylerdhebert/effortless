@@ -1510,44 +1510,25 @@
 
 @media (max-width: 960px) {
   .app-shell {
-    grid-template-columns: 1fr;
-    height: auto;
-    min-height: 100vh;
-    overflow: visible;
+    /* Stay two-column even on narrow windows. Collapsing to a single column
+       stacked the sidebar full-height and pushed the terminal off-screen with no
+       way to reach it. Use the sidebar collapse control to reclaim width instead. */
+    grid-template-columns: 308px minmax(0, 1fr);
   }
 
-  .effort-surface {
-    grid-template-rows: auto auto;
-    overflow: visible;
-  }
-
-  .terminal-first-stage {
-    grid-template-columns: minmax(0, 1fr) 46px;
-    grid-template-rows: minmax(460px, 62vh) minmax(360px, auto);
-    height: auto;
-  }
-
+  /* Keep the desktop overlay layout at narrow widths. The old single-column
+     reflow dropped the right-rail drawer below the terminal, out of reach.
+     Instead, let the drawer overlay the full main area (rather than its fixed
+     desktop width) so tasks/inputs stay reachable on top of the PTY. */
   .effort-drawer {
-    position: relative;
-    right: auto;
-    top: auto;
-    bottom: auto;
-    width: 100% !important;
-    grid-column: 1 / -1;
-    grid-row: 2;
-    min-height: 360px;
+    left: 0;
+    width: auto;
   }
 
-  .effort-header {
-    position: relative;
-    padding-right: 18px;
-    padding-left: 18px;
-  }
-
+  .effort-header,
   .effort-scroll {
     padding-right: 18px;
     padding-left: 18px;
-    overflow: visible;
   }
 
   .effort-overview-side,

@@ -190,10 +190,6 @@ export function listPendingNotifications(db: AppDatabase): PendingNotification[]
   )
 }
 
-export function countPendingNotifications(db: AppDatabase): number {
-  return listPendingNotifications(db).length
-}
-
 export function getPendingNotificationsByEffort(
   db: AppDatabase,
   effortId: number,

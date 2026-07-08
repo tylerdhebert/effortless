@@ -5,6 +5,7 @@ import { Terminal } from '@xterm/xterm'
 import '@xterm/xterm/css/xterm.css'
 import { ChevronDown, Play, Plus, RotateCcw, Square, X } from 'lucide-react'
 import type { AgentRun, InputRequest, LiveAgentRunSession } from '../../../core/types'
+import { THEME_PALETTES } from '../../themes'
 import { InputDock } from './InputDock'
 import { Ref } from '../ui/Ref'
 import { Stamp, statusTone } from '../ui/Stamp'
@@ -1135,41 +1136,211 @@ function isMinorTerminalSizeDrift(left: TerminalSize, right: TerminalSize): bool
   return Math.abs(left.cols - right.cols) <= 1 && Math.abs(left.rows - right.rows) <= 1
 }
 
+// Worm's-eye "efl" (the CLI command). Geometric slab glyphs are pushed through a
+// perspective warp: every row splays wider toward the base (horizontal
+// convergence) while GIANT_TILT compresses the rows toward the top (vertical
+// foreshortening). TILT 0 reads as a straight-on "skyscraper" (full-height,
+// converging inward); higher values lean toward a Star Wars "crawl" (top
+// squashed). The warped shape is supersampled 2×2 into Unicode quadrant blocks so
+// the sloped edges resolve smoothly instead of as a coarse staircase.
+//
+// Tuning knobs live here: GIANT_TILT (upright↔crawl) and the flare range in
+// buildGiantArt.
+const GIANT_TILT = .75;
+
+const GIANT_BITMAPS: Record<'e' | 'f' | 'l', string[]> = {
+  // Same source height for all three; e is blanked at the top so it sits at the
+  // shared x-height baseline while f and l rise as ascenders.
+  e: [
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '.##############.',
+    '.##############.',
+    '.####......####.',
+    '.####......####.',
+    '.##############.',
+    '.##############.',
+    '.####...........',
+    '.####...........',
+    '.##############.',
+    '.##############.',
+  ],
+  f: [
+    '.....########',
+    '.....########',
+    '.....####....',
+    '.....####....',
+    '.############',
+    '.############',
+    '.....####....',
+    '.....####....',
+    '.....####....',
+    '.....####....',
+    '.....####....',
+    '.....####....',
+    '.....####....',
+    '.....####....',
+    '.....####....',
+    '.....####....',
+  ],
+  l: [
+    '..####..',
+    '..####..',
+    '..####..',
+    '..####..',
+    '..####..',
+    '..####..',
+    '..####..',
+    '..####..',
+    '..####..',
+    '..####..',
+    '..####..',
+    '..####..',
+    '..####..',
+    '..####..',
+    '.######.',
+    '.######.',
+  ],
+}
+
+// 2×2 sub-cell coverage → quadrant block, indexed by (tl|tr<<1|bl<<2|br<<3).
+const GIANT_QUADRANTS = [' ', '▘', '▝', '▀', '▖', '▌', '▞', '▛', '▗', '▚', '▐', '▜', '▄', '▙', '▟', '█']
+const GIANT_GAP = 6
+
+// Ink-trim each glyph so the equal GIANT_GAP yields even spacing — the source side
+// bearings differ per letter and would otherwise make the gaps look uneven.
+function trimGlyph(rows: string[]): string[] {
+  let min = Infinity
+  let max = -1
+  for (const row of rows) {
+    for (let col = 0; col < row.length; col++) {
+      if (row[col] === '#') {
+        if (col < min) min = col
+        if (col > max) max = col
+      }
+    }
+  }
+  if (max < 0) return rows
+  return rows.map((row) => {
+    let trimmed = ''
+    for (let col = min; col <= max; col++) trimmed += row[col] ?? '.'
+    return trimmed
+  })
+}
+
+const GIANT_TRIMMED: Record<'e' | 'f' | 'l', string[]> = {
+  e: trimGlyph(GIANT_BITMAPS.e),
+  f: trimGlyph(GIANT_BITMAPS.f),
+  l: trimGlyph(GIANT_BITMAPS.l),
+}
+
+// Fitting span for the f-centred layout: the block is padded symmetric about the
+// f, and e (leftmost, widest) drives the extent, so final width tracks 2×e + f.
+const giantGlyphWidth = (key: 'e' | 'f' | 'l') => Math.max(...GIANT_TRIMMED[key].map((row) => row.length))
+const GIANT_FIT_SPAN = 2 * giantGlyphWidth('e') + giantGlyphWidth('f')
+
+function renderGiantLetter(src: string[], outH: number, topScale: number, botScale: number, tilt: number): string[] {
+  const srcH = src.length
+  const srcW = Math.max(...src.map((row) => row.length))
+  const power = 1 + tilt * 2.4
+  const subH = outH * 2
+  const maxW = Math.round(srcW * botScale)
+  const subW = maxW * 2
+  const center = subW / 2
+  const coverage: boolean[][] = []
+  for (let sy = 0; sy < subH; sy++) {
+    const depth = subH === 1 ? 1 : sy / (subH - 1)
+    // Inverse-map every sub-pixel through one continuous transform (rather than
+    // scaling+rounding each row independently) so all edges are sampled against
+    // the same boundary line and the stair-steps come out evenly spaced.
+    const scale = (topScale + (botScale - topScale) * depth) * 2
+    const srcRow = Math.min(srcH - 1, Math.floor((1 - Math.pow(1 - depth, power)) * srcH))
+    const row = new Array<boolean>(subW).fill(false)
+    for (let sx = 0; sx < subW; sx++) {
+      const u = (sx - center) / scale + srcW / 2
+      if (u >= 0 && u < srcW && src[srcRow][Math.floor(u)] === '#') row[sx] = true
+    }
+    coverage.push(row)
+  }
+  const lines: string[] = []
+  for (let oy = 0; oy < outH; oy++) {
+    let line = ''
+    for (let ox = 0; ox < maxW; ox++) {
+      const tl = coverage[oy * 2][ox * 2]
+      const tr = coverage[oy * 2][ox * 2 + 1]
+      const bl = coverage[oy * 2 + 1][ox * 2]
+      const br = coverage[oy * 2 + 1][ox * 2 + 1]
+      line += GIANT_QUADRANTS[(tl ? 1 : 0) | (tr ? 2 : 0) | (bl ? 4 : 0) | (br ? 8 : 0)]
+    }
+    lines.push(line)
+  }
+  return lines
+}
+
+function buildGiant(outH: number, topScale: number, botScale: number, tilt: number): string[] {
+  const letters = (['e', 'f', 'l'] as const).map((key) =>
+    renderGiantLetter(GIANT_TRIMMED[key], outH, topScale, botScale, tilt),
+  )
+  const widths = letters.map((letter) => letter[0].length)
+  const gap = ' '.repeat(GIANT_GAP)
+  const rawWidth = widths[0] + widths[1] + widths[2] + GIANT_GAP * 2
+  // Anchor on the f's centre column (not the block's) so f sits dead-centre, then
+  // pad symmetric about it so the shared centerLine keeps it centred.
+  const fCenter = Math.round(widths[0] + GIANT_GAP + widths[1] / 2)
+  const half = Math.max(fCenter, rawWidth - fCenter)
+  const padLeft = ' '.repeat(half - fCenter)
+  const padRight = ' '.repeat(half - (rawWidth - fCenter))
+  const lines: string[] = []
+  for (let row = 0; row < outH; row++) {
+    lines.push(padLeft + letters.map((letter) => letter[row]).join(gap) + padRight)
+  }
+  return lines
+}
+
+// Sizes the giant to the pane and returns null (fall back to compact text) when
+// it can't fit legibly.
+function buildGiantArt(cols: number, rows: number): string[] | null {
+  if (cols < 60 || rows < 14) return null
+  const botScale = clamp((cols * 0.9 - 2 * GIANT_GAP) / GIANT_FIT_SPAN, 1.7, 4)
+  const topScale = botScale * 0.3
+  const outH = clamp(Math.floor((rows - 6) * 0.82), 8, 22)
+  const art = buildGiant(outH, topScale, botScale, GIANT_TILT)
+  if (art[0].length > cols || art.length > rows - 4) return null
+  return art
+}
+
+function clamp(value: number, lo: number, hi: number): number {
+  return Math.min(hi, Math.max(lo, value))
+}
+
 function drawIdleWordmark(
   terminal: Terminal,
   palette: TerminalPalette['idleArt'],
   label: string,
   helper: string,
 ): void {
-  const art = terminal.cols >= 56
-    ? [
-        ['e', 'f', 'f', 'o', 'r', 't', 'l', 'e', 's', 's'].join(' '),
-        ['ee', 'ff', 'ff', 'oo', 'rr', 'tt', 'll', 'ee', 'ss', 'ss'].join(' '),
-        ['eee', 'fff', 'fff', 'ooo', 'rrr', 'ttt', 'lll', 'eee', 'sss', 'sss'].join(' '),
-        ['eeee', 'ffff', 'ffff', 'oooo', 'rrrr', 'tttt', 'llll', 'eeee', 'ssss', 'ssss'].join(' '),
-      ]
-    : terminal.cols >= 28
-      ? [
-          'effortless',
-          'effortless',
-          'effortless',
-        ]
-      : [
-          'effortless',
-        ]
+  const art = buildGiantArt(terminal.cols, terminal.rows)
+
+  // Gradient the rows dim-far (top) to bright-near (base) to deepen the low angle.
+  const markLines = art
+    ? art.map((line, index) => {
+        const depth = art.length === 1 ? 1 : index / (art.length - 1)
+        return ansiText(mixColors(palette.top, palette.label, depth), centerLine(terminal.cols, line), depth > 0.55)
+      })
+    : [ansiText(palette.upper, centerLine(terminal.cols, 'e f f o r t l e s s'), true)]
+
+  const caption = art
+    ? ['', ansiText(mixColors(palette.helper, palette.upper, 0.5), centerLine(terminal.cols, 'e f f o r t l e s s'))]
+    : []
 
   const body = [
     '',
-    ansiText(palette.top, centerLine(terminal.cols, art[0])),
-    ...(art[1]
-      ? [ansiText(palette.upper, centerLine(terminal.cols, art[1]))]
-      : []),
-    ...(art[2]
-      ? [ansiText(palette.lower, centerLine(terminal.cols, art[2]), true)]
-      : []),
-    ...(art[3]
-      ? [ansiText(palette.base, centerLine(terminal.cols, art[3]), true)]
-      : []),
+    ...markLines,
+    ...caption,
     '',
     ansiText(palette.label, centerLine(terminal.cols, label)),
     ansiText(palette.helper, centerLine(terminal.cols, helper)),
@@ -1189,14 +1360,17 @@ function centerLine(width: number, line: string): string {
   return `${' '.repeat(padding)}${line}`
 }
 
-function deriveTerminalPalette(host: HTMLElement | null, cursorColor?: string): TerminalPalette {
-  const rootStyles = window.getComputedStyle(document.documentElement)
-  const hostStyles = host ? window.getComputedStyle(host) : rootStyles
-  const background = resolveTerminalBackground(hostStyles, rootStyles)
-  const foreground = readCssVar(rootStyles, '--text', '#d5dccd')
-  const strong = readCssVar(rootStyles, '--text-strong', foreground)
-  const muted = readCssVar(rootStyles, '--muted', foreground)
-  const accent = readCssVar(rootStyles, '--accent', strong)
+// The embedded CLIs (codex, claude, …) render their own ANSI colors assuming a
+// dark terminal, so the PTY screen stays dark in every app theme. We borrow the
+// app's own dark-theme tokens so it matches dark mode exactly rather than being
+// an alien black void. `host` is unused now but kept for call-site stability.
+function deriveTerminalPalette(_host: HTMLElement | null, cursorColor?: string): TerminalPalette {
+  const dark = THEME_PALETTES.dark
+  const background = dark['--field']
+  const foreground = dark['--text']
+  const strong = dark['--text-strong']
+  const muted = dark['--muted']
+  const accent = dark['--accent']
   const selectionBackground = rgbaString(mixColors(accent, strong, 0.28), 0.26)
 
   return {
@@ -1215,22 +1389,6 @@ function deriveTerminalPalette(host: HTMLElement | null, cursorColor?: string): 
       helper: muted,
     },
   }
-}
-
-function readCssVar(styles: CSSStyleDeclaration, name: string, fallback: string): string {
-  const value = styles.getPropertyValue(name).trim()
-  return value || fallback
-}
-
-function resolveTerminalBackground(
-  hostStyles: CSSStyleDeclaration,
-  rootStyles: CSSStyleDeclaration,
-): string {
-  const hostBackground = hostStyles.backgroundColor.trim()
-  if (hostBackground && hostBackground !== 'transparent' && hostBackground !== 'rgba(0, 0, 0, 0)') {
-    return hostBackground
-  }
-  return readCssVar(rootStyles, '--field', '#10120e')
 }
 
 function ansiText(color: string, text: string, bold = false): string {

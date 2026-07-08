@@ -216,8 +216,6 @@ contextBridge.exposeInMainWorld('effortless', {
     ipcRenderer.invoke('debug:capture-screenshot', relativePath) as Promise<{ path: string; sha256: string }>,
   listPendingNotifications: () =>
     ipcRenderer.invoke('notifications:list') as Promise<PendingNotification[]>,
-  countPendingNotifications: () =>
-    ipcRenderer.invoke('notifications:count') as Promise<number>,
   showOSNotification: (title: string, body: string) =>
     ipcRenderer.invoke('notifications:show-os', title, body) as Promise<void>,
   updateNotificationSettings: (settings: NotificationSettings) =>
